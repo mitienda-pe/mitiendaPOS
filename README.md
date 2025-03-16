@@ -2,7 +2,6 @@
 
 Sistema de Punto de Venta (POS) moderno desarrollado con Vue.js 3, diseñado para ofrecer una experiencia fluida y eficiente en operaciones de venta minorista.
 
-
 ## Características
 
 - 🔐 Autenticación JWT con roles (cajero, supervisor, administrador)
@@ -15,14 +14,13 @@ Sistema de Punto de Venta (POS) moderno desarrollado con Vue.js 3, diseñado par
 - 👥 Gestión de clientes
 - 📦 Control de inventario
 - 🎁 Gestión de vales y tarjetas de regalo
-
+- Pagos combinados con múltiples métodos
 
 ## Requisitos Previos
 
 - Node.js (v16 o superior)
 - npm o yarn
 - Navegador moderno con soporte para ES6+
-
 
 ## Instalación
 
@@ -48,7 +46,6 @@ Editar `.env` con las configuraciones necesarias.
 npm run dev
 ```
 
-
 ## Estructura del Proyecto
 
 ```
@@ -65,11 +62,9 @@ POS2/
 ├── public/           # Archivos públicos
 └── package.json      # Dependencias y scripts
 
-
 ## Módulos del Sistema
 
 El sistema cuenta con los siguientes módulos principales:
-
 
 ### Módulos Operativos
 
@@ -77,7 +72,6 @@ El sistema cuenta con los siguientes módulos principales:
 - **Clientes**: Gestión de cartera de clientes
 - **Inventario**: Control de productos y stock
 - **Cambios y Devoluciones**: Gestión de devoluciones
-
 
 ### Módulos Administrativos
 
@@ -90,7 +84,6 @@ El sistema cuenta con los siguientes módulos principales:
 - **Preferencias**: Configuración del sistema
 - **Vales y Tarjetas de Regalo**: Gestión de gift cards
 
-
 ## Métodos de Pago
 
 El sistema soporta los siguientes métodos de pago:
@@ -99,7 +92,25 @@ El sistema soporta los siguientes métodos de pago:
 - **Tarjeta**: Pago con tarjeta de crédito/débito
 - **Gift Card**: Pago con tarjeta de regalo, requiere código de validación
 - **Puntos**: Sistema de fidelización mediante puntos acumulados (en desarrollo)
+- Pagos combinados con múltiples métodos
 
+## Pagos Combinados
+
+La funcionalidad de pagos combinados permite:
+
+- Utilizar múltiples métodos de pago en una sola transacción
+- Visualizar el saldo pendiente en tiempo real
+- Agregar y eliminar pagos de forma dinámica
+- Validar que el monto total de los pagos cubra el importe de la venta
+- Generar un comprobante detallado con todos los métodos utilizados
+
+### Uso de Pagos Combinados
+
+1. Seleccionar un método de pago inicial
+2. Ingresar el monto para ese método (puede ser parcial)
+3. Hacer clic en "Agregar Pago"
+4. Repetir el proceso con otros métodos hasta cubrir el total
+5. Confirmar la transacción cuando el saldo pendiente sea cero
 
 ## Características por Rol
 
@@ -122,7 +133,6 @@ El sistema soporta los siguientes métodos de pago:
 - Configuración del sistema
 - Gestión de usuarios
 
-
 ## Soporte de Hardware
 
 ### Impresora Térmica
@@ -133,13 +143,11 @@ El sistema está configurado para trabajar con impresoras térmicas que soporten
 
 Compatible con cualquier lector de código de barras que funcione como dispositivo HID (emulación de teclado).
 
-
 ## Scripts Disponibles
 
 - `npm run dev`: Inicia el servidor de desarrollo
 - `npm run build`: Compila para producción
 - `npm run preview`: Vista previa de la build de producción
-
 
 ## Tecnologías Principales
 
@@ -149,7 +157,6 @@ Compatible con cualquier lector de código de barras que funcione como dispositi
 - Vue Router
 - Tailwind CSS
 - Lucide Icons para iconografía moderna
-
 
 ## Diseño UI/UX
 
