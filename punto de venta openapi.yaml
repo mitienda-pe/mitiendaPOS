@@ -1,0 +1,130 @@
+openapi: 3.0.3
+info:
+  title: POS API
+  description: API RESTful para la aplicación de punto de venta (POS) con integración a NetSuite
+  version: 1.0.0
+servers:
+  - url: https://api.ejemplo.com/api/v1
+    description: Servidor de producción
+  - url: https://staging.api.ejemplo.com/api/v1
+    description: Servidor de pruebas
+
+paths:
+  /auth/login:
+    post:
+      summary: Iniciar sesión
+      description: Autenticación de usuario y retorno de token JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Inicio de sesión exitoso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        "401":
+          description: Credenciales inválidas
+  
+  /productos:
+    get:
+      summary: Listar productos
+      description: Obtiene la lista de productos con soporte para paginación y filtros
+      parameters:
+        - name: page
+          in: query
+          description: Número de página
+          schema:
+            type: integer
+        - name: per_page
+          in: query
+          description: Cantidad de productos por página
+          schema:
+            type: integer
+        - name: search
+          in: query
+          description: Búsqueda por nombre o SKU
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Lista de productos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    nombre:
+                      type: string
+                    precio:
+                      type: number
+                      format: float
+        "400":
+          description: Parámetros inválidos
+
+  /ventas:
+    post:
+      summary: Registrar una venta
+      description: Crea un nuevo registro de venta
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cliente_id:
+                  type: integer
+                productos:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      producto_id:
+                        type: integer
+                      cantidad:
+                        type: integer
+                total:
+                  type: number
+                  format: float
+      responses:
+        "201":
+          description: Venta registrada exitosamente
+        "400":
+          description: Datos inválidos
+
+  /sync/stock:
+    post:
+      summary: Actualizar stock desde NetSuite
+      description: Sincroniza la información de stock desde NetSuite
+      responses:
+        "200":
+          description: Stock actualizado exitosamente
+        "500":
+          description: Error en la sincronización
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - BearerAuth: []
