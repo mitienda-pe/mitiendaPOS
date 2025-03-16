@@ -179,17 +179,64 @@
                 <span>Total</span>
                 <span>{{ formatCurrency(total) }}</span>
               </div>
+              
+              <!-- Pagos Parciales -->
+              <div v-if="payments.length > 0" class="mt-4">
+                <div class="border-t pt-3 mb-2">
+                  <h3 class="font-medium text-gray-700">Pagos Realizados:</h3>
+                </div>
+                <div class="space-y-2">
+                  <div v-for="(payment, index) in payments" :key="index" 
+                    class="flex justify-between items-center p-2 bg-gray-50 rounded-lg border border-gray-200">
+                    <div class="flex items-center">
+                      <span class="font-medium text-sm">{{ payment.methodName }}</span>
+                      <span v-if="payment.reference" class="ml-2 text-xs text-gray-500">{{ payment.reference }}</span>
+                    </div>
+                    <div class="flex items-center">
+                      <span class="font-medium">{{ formatCurrency(payment.amount) }}</span>
+                      <button @click="removePayment(index)" class="ml-2 text-red-600 hover:text-red-800">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M18 6L6 18M6 6l12 12"></path>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex justify-between mt-3 font-medium text-green-700">
+                  <span>Pagado:</span>
+                  <span>{{ formatCurrency(totalPaid) }}</span>
+                </div>
+                <div class="flex justify-between font-medium" :class="remainingAmount === 0 ? 'text-green-700' : 'text-red-600'">
+                  <span>Saldo pendiente:</span>
+                  <span>{{ formatCurrency(remainingAmount) }}</span>
+                </div>
+              </div>
             </div>
           </div>
 
           <!-- Payment Actions -->
           <div class="flex-shrink-0 mt-auto space-y-4">
             <button
+              v-if="payments.length === 0 || remainingAmount > 0"
               @click="processPayment"
               :disabled="!cartItems.length"
-              class="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors duration-200"
+              class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors duration-200 flex items-center justify-center"
             >
-              Procesar Pago
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                <line x1="1" y1="10" x2="23" y2="10"></line>
+              </svg>
+              Añadir Pago
+            </button>
+            <button
+              v-if="payments.length > 0 && remainingAmount === 0"
+              @click="handlePaymentCompleted"
+              class="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center justify-center"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              Completar Venta
             </button>
             <div class="flex space-x-2">
               <button
@@ -309,9 +356,11 @@
   <PaymentModal
     v-model="showPaymentModal"
     :total="total"
+    :remaining-amount="remainingAmount"
     :customer="selectedCustomer"
     :items="cartItems"
     @payment-completed="handlePaymentCompleted"
+    @payment-added="handlePaymentAdded"
   />
 
   <!-- Saved Sales Modal -->
@@ -319,10 +368,21 @@
     v-model="showSavedSalesModal"
     @resume-sale="resumeSavedSale"
   />
+
+  <!-- Ticket Modal -->
+  <TicketModal
+    v-model="showTicketModal"
+    :customer="selectedCustomer"
+    :items="cartItems"
+    :subtotal="subtotal"
+    :tax="tax"
+    :total="total"
+    :payments="payments"
+  />
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { mockInventoryApi } from '../api/mockInventory';
 import { mockCustomersApi } from '../api/mockCustomers';
@@ -330,6 +390,7 @@ import { useSavedSalesStore } from '../stores/savedSales';
 import CustomerSearchModal from '../components/CustomerSearchModal.vue';
 import PaymentModal from '../components/PaymentModal.vue';
 import SavedSalesModal from '../components/SavedSalesModal.vue';
+import TicketModal from '../components/TicketModal.vue';
 
 // State
 const authStore = useAuthStore();
@@ -348,7 +409,9 @@ const categories = ref([]);
 const allProducts = ref([]);
 const showPaymentModal = ref(false);
 const showSavedSalesModal = ref(false);
+const showTicketModal = ref(false);
 const currentSaleId = ref(null);
+const payments = ref([]);
 
 // Computed properties
 const filteredProducts = computed(() => {
@@ -377,6 +440,12 @@ const subtotal = computed(() => {
 
 const tax = computed(() => subtotal.value * 0.18);
 const total = computed(() => subtotal.value + tax.value);
+const totalPaid = computed(() => {
+  return payments.value.reduce((sum, payment) => sum + payment.amount, 0);
+});
+const remainingAmount = computed(() => {
+  return Math.round((total.value - totalPaid.value) * 100) / 100;
+});
 
 // Methods
 const formatCurrency = (amount) => {
@@ -518,7 +587,25 @@ const resumeSavedSale = (sale) => {
 };
 
 const processPayment = () => {
-  showPaymentModal.value = true;
+  // Solo mostrar el modal si hay un saldo pendiente
+  if (remainingAmount.value > 0) {
+    showPaymentModal.value = true;
+  } else if (payments.value.length > 0) {
+    // Si ya está pagado completamente, procesar la venta
+    handlePaymentCompleted();
+  }
+};
+
+const handlePaymentAdded = (paymentData) => {
+  payments.value.push({
+    method: paymentData.method,
+    methodName: getPaymentMethodName(paymentData.method),
+    amount: paymentData.amount,
+    reference: paymentData.reference
+  });
+  
+  // Ya no procesamos la venta automáticamente cuando el saldo llega a cero
+  // Esto permite al usuario ver el resumen de la orden
 };
 
 const handlePaymentCompleted = async () => {
@@ -542,7 +629,8 @@ const handlePaymentCompleted = async () => {
       })),
       subtotal: subtotal.value,
       igv: tax.value,
-      total: total.value
+      total: total.value,
+      pagos: payments.value
     };
 
     // Here you would integrate with your sales API
@@ -553,8 +641,8 @@ const handlePaymentCompleted = async () => {
       savedSalesStore.deleteSavedSale(currentSaleId.value);
     }
     
-    // Reset sale after payment is completed
-    resetSale();
+    // Mostrar el ticket de compra
+    showTicketModal.value = true;
   } catch (error) {
     console.error('Error al procesar el pago:', error);
   }
@@ -569,9 +657,10 @@ const cancelSale = () => {
 const resetSale = () => {
   cartItems.value = [];
   selectedCustomer.value = null;
-  barcode.value = '';
   currentSaleId.value = null;
-  barcodeInput.value.focus();
+  payments.value = [];
+  searchQuery.value = '';
+  searchResults.value = [];
 };
 
 const fetchCustomers = async () => {
@@ -667,13 +756,43 @@ const handleCustomerSelect = (customer) => {
 };
 
 // Lifecycle hooks
-onMounted(() => {
+onMounted(async () => {
   fetchCustomers();
-  barcodeInput.value.focus();
+  
+  // Esperar a que el DOM se actualice y luego intentar hacer focus
+  await nextTick();
+  if (barcodeInput.value) {
+    barcodeInput.value.focus();
+  }
+  
   document.addEventListener('click', handleClickOutside);
 });
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside);
 });
+
+// Watcher para resetear la venta cuando se cierra el modal del ticket
+watch(showTicketModal, (newValue) => {
+  if (!newValue) {
+    resetSale();
+  }
+});
+
+const removePayment = (index) => {
+  payments.value.splice(index, 1);
+};
+
+const getPaymentMethodName = (method) => {
+  const methods = {
+    'efectivo': 'Efectivo',
+    'tarjeta': 'Tarjeta de crédito/débito',
+    'qr': 'Pago con QR',
+    'credito': 'Crédito',
+    'giftcard': 'Gift Card',
+    'puntos': 'Puntos'
+  };
+  
+  return methods[method] || '';
+};
 </script>
