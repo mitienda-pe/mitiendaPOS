@@ -1,3 +1,423 @@
+<script setup>
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import { useAuthStore } from '../stores/auth';
+import { mockInventoryApi } from '../api/mockInventory';
+import { mockCustomersApi } from '../api/mockCustomers';
+import { useSavedSalesStore } from '../stores/savedSales';
+import CustomerSearchModal from '../components/CustomerSearchModal.vue';
+import PaymentModal from '../components/PaymentModal.vue';
+import SavedSalesModal from '../components/SavedSalesModal.vue';
+
+// State
+const authStore = useAuthStore();
+const savedSalesStore = useSavedSalesStore();
+const customers = ref([]); 
+const categories = ref([]); 
+const allProducts = ref([]); 
+const barcode = ref('');
+const barcodeInput = ref(null);
+const cartItems = ref([]);
+const selectedCustomer = ref(null);
+const searchQuery = ref('');
+const searchResults = ref([]);
+const showProductModal = ref(false);
+const showPaymentModal = ref(false);
+const showCustomerSearch = ref(false);
+const showSavedSalesModal = ref(false);
+const productSearchQuery = ref('');
+const productCategoryFilter = ref('');
+const productSearchResults = ref([]);
+const payments = ref([]);
+const currentSaleId = ref(null);
+const documentType = ref('boleta'); // Tipo de documento (boleta o factura)
+const showTicket = ref(false); // Variable para controlar la visualización del ticket
+
+// Computed properties
+const filteredProducts = computed(() => {
+  let filtered = [...allProducts.value];
+  
+  if (productSearchQuery.value) {
+    const search = productSearchQuery.value.toLowerCase();
+    filtered = filtered.filter(product => 
+      product.nombre.toLowerCase().includes(search) ||
+      (product.sku ? String(product.sku).toLowerCase().includes(search) : false)
+    );
+  }
+  
+  if (productCategoryFilter.value) {
+    filtered = filtered.filter(product => 
+      product.categoria === productCategoryFilter.value
+    );
+  }
+  
+  return filtered;
+});
+
+const subtotal = computed(() => {
+  return cartItems.value.reduce((sum, item) => sum + calculateSubtotal(item), 0);
+});
+
+const tax = computed(() => subtotal.value * 0.18);
+const total = computed(() => subtotal.value + tax.value);
+const totalPaid = computed(() => {
+  return payments.value.reduce((sum, payment) => sum + payment.amount, 0);
+});
+const remainingAmount = computed(() => {
+  return Math.round((total.value - totalPaid.value) * 100) / 100;
+});
+
+// Methods
+const formatCurrency = (amount) => {
+  if (isNaN(amount) || amount === null || amount === undefined) return 'S/ 0.00';
+  return new Intl.NumberFormat('es-PE', {
+    style: 'currency',
+    currency: 'PEN'
+  }).format(amount);
+};
+
+const calculateSubtotal = (item) => {
+  const precio = parseFloat(item.precio) || 0;
+  const cantidad = parseInt(item.quantity) || 0;
+  return precio * cantidad;
+};
+
+const handleBarcodeInput = async () => {
+  if (!barcode.value) return;
+  
+  try {
+    const response = await mockInventoryApi.getInventory({
+      search: barcode.value,
+      perPage: 1
+    });
+    
+    const product = response.data.items[0];
+    if (product) {
+      if (product.stock > 0) {
+        addToCart(product);
+      } else {
+        alert('Este producto está agotado');
+      }
+    } else {
+      alert('Producto no encontrado');
+    }
+    
+    barcode.value = '';
+    barcodeInput.value.focus();
+  } catch (error) {
+    console.error('Error searching product:', error);
+  }
+};
+
+const addToCart = (product) => {
+  const existingItem = cartItems.value.find(item => item.id === product.id);
+  
+  if (existingItem) {
+    // Check if we have enough stock
+    if (existingItem.quantity < product.stock) {
+      existingItem.quantity++;
+    } else {
+      alert('No hay suficiente stock disponible');
+    }
+  } else {
+    cartItems.value.push({
+      ...product,
+      quantity: 1
+    });
+  }
+};
+
+const incrementQuantity = (item) => {
+  const product = cartItems.value.find(i => i.id === item.id);
+  if (product && product.quantity < product.stock) {
+    item.quantity++;
+  } else {
+    alert('No hay suficiente stock disponible');
+  }
+};
+
+const decrementQuantity = (item) => {
+  if (item.quantity > 1) {
+    item.quantity--;
+  }
+};
+
+const removeItem = (item) => {
+  cartItems.value = cartItems.value.filter(i => i.id !== item.id);
+};
+
+// Guardar la venta actual para más tarde
+const saveSaleForLater = () => {
+  if (!cartItems.value.length) return;
+
+  const saleData = {
+    customer: selectedCustomer.value,
+    items: [...cartItems.value],
+    subtotal: subtotal.value,
+    tax: tax.value,
+    total: total.value
+  };
+
+  // Si ya existe un ID para esta venta, eliminar la versión anterior
+  if (currentSaleId.value) {
+    savedSalesStore.deleteSavedSale(currentSaleId.value);
+  }
+
+  // Guardar la venta y obtener el nuevo ID
+  const saleId = savedSalesStore.saveSale(saleData);
+  currentSaleId.value = saleId;
+
+  // Mostrar mensaje de confirmación
+  alert('Venta guardada correctamente');
+  
+  // Limpiar la venta actual
+  resetSale();
+};
+
+// Iniciar una nueva venta
+const newSale = () => {
+  if (cartItems.value.length > 0) {
+    if (confirm('¿Desea guardar la venta actual antes de iniciar una nueva?')) {
+      saveSaleForLater();
+    } else {
+      resetSale();
+    }
+  }
+  
+  // Limpiar el ID de la venta actual
+  currentSaleId.value = null;
+  
+  // Abrir el modal de búsqueda de cliente
+  showCustomerSearch.value = true;
+};
+
+// Retomar una venta guardada
+const resumeSavedSale = (sale) => {
+  // Si hay una venta en curso, preguntar si se desea guardar
+  if (cartItems.value.length > 0) {
+    if (confirm('¿Desea guardar la venta actual antes de cargar la venta guardada?')) {
+      saveSaleForLater();
+    }
+  }
+
+  // Cargar la venta guardada
+  cartItems.value = [...sale.items];
+  selectedCustomer.value = sale.customer;
+  currentSaleId.value = sale.id;
+};
+
+const processPayment = () => {
+  // Solo mostrar el modal si hay un saldo pendiente
+  if (remainingAmount.value > 0) {
+    showPaymentModal.value = true;
+  } else if (payments.value.length > 0) {
+    // Si ya está pagado completamente, procesar la venta
+    handlePaymentCompleted();
+  }
+};
+
+const handlePaymentAdded = (paymentData) => {
+  payments.value.push({
+    method: paymentData.method,
+    methodName: getPaymentMethodName(paymentData.method),
+    amount: paymentData.amount,
+    reference: paymentData.reference
+  });
+  
+  // Ya no procesamos la venta automáticamente cuando el saldo llega a cero
+  // Esto permite al usuario ver el resumen de la orden
+};
+
+const handlePaymentCompleted = async () => {
+  try {
+    // Update inventory stock for each item
+    for (const item of cartItems.value) {
+      const updatedStock = item.stock - item.quantity;
+      await mockInventoryApi.updateItem(item.id, {
+        ...item,
+        stock: updatedStock
+      });
+    }
+
+    // Process the sale
+    const saleData = {
+      cliente_id: selectedCustomer.value ? selectedCustomer.value.id : null,
+      productos: cartItems.value.map(item => ({
+        id: item.id,
+        cantidad: item.quantity,
+        precio: item.precio
+      })),
+      subtotal: subtotal.value,
+      igv: tax.value,
+      total: total.value,
+      pagos: payments.value
+    };
+
+    // Here you would integrate with your sales API
+    console.log('Venta procesada:', saleData);
+    
+    // Si esta venta estaba guardada, eliminarla de las ventas guardadas
+    if (currentSaleId.value) {
+      savedSalesStore.deleteSavedSale(currentSaleId.value);
+    }
+    
+    // Mostrar el ticket
+    showTicket.value = true;
+  } catch (error) {
+    console.error('Error al procesar el pago:', error);
+  }
+};
+
+const cancelSale = () => {
+  if (confirm('¿Está seguro de cancelar la venta?')) {
+    resetSale();
+  }
+};
+
+const resetSale = () => {
+  cartItems.value = [];
+  selectedCustomer.value = null;
+  currentSaleId.value = null;
+  payments.value = [];
+  searchQuery.value = '';
+  searchResults.value = [];
+};
+
+const fetchCustomers = async () => {
+  try {
+    const response = await mockCustomersApi.getCustomers();
+    customers.value = response.data;
+  } catch (error) {
+    console.error('Error fetching customers:', error);
+  }
+};
+
+// Search methods
+const searchProducts = async () => {
+  if (!barcode.value) {
+    searchResults.value = [];
+    return;
+  }
+
+  try {
+    const response = await mockInventoryApi.getInventory({
+      search: barcode.value,
+      perPage: 5
+    });
+    
+    // Asegurarse de que todos los SKUs sean strings antes de mostrar los resultados
+    searchResults.value = response.data.items.map(item => ({
+      ...item,
+      sku: item.sku ? String(item.sku) : ''
+    }));
+  } catch (error) {
+    console.error('Error searching products:', error);
+    searchResults.value = [];
+  }
+};
+
+const selectProduct = (product) => {
+  // Asegurarse de que el SKU sea un string
+  const safeProduct = {
+    ...product,
+    sku: product.sku ? String(product.sku) : ''
+  };
+  
+  if (safeProduct.stock > 0) {
+    addToCart(safeProduct);
+    searchResults.value = [];
+    barcode.value = '';
+    closeProductModal();
+  } else {
+    alert('Este producto está agotado');
+  }
+};
+
+const showProductList = async () => {
+  try {
+    const [categoriesResponse, productsResponse] = await Promise.all([
+      mockInventoryApi.getCategories(),
+      mockInventoryApi.getInventory({ perPage: 100 })
+    ]);
+    
+    categories.value = categoriesResponse.data;
+    
+    // Asegurarse de que todos los SKUs sean strings
+    allProducts.value = productsResponse.data.items.map(item => ({
+      ...item,
+      sku: item.sku ? String(item.sku) : ''
+    }));
+    
+    showProductModal.value = true;
+  } catch (error) {
+    console.error('Error loading product list:', error);
+  }
+};
+
+const closeProductModal = () => {
+  showProductModal.value = false;
+  productSearchQuery.value = '';
+  productCategoryFilter.value = '';
+};
+
+const searchProductList = () => {
+  // No need to do anything here as we're using a computed property
+};
+
+// Click outside to close search results
+const handleClickOutside = (event) => {
+  if (!event.target.closest('.search-container')) {
+    searchResults.value = [];
+  }
+};
+
+const handleCustomerSelect = (customer) => {
+  selectedCustomer.value = customer;
+};
+
+// Lifecycle hooks
+onMounted(async () => {
+  fetchCustomers();
+  
+  // Esperar a que el DOM se actualice y luego intentar hacer focus
+  await nextTick();
+  if (barcodeInput.value) {
+    barcodeInput.value.focus();
+  }
+  
+  document.addEventListener('click', handleClickOutside);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside);
+});
+
+// Watcher para showPaymentModal
+watch(showPaymentModal, (newValue) => {
+  if (!newValue) {
+    // No reseteamos la venta automáticamente
+    // La venta solo debe resetearse cuando el usuario explícitamente finaliza la venta
+    // con el botón "Completar venta"
+  }
+});
+
+const removePayment = (index) => {
+  payments.value.splice(index, 1);
+};
+
+const getPaymentMethodName = (method) => {
+  const methods = {
+    'efectivo': 'Efectivo',
+    'tarjeta': 'Tarjeta de crédito/débito',
+    'qr': 'Pago con QR',
+    'credito': 'Crédito',
+    'giftcard': 'Gift Card',
+    'puntos': 'Puntos'
+  };
+  
+  return methods[method] || '';
+};
+</script>
+
 <template>
   <div class="h-[calc(100dvh-4rem)] flex flex-col">
     <!-- Main Content -->
@@ -356,11 +776,15 @@
   <PaymentModal
     v-model="showPaymentModal"
     :total="total"
-    :remaining-amount="remainingAmount"
     :customer="selectedCustomer"
     :items="cartItems"
-    @payment-completed="handlePaymentCompleted"
+    :payments="payments"
+    :document-type="documentType"
+    :remaining-amount="remainingAmount"
+    :show-ticket="showTicket"
     @payment-added="handlePaymentAdded"
+    @sale-finalized="resetSale"
+    @update:show-ticket="showTicket = $event"
   />
 
   <!-- Saved Sales Modal -->
@@ -368,431 +792,4 @@
     v-model="showSavedSalesModal"
     @resume-sale="resumeSavedSale"
   />
-
-  <!-- Ticket Modal -->
-  <TicketModal
-    v-model="showTicketModal"
-    :customer="selectedCustomer"
-    :items="cartItems"
-    :subtotal="subtotal"
-    :tax="tax"
-    :total="total"
-    :payments="payments"
-  />
 </template>
-
-<script setup>
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
-import { useAuthStore } from '../stores/auth';
-import { mockInventoryApi } from '../api/mockInventory';
-import { mockCustomersApi } from '../api/mockCustomers';
-import { useSavedSalesStore } from '../stores/savedSales';
-import CustomerSearchModal from '../components/CustomerSearchModal.vue';
-import PaymentModal from '../components/PaymentModal.vue';
-import SavedSalesModal from '../components/SavedSalesModal.vue';
-import TicketModal from '../components/TicketModal.vue';
-
-// State
-const authStore = useAuthStore();
-const savedSalesStore = useSavedSalesStore();
-const barcode = ref('');
-const barcodeInput = ref(null);
-const cartItems = ref([]);
-const selectedCustomer = ref(null);
-const showCustomerSearch = ref(false);
-const customers = ref([]);
-const searchResults = ref([]);
-const showProductModal = ref(false);
-const productSearchQuery = ref('');
-const productCategoryFilter = ref('');
-const categories = ref([]);
-const allProducts = ref([]);
-const showPaymentModal = ref(false);
-const showSavedSalesModal = ref(false);
-const showTicketModal = ref(false);
-const currentSaleId = ref(null);
-const payments = ref([]);
-
-// Computed properties
-const filteredProducts = computed(() => {
-  let filtered = [...allProducts.value];
-  
-  if (productSearchQuery.value) {
-    const search = productSearchQuery.value.toLowerCase();
-    filtered = filtered.filter(product => 
-      product.nombre.toLowerCase().includes(search) ||
-      (product.sku ? String(product.sku).toLowerCase().includes(search) : false)
-    );
-  }
-  
-  if (productCategoryFilter.value) {
-    filtered = filtered.filter(product => 
-      product.categoria === productCategoryFilter.value
-    );
-  }
-  
-  return filtered;
-});
-
-const subtotal = computed(() => {
-  return cartItems.value.reduce((sum, item) => sum + calculateSubtotal(item), 0);
-});
-
-const tax = computed(() => subtotal.value * 0.18);
-const total = computed(() => subtotal.value + tax.value);
-const totalPaid = computed(() => {
-  return payments.value.reduce((sum, payment) => sum + payment.amount, 0);
-});
-const remainingAmount = computed(() => {
-  return Math.round((total.value - totalPaid.value) * 100) / 100;
-});
-
-// Methods
-const formatCurrency = (amount) => {
-  if (isNaN(amount) || amount === null || amount === undefined) return 'S/ 0.00';
-  return new Intl.NumberFormat('es-PE', {
-    style: 'currency',
-    currency: 'PEN'
-  }).format(amount);
-};
-
-const calculateSubtotal = (item) => {
-  const precio = parseFloat(item.precio) || 0;
-  const cantidad = parseInt(item.quantity) || 0;
-  return precio * cantidad;
-};
-
-const handleBarcodeInput = async () => {
-  if (!barcode.value) return;
-  
-  try {
-    const response = await mockInventoryApi.getInventory({
-      search: barcode.value,
-      perPage: 1
-    });
-    
-    const product = response.data.items[0];
-    if (product) {
-      if (product.stock > 0) {
-        addToCart(product);
-      } else {
-        alert('Este producto está agotado');
-      }
-    } else {
-      alert('Producto no encontrado');
-    }
-    
-    barcode.value = '';
-    barcodeInput.value.focus();
-  } catch (error) {
-    console.error('Error searching product:', error);
-  }
-};
-
-const addToCart = (product) => {
-  const existingItem = cartItems.value.find(item => item.id === product.id);
-  
-  if (existingItem) {
-    // Check if we have enough stock
-    if (existingItem.quantity < product.stock) {
-      existingItem.quantity++;
-    } else {
-      alert('No hay suficiente stock disponible');
-    }
-  } else {
-    cartItems.value.push({
-      ...product,
-      quantity: 1
-    });
-  }
-};
-
-const incrementQuantity = (item) => {
-  const product = cartItems.value.find(i => i.id === item.id);
-  if (product && product.quantity < product.stock) {
-    item.quantity++;
-  } else {
-    alert('No hay suficiente stock disponible');
-  }
-};
-
-const decrementQuantity = (item) => {
-  if (item.quantity > 1) {
-    item.quantity--;
-  }
-};
-
-const removeItem = (item) => {
-  cartItems.value = cartItems.value.filter(i => i.id !== item.id);
-};
-
-// Guardar la venta actual para más tarde
-const saveSaleForLater = () => {
-  if (!cartItems.value.length) return;
-
-  const saleData = {
-    customer: selectedCustomer.value,
-    items: [...cartItems.value],
-    subtotal: subtotal.value,
-    tax: tax.value,
-    total: total.value
-  };
-
-  // Si ya existe un ID para esta venta, eliminar la versión anterior
-  if (currentSaleId.value) {
-    savedSalesStore.deleteSavedSale(currentSaleId.value);
-  }
-
-  // Guardar la venta y obtener el nuevo ID
-  const saleId = savedSalesStore.saveSale(saleData);
-  currentSaleId.value = saleId;
-
-  // Mostrar mensaje de confirmación
-  alert('Venta guardada correctamente');
-  
-  // Limpiar la venta actual
-  resetSale();
-};
-
-// Iniciar una nueva venta
-const newSale = () => {
-  if (cartItems.value.length > 0) {
-    if (confirm('¿Desea guardar la venta actual antes de iniciar una nueva?')) {
-      saveSaleForLater();
-    } else {
-      resetSale();
-    }
-  }
-  
-  // Limpiar el ID de la venta actual
-  currentSaleId.value = null;
-  
-  // Enfocar el campo de código de barras
-  barcodeInput.value.focus();
-};
-
-// Retomar una venta guardada
-const resumeSavedSale = (sale) => {
-  // Si hay una venta en curso, preguntar si se desea guardar
-  if (cartItems.value.length > 0) {
-    if (confirm('¿Desea guardar la venta actual antes de cargar la venta guardada?')) {
-      saveSaleForLater();
-    }
-  }
-
-  // Cargar la venta guardada
-  cartItems.value = [...sale.items];
-  selectedCustomer.value = sale.customer;
-  currentSaleId.value = sale.id;
-};
-
-const processPayment = () => {
-  // Solo mostrar el modal si hay un saldo pendiente
-  if (remainingAmount.value > 0) {
-    showPaymentModal.value = true;
-  } else if (payments.value.length > 0) {
-    // Si ya está pagado completamente, procesar la venta
-    handlePaymentCompleted();
-  }
-};
-
-const handlePaymentAdded = (paymentData) => {
-  payments.value.push({
-    method: paymentData.method,
-    methodName: getPaymentMethodName(paymentData.method),
-    amount: paymentData.amount,
-    reference: paymentData.reference
-  });
-  
-  // Ya no procesamos la venta automáticamente cuando el saldo llega a cero
-  // Esto permite al usuario ver el resumen de la orden
-};
-
-const handlePaymentCompleted = async () => {
-  try {
-    // Update inventory stock for each item
-    for (const item of cartItems.value) {
-      const updatedStock = item.stock - item.quantity;
-      await mockInventoryApi.updateItem(item.id, {
-        ...item,
-        stock: updatedStock
-      });
-    }
-
-    // Process the sale
-    const saleData = {
-      cliente_id: selectedCustomer.value ? selectedCustomer.value.id : null,
-      productos: cartItems.value.map(item => ({
-        id: item.id,
-        cantidad: item.quantity,
-        precio: item.precio
-      })),
-      subtotal: subtotal.value,
-      igv: tax.value,
-      total: total.value,
-      pagos: payments.value
-    };
-
-    // Here you would integrate with your sales API
-    console.log('Venta procesada:', saleData);
-    
-    // Si esta venta estaba guardada, eliminarla de las ventas guardadas
-    if (currentSaleId.value) {
-      savedSalesStore.deleteSavedSale(currentSaleId.value);
-    }
-    
-    // Mostrar el ticket de compra
-    showTicketModal.value = true;
-  } catch (error) {
-    console.error('Error al procesar el pago:', error);
-  }
-};
-
-const cancelSale = () => {
-  if (confirm('¿Está seguro de cancelar la venta?')) {
-    resetSale();
-  }
-};
-
-const resetSale = () => {
-  cartItems.value = [];
-  selectedCustomer.value = null;
-  currentSaleId.value = null;
-  payments.value = [];
-  searchQuery.value = '';
-  searchResults.value = [];
-};
-
-const fetchCustomers = async () => {
-  try {
-    const response = await mockCustomersApi.getCustomers();
-    customers.value = response.data;
-  } catch (error) {
-    console.error('Error fetching customers:', error);
-  }
-};
-
-// Search methods
-const searchProducts = async () => {
-  if (!barcode.value) {
-    searchResults.value = [];
-    return;
-  }
-
-  try {
-    const response = await mockInventoryApi.getInventory({
-      search: barcode.value,
-      perPage: 5
-    });
-    
-    // Asegurarse de que todos los SKUs sean strings antes de mostrar los resultados
-    searchResults.value = response.data.items.map(item => ({
-      ...item,
-      sku: item.sku ? String(item.sku) : ''
-    }));
-  } catch (error) {
-    console.error('Error searching products:', error);
-    searchResults.value = [];
-  }
-};
-
-const selectProduct = (product) => {
-  // Asegurarse de que el SKU sea un string
-  const safeProduct = {
-    ...product,
-    sku: product.sku ? String(product.sku) : ''
-  };
-  
-  if (safeProduct.stock > 0) {
-    addToCart(safeProduct);
-    searchResults.value = [];
-    barcode.value = '';
-    closeProductModal();
-  } else {
-    alert('Este producto está agotado');
-  }
-};
-
-const showProductList = async () => {
-  try {
-    const [categoriesResponse, productsResponse] = await Promise.all([
-      mockInventoryApi.getCategories(),
-      mockInventoryApi.getInventory({ perPage: 100 })
-    ]);
-    
-    categories.value = categoriesResponse.data;
-    
-    // Asegurarse de que todos los SKUs sean strings
-    allProducts.value = productsResponse.data.items.map(item => ({
-      ...item,
-      sku: item.sku ? String(item.sku) : ''
-    }));
-    
-    showProductModal.value = true;
-  } catch (error) {
-    console.error('Error loading product list:', error);
-  }
-};
-
-const closeProductModal = () => {
-  showProductModal.value = false;
-  productSearchQuery.value = '';
-  productCategoryFilter.value = '';
-};
-
-const searchProductList = () => {
-  // No need to do anything here as we're using a computed property
-};
-
-// Click outside to close search results
-const handleClickOutside = (event) => {
-  if (!event.target.closest('.search-container')) {
-    searchResults.value = [];
-  }
-};
-
-const handleCustomerSelect = (customer) => {
-  selectedCustomer.value = customer;
-};
-
-// Lifecycle hooks
-onMounted(async () => {
-  fetchCustomers();
-  
-  // Esperar a que el DOM se actualice y luego intentar hacer focus
-  await nextTick();
-  if (barcodeInput.value) {
-    barcodeInput.value.focus();
-  }
-  
-  document.addEventListener('click', handleClickOutside);
-});
-
-onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside);
-});
-
-// Watcher para resetear la venta cuando se cierra el modal del ticket
-watch(showTicketModal, (newValue) => {
-  if (!newValue) {
-    resetSale();
-  }
-});
-
-const removePayment = (index) => {
-  payments.value.splice(index, 1);
-};
-
-const getPaymentMethodName = (method) => {
-  const methods = {
-    'efectivo': 'Efectivo',
-    'tarjeta': 'Tarjeta de crédito/débito',
-    'qr': 'Pago con QR',
-    'credito': 'Crédito',
-    'giftcard': 'Gift Card',
-    'puntos': 'Puntos'
-  };
-  
-  return methods[method] || '';
-};
-</script>
