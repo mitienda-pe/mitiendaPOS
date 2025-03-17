@@ -1,8 +1,14 @@
+import { ref, watch } from 'vue';
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
 
 export const useSavedSalesStore = defineStore('savedSales', () => {
-  const savedSales = ref([]);
+  // Inicializar desde localStorage si hay datos
+  const savedSales = ref(JSON.parse(localStorage.getItem('savedSales')) || []);
+  
+  // Guardar en localStorage cada vez que cambia savedSales
+  watch(savedSales, (newValue) => {
+    localStorage.setItem('savedSales', JSON.stringify(newValue));
+  }, { deep: true });
 
   // Guardar una venta inconclusa
   function saveSale(sale) {
@@ -35,11 +41,28 @@ export const useSavedSalesStore = defineStore('savedSales', () => {
     savedSales.value = savedSales.value.filter(sale => sale.id !== id);
   }
 
+  // Actualizar una venta existente
+  function updateSale(id, saleData) {
+    const index = savedSales.value.findIndex(sale => sale.id === id);
+    if (index !== -1) {
+      // Mantener el ID y timestamp originales
+      const originalId = savedSales.value[index].id;
+      const originalTimestamp = savedSales.value[index].timestamp;
+      
+      savedSales.value[index] = {
+        id: originalId,
+        timestamp: originalTimestamp,
+        ...saleData
+      };
+    }
+  }
+
   return {
     savedSales,
     saveSale,
     getSavedSales,
     getSaleById,
-    deleteSavedSale
+    deleteSavedSale,
+    updateSale
   };
 });

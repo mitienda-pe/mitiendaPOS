@@ -147,30 +147,9 @@ const removeItem = (item) => {
 
 // Guardar la venta actual para más tarde
 const saveSaleForLater = () => {
-  if (!cartItems.value.length) return;
-
-  const saleData = {
-    customer: selectedCustomer.value,
-    items: [...cartItems.value],
-    subtotal: subtotal.value,
-    tax: tax.value,
-    total: total.value
-  };
-
-  // Si ya existe un ID para esta venta, eliminar la versión anterior
-  if (currentSaleId.value) {
-    savedSalesStore.deleteSavedSale(currentSaleId.value);
-  }
-
-  // Guardar la venta y obtener el nuevo ID
-  const saleId = savedSalesStore.saveSale(saleData);
-  currentSaleId.value = saleId;
-
+  autoSaveSale();
   // Mostrar mensaje de confirmación
   alert('Venta guardada correctamente');
-  
-  // Limpiar la venta actual
-  resetSale();
 };
 
 // Iniciar una nueva venta
@@ -203,6 +182,13 @@ const resumeSavedSale = (sale) => {
   cartItems.value = [...sale.items];
   selectedCustomer.value = sale.customer;
   currentSaleId.value = sale.id;
+  
+  // Cargar los pagos si existen
+  if (sale.payments && Array.isArray(sale.payments)) {
+    payments.value = [...sale.payments];
+  } else {
+    payments.value = [];
+  }
 };
 
 const processPayment = () => {
@@ -390,6 +376,38 @@ onMounted(async () => {
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside);
 });
+
+// Watcher para guardar automáticamente la venta cuando cambia el carrito o los pagos
+watch([cartItems, payments, selectedCustomer], () => {
+  // Solo guardar si hay productos en el carrito
+  if (cartItems.value.length > 0) {
+    autoSaveSale();
+  }
+}, { deep: true });
+
+// Función para guardar automáticamente la venta
+const autoSaveSale = () => {
+  // No guardar si no hay productos en el carrito
+  if (!cartItems.value.length) return;
+
+  const saleData = {
+    customer: selectedCustomer.value,
+    items: [...cartItems.value],
+    subtotal: subtotal.value,
+    tax: tax.value,
+    total: total.value,
+    payments: [...payments.value]
+  };
+
+  // Si ya existe un ID para esta venta, actualizar en lugar de crear una nueva
+  if (currentSaleId.value) {
+    savedSalesStore.updateSale(currentSaleId.value, saleData);
+  } else {
+    // Guardar la venta y obtener el nuevo ID
+    const saleId = savedSalesStore.saveSale(saleData);
+    currentSaleId.value = saleId;
+  }
+};
 
 // Watcher para showPaymentModal
 watch(showPaymentModal, (newValue) => {
