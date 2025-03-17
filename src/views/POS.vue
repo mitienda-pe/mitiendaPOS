@@ -565,6 +565,14 @@ const getPaymentMethodName = (method) => {
 
             <button @click="saveSaleForLater" :disabled="!cartItems.length"
               class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2v8" />
+                <path d="m16 6-4 4-4-4" />
+                <rect width="20" height="8" x="2" y="14" rx="2" />
+                <path d="M6 18h.01" />
+                <path d="M10 18h.01" />
+              </svg>
               Guardar Venta
             </button>
 

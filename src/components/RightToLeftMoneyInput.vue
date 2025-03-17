@@ -22,199 +22,181 @@
     </div>
 </template>
 
-<script>
-import { ref, computed, watch, onMounted, defineExpose } from 'vue';
+<script setup>
+import { ref, watch, onMounted, defineProps, defineEmits, defineExpose } from 'vue';
 
-export default {
-    name: 'RightToLeftMoneyInput',
-
-    props: {
-        modelValue: {
-            type: [Number, String],
-            default: 0
-        },
-        label: {
-            type: String,
-            default: 'Monto (S/):'
-        },
-        helpText: {
-            type: String,
-            default: 'Ingrese los dígitos de derecha a izquierda (centavos primero)'
-        },
-        showInstructions: {
-            type: Boolean,
-            default: false
-        },
-        maxDigits: {
-            type: Number,
-            default: 10 // 8 enteros + 2 decimales
-        },
-        error: {
-            type: String,
-            default: ''
-        },
-        id: {
-            type: String,
-            default: () => `money-input-${Math.random().toString(36).substr(2, 9)}`
-        }
+const props = defineProps({
+    modelValue: {
+        type: [Number, String],
+        default: 0
     },
+    label: {
+        type: String,
+        default: 'Monto (S/):'
+    },
+    helpText: {
+        type: String,
+        default: 'Ingrese los dígitos de derecha a izquierda (centavos primero)'
+    },
+    showInstructions: {
+        type: Boolean,
+        default: false
+    },
+    maxDigits: {
+        type: Number,
+        default: 10 // 8 enteros + 2 decimales
+    },
+    error: {
+        type: String,
+        default: ''
+    },
+    id: {
+        type: String,
+        default: () => `money-input-${Math.random().toString(36).substr(2, 9)}`
+    }
+});
 
-    emits: ['update:modelValue', 'change'],
+const emit = defineEmits(['update:modelValue', 'change']);
 
-    setup(props, { emit }) {
-        const internalValue = ref('');
-        const displayValue = ref('0.00');
-        const inputRef = ref(null);
+const internalValue = ref('');
+const displayValue = ref('0.00');
+const inputRef = ref(null);
 
-        // Inicializar con el valor del prop
-        onMounted(() => {
-            if (props.modelValue) {
-                setValue(props.modelValue);
-            }
-        });
+// Inicializar con el valor del prop
+onMounted(() => {
+    if (props.modelValue) {
+        setValue(props.modelValue);
+    }
+});
 
-        // Actualiza el componente cuando cambia el prop
-        watch(() => props.modelValue, (newValue) => {
-            if (newValue !== getValue()) {
-                setValue(newValue);
-            }
-        });
+// Actualiza el componente cuando cambia el prop
+watch(() => props.modelValue, (newValue) => {
+    if (newValue !== getValue()) {
+        setValue(newValue);
+    }
+});
 
-        // Procesa la entrada y actualiza los valores
-        const processInput = (digits) => {
-            if (digits === '') {
-                displayValue.value = '0.00';
-                internalValue.value = '';
-                emitChange(0);
-                return;
-            }
+// Procesa la entrada y actualiza los valores
+const processInput = (digits) => {
+    if (digits === '') {
+        displayValue.value = '0.00';
+        internalValue.value = '';
+        emitChange(0);
+        return;
+    }
 
-            // Limitar a máximo de dígitos (defecto: 10 = 8 enteros + 2 decimales)
-            if (digits.length > props.maxDigits) {
-                digits = digits.substring(digits.length - props.maxDigits);
-            }
+    // Limitar a máximo de dígitos (defecto: 10 = 8 enteros + 2 decimales)
+    if (digits.length > props.maxDigits) {
+        digits = digits.substring(digits.length - props.maxDigits);
+    }
 
-            // Formatear con punto decimal
-            const centavos = digits.slice(-2).padStart(2, '0');
-            const enteros = digits.slice(0, -2) || '0';
+    // Formatear con punto decimal
+    const centavos = digits.slice(-2).padStart(2, '0');
+    const enteros = digits.slice(0, -2) || '0';
 
-            // Formatear con separadores de miles
-            const enterosFormatted = enteros.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    // Formatear con separadores de miles
+    const enterosFormatted = enteros.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
-            displayValue.value = `${enterosFormatted}.${centavos}`;
-            internalValue.value = digits;
+    displayValue.value = `${enterosFormatted}.${centavos}`;
+    internalValue.value = digits;
 
-            // Emitir el valor numérico para v-model
-            emitChange(parseFloat(`${enteros}.${centavos}`));
-        };
+    // Emitir el valor numérico para v-model
+    emitChange(parseFloat(`${enteros}.${centavos}`));
+};
 
-        // Emite el cambio para v-model y evento change
-        const emitChange = (numericValue) => {
-            emit('update:modelValue', numericValue);
-            emit('change', {
-                value: numericValue,
-                formatted: displayValue.value,
-                raw: internalValue.value
-            });
-        };
+// Emite el cambio para v-model y evento change
+const emitChange = (numericValue) => {
+    emit('update:modelValue', numericValue);
+    emit('change', {
+        value: numericValue,
+        formatted: displayValue.value,
+        raw: internalValue.value
+    });
+};
 
-        // Maneja las teclas presionadas
-        const handleKeyDown = (e) => {
-            // Permitir solo teclas numéricas, backspace, delete, tab, y flechas
-            const allowedKeys = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
-            const isNumericKey = /^[0-9]$/.test(e.key);
+// Maneja las teclas presionadas
+const handleKeyDown = (e) => {
+    // Permitir solo teclas numéricas, backspace, delete, tab, y flechas
+    const allowedKeys = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+    const isNumericKey = /^[0-9]$/.test(e.key);
 
-            if (!isNumericKey && !allowedKeys.includes(e.key)) {
-                e.preventDefault();
-                return;
-            }
+    if (!isNumericKey && !allowedKeys.includes(e.key)) {
+        e.preventDefault();
+        return;
+    }
 
-            // Si presiona una tecla numérica
-            if (isNumericKey) {
-                e.preventDefault();
-                const newValue = internalValue.value + e.key;
-                processInput(newValue);
-            }
+    // Si presiona una tecla numérica
+    if (isNumericKey) {
+        e.preventDefault();
+        const newValue = internalValue.value + e.key;
+        processInput(newValue);
+    }
 
-            // Manejar backspace
-            if (e.key === 'Backspace') {
-                e.preventDefault();
-                const newValue = internalValue.value.slice(0, -1);
-                processInput(newValue);
-            }
-        };
-
-        // Maneja el pegado (paste)
-        const handlePaste = (e) => {
-            e.preventDefault();
-            const pastedText = e.clipboardData.getData('text');
-            const numericText = pastedText.replace(/[^\d]/g, '');
-
-            if (numericText) {
-                const newValue = internalValue.value + numericText;
-                processInput(newValue);
-            }
-        };
-
-        // Coloca el cursor al final del input
-        const handleFocus = () => {
-            setTimeout(() => {
-                if (inputRef.value) {
-                    inputRef.value.selectionStart = inputRef.value.value.length;
-                    inputRef.value.selectionEnd = inputRef.value.value.length;
-                }
-            }, 0);
-        };
-
-        // Obtiene el valor numérico actual
-        const getValue = () => {
-            if (internalValue.value === '') return 0;
-
-            const centavos = internalValue.value.slice(-2).padStart(2, '0');
-            const enteros = internalValue.value.slice(0, -2) || '0';
-
-            return parseFloat(`${enteros}.${centavos}`);
-        };
-
-        // Establece un valor numérico
-        const setValue = (value) => {
-            if (value === null || value === undefined) {
-                processInput('');
-                return;
-            }
-
-            // Convertir a string y eliminar punto decimal
-            const valueStr = parseFloat(value).toFixed(2).replace('.', '');
-            processInput(valueStr);
-        };
-
-        // Resetea el campo
-        const reset = () => {
-            processInput('');
-        };
-
-        // Exponer métodos al componente padre
-        const expose = {
-            getValue,
-            setValue,
-            reset,
-            getFormattedValue: () => displayValue.value,
-            getRawValue: () => internalValue.value
-        };
-
-        // ¡Importante! En Vue 3, debemos retornar los métodos que queremos exponer
-        defineExpose(expose);
-
-        return {
-            internalValue,
-            displayValue,
-            inputRef,
-            handleKeyDown,
-            handlePaste,
-            handleFocus
-        };
+    // Manejar backspace
+    if (e.key === 'Backspace') {
+        e.preventDefault();
+        const newValue = internalValue.value.slice(0, -1);
+        processInput(newValue);
     }
 };
+
+// Maneja el pegado (paste)
+const handlePaste = (e) => {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData('text');
+    const numericText = pastedText.replace(/[^\d]/g, '');
+
+    if (numericText) {
+        const newValue = internalValue.value + numericText;
+        processInput(newValue);
+    }
+};
+
+// Coloca el cursor al final del input
+const handleFocus = () => {
+    setTimeout(() => {
+        if (inputRef.value) {
+            inputRef.value.selectionStart = inputRef.value.value.length;
+            inputRef.value.selectionEnd = inputRef.value.value.length;
+        }
+    }, 0);
+};
+
+// Obtiene el valor numérico actual
+const getValue = () => {
+    if (internalValue.value === '') return 0;
+
+    const centavos = internalValue.value.slice(-2).padStart(2, '0');
+    const enteros = internalValue.value.slice(0, -2) || '0';
+
+    return parseFloat(`${enteros}.${centavos}`);
+};
+
+// Establece un valor numérico
+const setValue = (value) => {
+    if (value === null || value === undefined) {
+        processInput('');
+        return;
+    }
+
+    // Convertir a string y eliminar punto decimal
+    const valueStr = parseFloat(value).toFixed(2).replace('.', '');
+    processInput(valueStr);
+};
+
+// Resetea el campo
+const reset = () => {
+    processInput('');
+};
+
+// Exponer métodos al componente padre - esto funciona correctamente en <script setup>
+defineExpose({
+    getValue,
+    setValue,
+    reset,
+    getFormattedValue: () => displayValue.value,
+    getRawValue: () => internalValue.value
+});
 </script>
 
 <style scoped>
