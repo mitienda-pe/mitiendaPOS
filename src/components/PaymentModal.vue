@@ -141,13 +141,11 @@
               <div v-if="paymentMethod" class="mb-4 p-3 border rounded-lg">
                 <!-- Campos específicos según el método de pago -->
                 <div v-if="paymentMethod === 'efectivo'" class="mb-3">
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Monto entregado</label>
-                  <input 
-                    type="number" 
-                    v-model="cashAmount" 
-                    class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                    step="0.01"
-                    @input="calculateChange"
+                  <RightToLeftMoneyInput
+                    v-model="cashAmount"
+                    label="Monto Entregado"
+                    helpText="Ingrese el monto entregado por el cliente"
+                    showInstructions
                   />
                   <div class="flex justify-between mt-2">
                     <span class="text-sm font-medium">Cambio:</span>
@@ -468,6 +466,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
+import RightToLeftMoneyInput from './RightToLeftMoneyInput.vue';
 
 const props = defineProps({
   modelValue: {
