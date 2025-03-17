@@ -2,7 +2,7 @@
     <div class="right-to-left-money-input">
         <label v-if="label" :for="id" class="input-label">{{ label }}</label>
         <div class="input-container">
-            <span class="currency-symbol">$</span>
+            <span class="currency-symbol">S/</span>
             <input :id="id" ref="inputRef" type="text" :value="displayValue" placeholder="0.00" readonly
                 @keydown="handleKeyDown" @paste="handlePaste" @focus="handleFocus" @click="handleFocus"
                 :class="{ 'input-error': error }" />
@@ -35,7 +35,7 @@ export default {
         },
         label: {
             type: String,
-            default: 'Monto ($):'
+            default: 'Monto (S/):'
         },
         helpText: {
             type: String,
@@ -43,7 +43,7 @@ export default {
         },
         showInstructions: {
             type: Boolean,
-            default: true
+            default: false
         },
         maxDigits: {
             type: Number,
