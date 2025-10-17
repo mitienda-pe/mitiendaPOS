@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git checkout:*)",
+      "Read(//Users/carlosvidal/www/mitienda/mitienda-administrador/src/**)",
+      "Read(//Users/carlosvidal/www/mitienda/mitienda-api-ci4/app/Config/**)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
