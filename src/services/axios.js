@@ -6,6 +6,7 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
     Accept: 'application/json'
   },
+  withCredentials: true, // Enviar cookies y headers de autenticación
   timeout: 30000
 });
 
