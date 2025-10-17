@@ -42,18 +42,28 @@ export const useAuthStore = defineStore('auth', {
 
           this.accessToken = access_token;
           this.refreshToken = refresh_token;
-          this.user = user;
+
+          // TEMPORAL: Forzar rol de administrador para todos los usuarios en el POS
+          // Los roles del API/backoffice aún no están sincronizados con el POS
+          this.user = {
+            ...user,
+            role: 'administrador'
+          };
 
           // Persist session data
           localStorage.setItem('access_token', access_token);
           localStorage.setItem('refresh_token', refresh_token);
-          localStorage.setItem('user', JSON.stringify(user));
+          localStorage.setItem('user', JSON.stringify(this.user));
 
           // Obtener las tiendas del usuario
           await this.fetchStores();
 
-          // Si solo tiene una tienda, seleccionarla automáticamente
-          if (this.stores.length === 1) {
+          // TEMPORAL: Buscar y seleccionar tienda 10715 automáticamente si está disponible
+          const targetStore = this.stores.find(s => s.id === 10715);
+          if (targetStore) {
+            await this.selectStore(targetStore.id);
+          } else if (this.stores.length === 1) {
+            // Si solo tiene una tienda, seleccionarla automáticamente
             await this.selectStore(this.stores[0].id);
           }
 
@@ -109,7 +119,11 @@ export const useAuthStore = defineStore('auth', {
       try {
         const response = await authApi.getProfile();
         if (response.success) {
-          this.user = response.data;
+          // TEMPORAL: Forzar rol de administrador
+          this.user = {
+            ...response.data,
+            role: 'administrador'
+          };
           localStorage.setItem('user', JSON.stringify(this.user));
         }
       } catch (error) {
