@@ -1,7 +1,8 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useAuthStore } from '../stores/auth';
-import { mockInventoryApi } from '../api/mockInventory';
+import { productsApi } from '../services/productsApi';
+import { ordersApi } from '../services/ordersApi';
 import { mockCustomersApi } from '../api/mockCustomers';
 import { useSavedSalesStore } from '../stores/savedSales';
 import CustomerSearchModal from '../components/CustomerSearchModal.vue';
@@ -85,13 +86,19 @@ const handleBarcodeInput = async () => {
   if (!barcode.value) return;
 
   try {
-    const response = await mockInventoryApi.getInventory({
-      search: barcode.value,
-      perPage: 1
-    });
+    const response = await productsApi.searchByCode(barcode.value);
 
-    const product = response.data.items[0];
-    if (product) {
+    if (response.success && response.data) {
+      const product = {
+        id: response.data.id,
+        sku: response.data.sku || '',
+        nombre: response.data.name,
+        precio: response.data.price,
+        stock: response.data.stock,
+        categoria: response.data.category?.name || 'Sin categoría',
+        images: response.data.images || []
+      };
+
       if (product.stock > 0) {
         addToCart(product);
       } else {
@@ -105,6 +112,7 @@ const handleBarcodeInput = async () => {
     barcodeInput.value.focus();
   } catch (error) {
     console.error('Error searching product:', error);
+    alert('Error al buscar el producto');
   }
 };
 
@@ -215,41 +223,59 @@ const handlePaymentAdded = (paymentData) => {
 
 const handlePaymentCompleted = async () => {
   try {
-    // Update inventory stock for each item
-    for (const item of cartItems.value) {
-      const updatedStock = item.stock - item.quantity;
-      await mockInventoryApi.updateItem(item.id, {
-        ...item,
-        stock: updatedStock
-      });
-    }
-
-    // Process the sale
-    const saleData = {
-      cliente_id: selectedCustomer.value ? selectedCustomer.value.id : null,
-      productos: cartItems.value.map(item => ({
-        id: item.id,
-        cantidad: item.quantity,
-        precio: item.precio
+    // Preparar datos de la orden
+    const orderData = {
+      customer_id: selectedCustomer.value ? selectedCustomer.value.id : null,
+      document_type: documentType.value, // 'boleta' o 'factura'
+      items: cartItems.value.map(item => ({
+        product_id: item.id,
+        sku: item.sku,
+        name: item.nombre,
+        quantity: item.quantity,
+        unit_price: item.precio,
+        subtotal: item.precio * item.quantity,
+        tax: (item.precio * item.quantity) * 0.18,
+        total: (item.precio * item.quantity) * 1.18
+      })),
+      payments: payments.value.map(payment => ({
+        method: payment.method,
+        method_name: payment.methodName,
+        amount: payment.amount,
+        reference: payment.reference || null
       })),
       subtotal: subtotal.value,
-      igv: tax.value,
+      tax: tax.value,
+      tax_rate: 0.18,
       total: total.value,
-      pagos: payments.value
+      currency: 'PEN'
     };
 
-    // Here you would integrate with your sales API
-    console.log('Venta procesada:', saleData);
+    // Crear la orden en el backend
+    const response = await ordersApi.createOrder(orderData);
 
-    // Si esta venta estaba guardada, eliminarla de las ventas guardadas
-    if (currentSaleId.value) {
-      savedSalesStore.deleteSavedSale(currentSaleId.value);
+    if (response.success) {
+      console.log('Orden creada exitosamente:', response.data);
+
+      // Actualizar stock localmente (el backend ya lo actualiza, pero mantenemos sincronizado)
+      for (const item of cartItems.value) {
+        const updatedStock = item.stock - item.quantity;
+        await productsApi.updateStock(item.id, updatedStock);
+      }
+
+      // Si esta venta estaba guardada, eliminarla de las ventas guardadas
+      if (currentSaleId.value) {
+        savedSalesStore.deleteSavedSale(currentSaleId.value);
+      }
+
+      // Mostrar el ticket
+      showTicket.value = true;
+    } else {
+      throw new Error(response.message || 'Error al crear la orden');
     }
-
-    // Mostrar el ticket
-    showTicket.value = true;
   } catch (error) {
     console.error('Error al procesar el pago:', error);
+    const errorMessage = error.response?.data?.message || error.message || 'Error al procesar la venta';
+    alert(`Error: ${errorMessage}\n\nPor favor, intente nuevamente.`);
   }
 };
 
@@ -285,16 +311,23 @@ const searchProducts = async () => {
   }
 
   try {
-    const response = await mockInventoryApi.getInventory({
+    const response = await productsApi.getProducts({
       search: barcode.value,
-      perPage: 5
+      limit: 5,
+      published: true
     });
 
-    // Asegurarse de que todos los SKUs sean strings antes de mostrar los resultados
-    searchResults.value = response.data.items.map(item => ({
-      ...item,
-      sku: item.sku ? String(item.sku) : ''
-    }));
+    if (response.success) {
+      searchResults.value = response.data.map(item => ({
+        id: item.id,
+        sku: item.sku ? String(item.sku) : '',
+        nombre: item.name,
+        precio: item.price,
+        stock: item.stock,
+        categoria: item.category?.name || 'Sin categoría',
+        images: item.images || []
+      }));
+    }
   } catch (error) {
     console.error('Error searching products:', error);
     searchResults.value = [];
@@ -320,22 +353,37 @@ const selectProduct = (product) => {
 
 const showProductList = async () => {
   try {
-    const [categoriesResponse, productsResponse] = await Promise.all([
-      mockInventoryApi.getCategories(),
-      mockInventoryApi.getInventory({ perPage: 100 })
-    ]);
+    const productsResponse = await productsApi.getProducts({
+      limit: 100,
+      published: true
+    });
 
-    categories.value = categoriesResponse.data;
+    if (productsResponse.success) {
+      // Extraer categorías únicas de los productos
+      const uniqueCategories = new Set();
+      productsResponse.data.forEach(item => {
+        if (item.category?.name) {
+          uniqueCategories.add(item.category.name);
+        }
+      });
+      categories.value = Array.from(uniqueCategories);
 
-    // Asegurarse de que todos los SKUs sean strings
-    allProducts.value = productsResponse.data.items.map(item => ({
-      ...item,
-      sku: item.sku ? String(item.sku) : ''
-    }));
+      // Mapear productos al formato del POS
+      allProducts.value = productsResponse.data.map(item => ({
+        id: item.id,
+        sku: item.sku ? String(item.sku) : '',
+        nombre: item.name,
+        precio: item.price,
+        stock: item.stock,
+        categoria: item.category?.name || 'Sin categoría',
+        images: item.images || []
+      }));
+    }
 
     showProductModal.value = true;
   } catch (error) {
     console.error('Error loading product list:', error);
+    alert('Error al cargar la lista de productos');
   }
 };
 

@@ -1,10 +1,6 @@
 import { defineStore } from 'pinia';
-import api from '../api/axios';
 import router from '../router';
-import { mockApi } from '../api/mockApi';
-
-// Use mock API in development
-const apiService = import.meta.env.DEV ? mockApi : api;
+import { authApi } from '../services/authApi';
 
 // Helper function to parse stored user data
 const getStoredUser = () => {
@@ -20,73 +16,102 @@ const getStoredUser = () => {
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: getStoredUser(),
-    token: localStorage.getItem('token'),
+    accessToken: localStorage.getItem('access_token'),
+    refreshToken: localStorage.getItem('refresh_token'),
+    selectedStore: JSON.parse(localStorage.getItem('selected_store') || 'null'),
+    stores: [],
     loading: false,
     error: null,
   }),
-  
+
   getters: {
-    isAuthenticated: (state) => !!state.token && !!state.user,
+    isAuthenticated: (state) => !!state.accessToken && !!state.user,
     userRole: (state) => state.user?.role || null,
+    hasSelectedStore: (state) => !!state.selectedStore,
   },
-  
+
   actions: {
-    async login(username, password) {
+    async login(email, password) {
       this.loading = true;
       this.error = null;
       try {
-        const response = await apiService.login(username, password);
-        this.token = response.data.token;
-        this.user = response.data.user;
-        
-        // Persist session data
-        localStorage.setItem('token', this.token);
-        localStorage.setItem('user', JSON.stringify(this.user));
-        localStorage.setItem('lastLoginTime', new Date().toISOString());
-        
-        // Redirigir a todos los usuarios al menú principal
-        router.push('/menu');
-        
-        /* Comentamos la redirección basada en roles para usar el menú principal para todos
-        // Redirect based on user role
-        switch (this.user.role) {
-          case 'cajero':
-            router.push('/pos');
-            break;
-          case 'supervisor':
-            router.push('/dashboard');
-            break;
-          case 'administrador':
-            router.push('/admin');
-            break;
-          default:
-            router.push('/');
+        const response = await authApi.login({ email, password });
+
+        if (response.success) {
+          const { access_token, refresh_token, user } = response.data;
+
+          this.accessToken = access_token;
+          this.refreshToken = refresh_token;
+          this.user = user;
+
+          // Persist session data
+          localStorage.setItem('access_token', access_token);
+          localStorage.setItem('refresh_token', refresh_token);
+          localStorage.setItem('user', JSON.stringify(user));
+
+          // Obtener las tiendas del usuario
+          await this.fetchStores();
+
+          // Si solo tiene una tienda, seleccionarla automáticamente
+          if (this.stores.length === 1) {
+            await this.selectStore(this.stores[0].id);
+          }
+
+          // Redirigir al menú principal
+          router.push('/menu');
+        } else {
+          this.error = response.message || 'Error de autenticación';
+          throw new Error(this.error);
         }
-        */
       } catch (error) {
-        this.error = error.response?.data?.message || 'Error de autenticación';
+        this.error = error.response?.data?.message || error.message || 'Error de autenticación';
         throw error;
       } finally {
         this.loading = false;
       }
     },
 
-    async fetchUserProfile() {
-      if (!this.token) return;
-      
+    async fetchStores() {
       try {
-        if (import.meta.env.DEV) {
-          // En desarrollo, verificamos si tenemos datos almacenados
-          const storedUser = getStoredUser();
-          if (storedUser) {
-            this.user = storedUser;
-            return;
-          }
+        const response = await authApi.getStores();
+        if (response.success) {
+          this.stores = response.data;
         }
+      } catch (error) {
+        console.error('Error fetching stores:', error);
+      }
+    },
 
-        const response = await apiService.getProfile();
-        this.user = response.data;
-        localStorage.setItem('user', JSON.stringify(this.user));
+    async selectStore(storeId) {
+      try {
+        const response = await authApi.selectStore(storeId);
+        if (response.success) {
+          const { access_token } = response.data;
+
+          // Actualizar el token con permisos de tienda
+          this.accessToken = access_token;
+          localStorage.setItem('access_token', access_token);
+
+          // Guardar la tienda seleccionada
+          const store = this.stores.find(s => s.id === storeId);
+          this.selectedStore = store;
+          localStorage.setItem('selected_store', JSON.stringify(store));
+        }
+      } catch (error) {
+        console.error('Error selecting store:', error);
+        throw error;
+      }
+    },
+
+    async fetchUserProfile() {
+      if (!this.accessToken) return;
+
+      try {
+        const response = await authApi.getProfile();
+        if (response.success) {
+          this.user = response.data;
+          localStorage.setItem('user', JSON.stringify(this.user));
+        }
       } catch (error) {
         console.error('Error fetching user profile:', error);
         this.logout();
@@ -94,39 +119,48 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    logout() {
-      this.user = null;
-      this.token = null;
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('lastLoginTime');
-      router.push('/login');
+    async logout() {
+      try {
+        await authApi.logout();
+      } catch (error) {
+        console.error('Error during logout:', error);
+      } finally {
+        this.user = null;
+        this.accessToken = null;
+        this.refreshToken = null;
+        this.selectedStore = null;
+        this.stores = [];
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('selected_store');
+        router.push('/login');
+      }
     },
 
     // Verificar y restaurar sesión
     async checkSession() {
-      const token = localStorage.getItem('token');
-      const lastLoginTime = localStorage.getItem('lastLoginTime');
-      
-      if (!token || !lastLoginTime) {
-        this.logout();
-        return false;
-      }
+      const accessToken = localStorage.getItem('access_token');
+      const refreshToken = localStorage.getItem('refresh_token');
 
-      // Verificar si la sesión ha expirado (24 horas)
-      const lastLogin = new Date(lastLoginTime);
-      const now = new Date();
-      const hoursSinceLogin = (now - lastLogin) / (1000 * 60 * 60);
-
-      if (hoursSinceLogin > 24) {
+      if (!accessToken || !refreshToken) {
         this.logout();
         return false;
       }
 
       // Restaurar sesión
-      this.token = token;
-      await this.fetchUserProfile();
-      return true;
+      this.accessToken = accessToken;
+      this.refreshToken = refreshToken;
+
+      try {
+        await this.fetchUserProfile();
+        await this.fetchStores();
+        return true;
+      } catch (error) {
+        console.error('Error checking session:', error);
+        this.logout();
+        return false;
+      }
     }
   },
 });
