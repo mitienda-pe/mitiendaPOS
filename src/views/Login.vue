@@ -12,10 +12,10 @@
       <form class="mt-8 space-y-6" @submit.prevent="handleLogin">
         <div class="rounded-md shadow-sm -space-y-px">
           <div>
-            <label for="username" class="sr-only">Usuario</label>
-            <input id="username" v-model="username" name="username" type="text" required
+            <label for="email" class="sr-only">Email</label>
+            <input id="email" v-model="email" name="email" type="email" required
               class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-              placeholder="Usuario" :disabled="authStore.loading" />
+              placeholder="Email" :disabled="authStore.loading" />
           </div>
           <div>
             <label for="password" class="sr-only">Contraseña</label>
@@ -53,12 +53,12 @@ import { ref } from 'vue';
 import { useAuthStore } from '../stores/auth';
 
 const authStore = useAuthStore();
-const username = ref('');
+const email = ref('');
 const password = ref('');
 
 const handleLogin = async () => {
   try {
-    await authStore.login(username.value, password.value);
+    await authStore.login(email.value, password.value);
   } catch (error) {
     console.error('Login error:', error);
   }

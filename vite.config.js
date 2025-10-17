@@ -7,6 +7,12 @@ export default defineConfig({
   plugins: [vue()],
   server: {
     proxy: {
+      "/api": {
+        target: "https://api2.mitienda.pe",
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, ""),
+      },
       "/api-reniec": {
         target: "https://api.apis.net.pe/v2/reniec",
         changeOrigin: true,
