@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://api2.mitienda.pe',
+  baseURL: import.meta.env.DEV ? '/api' : (import.meta.env.VITE_API_BASE_URL || 'https://api2.mitienda.pe'),
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json'
@@ -50,8 +50,9 @@ apiClient.interceptors.response.use(
       if (refreshToken && !originalRequest.url?.includes('/auth/refresh')) {
         try {
           // Intentar renovar el token
+          const baseURL = import.meta.env.DEV ? '/api' : (import.meta.env.VITE_API_BASE_URL || 'https://api2.mitienda.pe');
           const response = await axios.post(
-            `${import.meta.env.VITE_API_BASE_URL || 'https://api2.mitienda.pe'}/auth/refresh`,
+            `${baseURL}/auth/refresh`,
             { refresh_token: refreshToken }
           );
 
