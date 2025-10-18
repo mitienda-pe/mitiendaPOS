@@ -232,9 +232,35 @@ const fetchOrders = async () => {
 
     // La respuesta puede venir en diferentes formatos
     if (response.orders) {
-      orders.value = response.orders;
+      // Mapear campos de BD a formato esperado
+      orders.value = response.orders.map((order) => ({
+        id: parseInt(order.tiendaventa_id),
+        order_number: order.tiendaventa_codigoreferencia,
+        customer: {
+          name: `${order.tiendaventa_nombres || ''} ${order.tiendaventa_apellidos || ''}`.trim() || 'Cliente General',
+          email: order.tiendaventa_correoelectronico,
+          phone: order.tiendaventa_telefono
+        },
+        total: parseFloat(order.tiendaventa_totalpagar || '0'),
+        status: order.tiendaventa_pagado, // 0=rechazado, 1=pagado, 2=pendiente
+        source: order.tiendaventa_origen || 'web',
+        created_at: order.tiendaventa_fecha,
+        // Guardar datos raw para modal
+        _raw: order
+      }));
     } else if (Array.isArray(response)) {
-      orders.value = response;
+      orders.value = response.map((order) => ({
+        id: parseInt(order.tiendaventa_id || order.id),
+        order_number: order.tiendaventa_codigoreferencia || order.order_number,
+        customer: {
+          name: `${order.tiendaventa_nombres || ''} ${order.tiendaventa_apellidos || ''}`.trim() || 'Cliente General'
+        },
+        total: parseFloat(order.tiendaventa_totalpagar || order.total || '0'),
+        status: order.tiendaventa_pagado || order.status,
+        source: order.tiendaventa_origen || order.source || 'web',
+        created_at: order.tiendaventa_fecha || order.created_at,
+        _raw: order
+      }));
     } else {
       orders.value = [];
     }
@@ -259,10 +285,12 @@ const viewOrderDetails = async (order) => {
     // Fetch full order details
     const response = await ordersApi.getOrder(order.id);
     console.log('Order Detail Response:', response);
-    selectedOrder.value = response;
+    // Use raw data if available, otherwise use response
+    selectedOrder.value = order._raw || response || order;
   } catch (err) {
     console.error('Error fetching order details:', err);
-    selectedOrder.value = order; // Fallback to list data
+    // Use raw data from list
+    selectedOrder.value = order._raw || order;
   }
 };
 
