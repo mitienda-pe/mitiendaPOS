@@ -3,7 +3,7 @@ import apiClient from './axios';
 export const ordersApi = {
   // Crear una nueva orden/venta desde el POS
   async createOrder(orderData) {
-    const response = await apiClient.post('/api/v1/orders/pos', orderData);
+    const response = await apiClient.post('/orders/pos', orderData);
     return response.data;
   },
 
@@ -19,13 +19,13 @@ export const ordersApi = {
     if (filters.customer_id) params.append('customer_id', filters.customer_id.toString());
     if (filters.source) params.append('source', filters.source); // web, pos, api
 
-    const response = await apiClient.get(`/api/v1/orders?${params.toString()}`);
+    const response = await apiClient.get(`/orders?${params.toString()}`);
     return response.data;
   },
 
   // Obtener detalle de una orden específica
   async getOrder(orderId) {
-    const response = await apiClient.get(`/api/v1/orders/${orderId}`);
+    const response = await apiClient.get(`/orders/${orderId}`);
     return response.data;
   },
 
@@ -34,7 +34,7 @@ export const ordersApi = {
     const params = new URLSearchParams();
     if (date) params.append('date', date);
 
-    const response = await apiClient.get(`/api/v1/orders/summary/daily?${params.toString()}`);
+    const response = await apiClient.get(`/orders/summary/daily?${params.toString()}`);
     return response.data;
   }
 };
