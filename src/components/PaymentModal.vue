@@ -529,9 +529,11 @@ const calculateChange = () => {
   // Redondear a 2 decimales
   cashAmount.value = Math.round(cashAmount.value * 100) / 100;
 
-  // Para efectivo, el monto del pago es el mismo que el monto entregado menos el cambio
-  paymentAmount.value = Math.min(cashAmount.value, props.remainingAmount);
-  change.value = Math.round((cashAmount.value - paymentAmount.value) * 100) / 100;
+  // El monto del pago es el total restante (lo que se debe cobrar)
+  paymentAmount.value = props.remainingAmount;
+
+  // El cambio es lo que sobra del efectivo entregado
+  change.value = Math.max(0, Math.round((cashAmount.value - props.remainingAmount) * 100) / 100);
 };
 
 const getPaymentMethodName = (method) => {
@@ -553,7 +555,7 @@ const addPayment = () => {
 
   switch (paymentMethod.value) {
     case 'efectivo':
-      amount = Math.min(cashAmount.value, props.remainingAmount);
+      amount = props.remainingAmount; // Siempre cobrar el total restante
       reference = `Cambio: ${formatCurrency(change.value)}`;
       break;
     case 'tarjeta':
