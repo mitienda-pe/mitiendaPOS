@@ -58,10 +58,19 @@ export const useAuthStore = defineStore('auth', {
           // Obtener las tiendas del usuario
           await this.fetchStores();
 
-          // TEMPORAL: Buscar y seleccionar tienda 10715 automáticamente si está disponible
-          const targetStore = this.stores.find(s => s.id === 10715);
-          if (targetStore) {
-            await this.selectStore(targetStore.id);
+          // Seleccionar tienda por defecto (configurable por .env)
+          const defaultStoreId = import.meta.env.VITE_DEFAULT_STORE_ID
+            ? parseInt(import.meta.env.VITE_DEFAULT_STORE_ID)
+            : null;
+
+          if (defaultStoreId) {
+            // Si hay una tienda por defecto configurada, intentar seleccionarla
+            const targetStore = this.stores.find(s => s.id === defaultStoreId);
+            if (targetStore) {
+              await this.selectStore(targetStore.id);
+            } else {
+              console.warn(`Store ${defaultStoreId} not found in user's stores`);
+            }
           } else if (this.stores.length === 1) {
             // Si solo tiene una tienda, seleccionarla automáticamente
             await this.selectStore(this.stores[0].id);

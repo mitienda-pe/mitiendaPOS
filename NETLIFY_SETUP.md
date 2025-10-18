@@ -24,6 +24,7 @@ Agrega las siguientes variables de entorno:
 | `VITE_API_BASE_URL` | `https://api2.mitienda.pe` | URL del API de producción |
 | `VITE_API_URL` | `https://api.apis.net.pe/` | API de APIS.net.pe (consultas RUC/DNI) |
 | `VITE_APISNET_TOKEN` | `apis-token-5053.eYOF6IPjZ03SX34x8mfm0oJCtKG2d04a` | Token de APIS.net.pe |
+| `VITE_DEFAULT_STORE_ID` | `10715` | ID de la tienda por defecto (opcional) |
 
 ### Paso 3: Re-desplegar
 
