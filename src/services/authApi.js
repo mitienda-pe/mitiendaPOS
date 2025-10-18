@@ -59,7 +59,7 @@ export const authApi = {
 
   // Seleccionar tienda activa - devuelve un nuevo token con permisos de tienda
   async selectStore(storeId) {
-    const response = await apiClient.post('/api/v1/user/store/select', { store_id: storeId });
+    const response = await apiClient.post('/user/store/select', { store_id: storeId });
     return response.data;
   }
 };
