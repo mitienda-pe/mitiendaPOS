@@ -1,5 +1,59 @@
 # Changelog - MiTienda POS
 
+## 2025-10-18 - Customer API Integration with Decolecta
+
+### ✅ Complete Real API Integration
+
+#### Decolecta API Integration (RENIEC/SUNAT)
+- **Backend endpoints created**:
+  - `GET /api/v1/customers/lookup/{document}?type={dni|ruc}` - Query official government databases
+  - `GET /api/v1/customers/search-by-document` - Search local customer database
+- **Two-step intelligent search**:
+  1. Check local database first (fast, no API cost)
+  2. If not found, query Decolecta (RENIEC for DNI, SUNAT for RUC)
+  3. Auto-fill form with official government data
+- **Auto-complete customer data**:
+  - DNI → nombres, apellidos from RENIEC
+  - RUC → razón social from SUNAT
+
+#### Frontend Customer Service
+- **New `customersApi.js` service**: Complete CRUD for customers
+  - `searchByDocument()` - Find customer by DNI/RUC
+  - `lookupDocument()` - Query Decolecta API
+  - `createCustomer()`, `updateCustomer()`, `deleteCustomer()`
+  - Automatic field mapping between frontend and backend formats
+
+#### Updated Components
+- **CustomerSearchModal**: Complete rewrite using real API
+  - Search customers by document number
+  - Auto-complete from RENIEC/SUNAT if not in database
+  - Improved UX with loading states and clear messages
+  - Create customer with pre-filled government data
+
+- **StartSaleModal**: Now uses real customersApi
+  - Integrated Decolecta lookup
+  - Auto-fills official data for new customers
+
+### 🔧 Technical Implementation
+
+**Backend (CodeIgniter 4)**:
+- File: `app/Controllers/V1/Customer.php`
+  - `lookup()` - Decolecta API integration
+  - `searchByDocument()` - Local database search
+- File: `app/Config/Routes.php` - New routes added
+- **Required**: `DECOLECTA_TOKEN` environment variable
+
+**Frontend (Vue 3)**:
+- `src/services/customersApi.js` - NEW centralized API service
+- `src/components/CustomerSearchModal.vue` - Rewritten with real API
+- `src/components/StartSaleModal.vue` - Updated to use customersApi
+
+**Decolecta Endpoints Used**:
+- DNI: `https://api.decolecta.com/v1/reniec/dni?numero={dni}`
+- RUC: `https://api.decolecta.com/v1/sunat/ruc?numero={ruc}`
+
+---
+
 ## 2025-10-18 - Improved Sale Initiation Flow
 
 ### ✅ New Features
