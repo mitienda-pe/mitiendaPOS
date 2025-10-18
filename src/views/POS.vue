@@ -67,6 +67,22 @@ const remainingAmount = computed(() => {
   return Math.round((total.value - totalPaid.value) * 100) / 100;
 });
 
+// Calcular el cambio total de los pagos en efectivo
+const totalChange = computed(() => {
+  const cashPayments = payments.value.filter(p => p.method === 'efectivo');
+  let totalChangeAmount = 0;
+
+  cashPayments.forEach(payment => {
+    // Extraer el cambio de la referencia
+    const match = payment.reference?.match(/Cambio: S\/\s*([\d.]+)/);
+    if (match) {
+      totalChangeAmount += parseFloat(match[1]);
+    }
+  });
+
+  return Math.round(totalChangeAmount * 100) / 100;
+});
+
 // Methods
 const formatCurrency = (amount) => {
   if (isNaN(amount) || amount === null || amount === undefined) return 'S/ 0.00';
@@ -700,6 +716,10 @@ const getPaymentMethodName = (method) => {
                 <div class="flex justify-between mt-3 font-medium text-green-700">
                   <span>Pagado:</span>
                   <span>{{ formatCurrency(totalPaid) }}</span>
+                </div>
+                <div v-if="totalChange > 0" class="flex justify-between font-medium text-blue-600">
+                  <span>Cambio:</span>
+                  <span>{{ formatCurrency(totalChange) }}</span>
                 </div>
                 <div class="flex justify-between font-medium"
                   :class="remainingAmount === 0 ? 'text-green-700' : 'text-red-600'">
