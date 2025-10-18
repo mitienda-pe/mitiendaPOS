@@ -45,7 +45,22 @@ export const authApi = {
         logo: null,
         url: store.tienda_url,
         plan: store.plan_titulo,
-        status: store.tienda_plan_status_text === 'Activo' ? 'active' : 'inactive'
+        status: store.tienda_plan_status_text === 'Activo' ? 'active' : 'inactive',
+        // Store details for receipts/invoices
+        ruc: store.tienda_ruc || '',
+        razonSocial: store.tienda_razon_social || store.tienda_nombre_comercial || '',
+        telefono: store.tienda_telefono || '',
+        direccion: store.tienda_direccion || '',
+        distrito: store.tienda_distrito || '',
+        provincia: store.tienda_provincia || '',
+        departamento: store.tienda_departamento || '',
+        // Full address for tickets
+        direccionCompleta: [
+          store.tienda_direccion,
+          store.tienda_distrito,
+          store.tienda_provincia,
+          store.tienda_departamento
+        ].filter(Boolean).join(', ')
       }));
 
       return {
