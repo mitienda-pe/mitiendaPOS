@@ -17,7 +17,7 @@ export const productsApi = {
       params.append('stock_status', filters.stock_status);
     }
 
-    const response = await apiClient.get(`/api/v1/products?${params.toString()}`);
+    const response = await apiClient.get(`/products?${params.toString()}`);
 
     // La API devuelve un array directo de productos
     const rawData = response.data;
@@ -92,7 +92,7 @@ export const productsApi = {
 
   // Obtener detalle de un producto
   async getProduct(id) {
-    const response = await apiClient.get(`/api/v1/products/${id}`);
+    const response = await apiClient.get(`/products/${id}`);
     const rawData = response.data?.data || response.data;
 
     if (rawData) {
@@ -150,13 +150,13 @@ export const productsApi = {
 
   // Actualizar stock de un producto (para el POS)
   async updateStock(id, newStock) {
-    const response = await apiClient.put(`/api/v1/products/${id}`, { stock: newStock });
+    const response = await apiClient.put(`/products/${id}`, { stock: newStock });
     return response.data;
   },
 
   // Buscar productos por código de barras o SKU
   async searchByCode(code) {
-    const response = await apiClient.get(`/api/v1/products?search=${encodeURIComponent(code)}`);
+    const response = await apiClient.get(`/products?search=${encodeURIComponent(code)}`);
     const rawData = response.data;
 
     if (Array.isArray(rawData) && rawData.length > 0) {
