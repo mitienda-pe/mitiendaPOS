@@ -27,13 +27,13 @@ export const authApi = {
 
   // Obtener perfil del usuario
   async getProfile() {
-    const response = await apiClient.get('/api/v1/user/profile');
+    const response = await apiClient.get('/user/profile');
     return response.data;
   },
 
   // Obtener tiendas del usuario
   async getStores() {
-    const response = await apiClient.get('/api/v1/user/stores');
+    const response = await apiClient.get('/user/stores');
 
     // La API devuelve { error: 0, data: { stores: [...] } }
     // Necesitamos mapear el formato
@@ -59,7 +59,7 @@ export const authApi = {
 
   // Seleccionar tienda activa - devuelve un nuevo token con permisos de tienda
   async selectStore(storeId) {
-    const response = await apiClient.post('/api/v1/user/store/select', { store_id: storeId });
+    const response = await apiClient.post('/user/store/select', { store_id: storeId });
     return response.data;
   }
 };
