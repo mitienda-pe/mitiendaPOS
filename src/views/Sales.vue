@@ -285,12 +285,16 @@ const viewOrderDetails = async (order) => {
     // Fetch full order details
     const response = await ordersApi.getOrder(order.id);
     console.log('Order Detail Response:', response);
-    // Use raw data if available, otherwise use response
-    selectedOrder.value = order._raw || response || order;
+    // Use the mapped order data (which has the correct structure)
+    // but also attach the raw data for the JSON viewer
+    selectedOrder.value = {
+      ...order, // Has correct structure with created_at, customer, etc.
+      _rawDetail: response // Full response for debugging
+    };
   } catch (err) {
     console.error('Error fetching order details:', err);
-    // Use raw data from list
-    selectedOrder.value = order._raw || order;
+    // Use the mapped order data
+    selectedOrder.value = order;
   }
 };
 
