@@ -620,16 +620,17 @@ const totalPaid = computed(() => {
 
 const totalChange = computed(() => {
   const cashPayments = props.payments.filter(p => p.method === 'efectivo');
-  const cashAmount = cashPayments.reduce((sum, payment) => sum + payment.amount, 0);
-  const cashDelivered = cashPayments.reduce((sum, payment) => {
-    const match = payment.reference?.match(/Cambio: S\/ ([\d.]+)/);
-    if (match) {
-      return sum + payment.amount + parseFloat(match[1]);
-    }
-    return sum + payment.amount;
-  }, 0);
+  let totalChangeAmount = 0;
 
-  return Math.max(0, cashDelivered - props.total);
+  cashPayments.forEach(payment => {
+    // Extraer el cambio de la referencia
+    const match = payment.reference?.match(/Cambio: S\/\s*([\d.]+)/);
+    if (match) {
+      totalChangeAmount += parseFloat(match[1]);
+    }
+  });
+
+  return Math.round(totalChangeAmount * 100) / 100;
 });
 
 const printTicket = () => {
@@ -688,6 +689,13 @@ watch(() => props.showTicket, (newValue) => {
 // Watcher para emitir el evento update:show-ticket cuando cambia showTicket
 watch(showTicket, (newValue) => {
   emit('update:show-ticket', newValue);
+});
+
+// Watcher para recalcular cambio cuando cambia el monto en efectivo
+watch(cashAmount, () => {
+  if (paymentMethod.value === 'efectivo') {
+    calculateChange();
+  }
 });
 
 // Inicialización
