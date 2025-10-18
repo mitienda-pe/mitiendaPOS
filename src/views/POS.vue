@@ -237,7 +237,17 @@ const handlePaymentAdded = (paymentData) => {
   // Esto permite al usuario ver el resumen de la orden
 };
 
+const processingOrder = ref(false);
+
 const handlePaymentCompleted = async () => {
+  // Prevenir múltiples clics
+  if (processingOrder.value) {
+    console.log('Order already being processed, ignoring duplicate request');
+    return;
+  }
+
+  processingOrder.value = true;
+
   try {
     // Preparar datos de la orden
     const orderData = {
@@ -292,6 +302,8 @@ const handlePaymentCompleted = async () => {
     console.error('Error al procesar el pago:', error);
     const errorMessage = error.response?.data?.message || error.message || 'Error al procesar la venta';
     alert(`Error: ${errorMessage}\n\nPor favor, intente nuevamente.`);
+  } finally {
+    processingOrder.value = false;
   }
 };
 
@@ -743,12 +755,17 @@ const getPaymentMethodName = (method) => {
               Añadir Pago
             </button>
             <button v-if="payments.length > 0 && remainingAmount === 0" @click="handlePaymentCompleted"
-              class="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none"
+              :disabled="processingOrder"
+              class="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center">
+              <svg v-if="processingOrder" class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              Completar Venta
+              {{ processingOrder ? 'Procesando...' : 'Completar Venta' }}
             </button>
             <div class="flex space-x-2">
 
