@@ -8,6 +8,7 @@ import { useSavedSalesStore } from '../stores/savedSales';
 import CustomerSearchModal from '../components/CustomerSearchModal.vue';
 import PaymentModal from '../components/PaymentModal.vue';
 import SavedSalesModal from '../components/SavedSalesModal.vue';
+import StartSaleModal from '../components/StartSaleModal.vue';
 
 // State
 const authStore = useAuthStore();
@@ -25,6 +26,8 @@ const showProductModal = ref(false);
 const showPaymentModal = ref(false);
 const showCustomerSearch = ref(false);
 const showSavedSalesModal = ref(false);
+const showStartSaleModal = ref(false);
+const saleHasUnsavedChanges = ref(false);
 const productSearchQuery = ref('');
 const productCategoryFilter = ref('');
 const productSearchResults = ref([]);
@@ -139,6 +142,7 @@ const addToCart = (product) => {
     // Check if we have enough stock
     if (existingItem.quantity < product.stock) {
       existingItem.quantity++;
+      saleHasUnsavedChanges.value = true;
     } else {
       alert('No hay suficiente stock disponible');
     }
@@ -147,6 +151,7 @@ const addToCart = (product) => {
       ...product,
       quantity: 1
     });
+    saleHasUnsavedChanges.value = true;
   }
 };
 
@@ -154,6 +159,7 @@ const incrementQuantity = (item) => {
   const product = cartItems.value.find(i => i.id === item.id);
   if (product && product.quantity < product.stock) {
     item.quantity++;
+    saleHasUnsavedChanges.value = true;
   } else {
     alert('No hay suficiente stock disponible');
   }
@@ -162,26 +168,36 @@ const incrementQuantity = (item) => {
 const decrementQuantity = (item) => {
   if (item.quantity > 1) {
     item.quantity--;
+    saleHasUnsavedChanges.value = true;
   }
 };
 
 const removeItem = (item) => {
   cartItems.value = cartItems.value.filter(i => i.id !== item.id);
+  saleHasUnsavedChanges.value = true;
 };
 
 // Guardar la venta actual para más tarde
 const saveSaleForLater = () => {
+  if (cartItems.value.length === 0) {
+    alert('No hay productos en la venta para guardar');
+    return;
+  }
+
   autoSaveSale();
+  saleHasUnsavedChanges.value = false;
   // Mostrar mensaje de confirmación
   alert('Venta guardada correctamente');
 };
 
 // Iniciar una nueva venta
 const newSale = () => {
-  if (cartItems.value.length > 0) {
+  // Si hay productos en el carrito y no está guardada, preguntar
+  if (cartItems.value.length > 0 && saleHasUnsavedChanges.value) {
     if (confirm('¿Desea guardar la venta actual antes de iniciar una nueva?')) {
       saveSaleForLater();
     } else {
+      // Usuario eligió eliminar
       resetSale();
     }
   }
@@ -189,8 +205,17 @@ const newSale = () => {
   // Limpiar el ID de la venta actual
   currentSaleId.value = null;
 
-  // Abrir el modal de búsqueda de cliente
-  showCustomerSearch.value = true;
+  // Abrir el modal de inicio de venta
+  showStartSaleModal.value = true;
+};
+
+// Manejar inicio de venta desde el modal
+const handleStartSale = (data) => {
+  resetSale();
+  if (data.customer) {
+    selectedCustomer.value = data.customer;
+  }
+  saleHasUnsavedChanges.value = false;
 };
 
 // Retomar una venta guardada
@@ -213,6 +238,9 @@ const resumeSavedSale = (sale) => {
   } else {
     payments.value = [];
   }
+
+  // Marcar como guardada (no tiene cambios sin guardar)
+  saleHasUnsavedChanges.value = false;
 };
 
 const processPayment = () => {
@@ -320,6 +348,7 @@ const resetSale = () => {
   payments.value = [];
   searchQuery.value = '';
   searchResults.value = [];
+  saleHasUnsavedChanges.value = false;
 };
 
 const fetchCustomers = async () => {
@@ -458,6 +487,8 @@ watch([cartItems, payments, selectedCustomer], () => {
   // Solo guardar si hay productos en el carrito
   if (cartItems.value.length > 0) {
     autoSaveSale();
+    // Marcar que hay cambios guardados automáticamente
+    saleHasUnsavedChanges.value = false;
   }
 }, { deep: true });
 
@@ -850,6 +881,9 @@ const getPaymentMethodName = (method) => {
       </div>
     </div>
   </div>
+
+  <!-- Start Sale Modal -->
+  <StartSaleModal v-model="showStartSaleModal" @start="handleStartSale" />
 
   <!-- Customer Search Modal -->
   <CustomerSearchModal v-model="showCustomerSearch" @select="handleCustomerSelect" />
