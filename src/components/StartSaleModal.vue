@@ -158,7 +158,7 @@
 
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue';
-import { mockCustomersApi } from '../api/mockCustomers';
+import { customersApi } from '../services/customersApi';
 
 const props = defineProps({
   modelValue: Boolean
@@ -172,6 +172,7 @@ const customerFound = ref(null);
 const searching = ref(false);
 const showCreateForm = ref(false);
 const docInput = ref(null);
+const lookupData = ref(null); // Store Decolecta lookup data
 
 const newCustomer = ref({
   nombres: '',
@@ -223,25 +224,51 @@ const searchCustomer = async () => {
   }
 
   searching.value = true;
+  lookupData.value = null;
 
   try {
-    const response = await mockCustomersApi.getCustomers({
-      tipoDoc: tipoDoc.value,
-      numDoc: numDoc.value
-    });
+    // Step 1: Search in our database first
+    const documentType = tipoDoc.value === 'DNI' ? '1' : '6';
+    const searchResponse = await customersApi.searchByDocument(numDoc.value, documentType);
 
-    if (response.data && response.data.length > 0) {
-      customerFound.value = response.data[0];
+    if (searchResponse.success && searchResponse.found) {
+      // Customer exists in our database
+      customerFound.value = searchResponse.data;
       showCreateForm.value = false;
     } else {
-      customerFound.value = null;
-      showCreateForm.value = true;
-      // Pre-fill new customer data
-      newCustomer.value.nombres = '';
-      newCustomer.value.apellidos = '';
-      newCustomer.value.razonSocial = '';
-      newCustomer.value.correoElectronico = '';
-      newCustomer.value.telefono = '';
+      // Step 2: Customer not found, lookup in Decolecta API
+      const lookupResponse = await customersApi.lookupDocument(
+        numDoc.value,
+        tipoDoc.value.toLowerCase()
+      );
+
+      if (lookupResponse.success) {
+        // Found in Decolecta - pre-fill form
+        lookupData.value = lookupResponse.data;
+        customerFound.value = null;
+        showCreateForm.value = true;
+
+        if (tipoDoc.value === 'DNI') {
+          newCustomer.value.nombres = lookupData.value.nombres || '';
+          newCustomer.value.apellidos = `${lookupData.value.apellidoPaterno || ''} ${lookupData.value.apellidoMaterno || ''}`.trim();
+          newCustomer.value.razonSocial = '';
+        } else {
+          newCustomer.value.razonSocial = lookupData.value.razonSocial || '';
+          newCustomer.value.nombres = '';
+          newCustomer.value.apellidos = '';
+        }
+        newCustomer.value.correoElectronico = '';
+        newCustomer.value.telefono = '';
+      } else {
+        // Not found in Decolecta either - show empty form
+        customerFound.value = null;
+        showCreateForm.value = true;
+        newCustomer.value.nombres = '';
+        newCustomer.value.apellidos = '';
+        newCustomer.value.razonSocial = '';
+        newCustomer.value.correoElectronico = '';
+        newCustomer.value.telefono = '';
+      }
     }
   } catch (error) {
     console.error('Error searching customer:', error);
@@ -254,17 +281,26 @@ const searchCustomer = async () => {
 const createAndSelectCustomer = async () => {
   try {
     const customerData = {
-      tipoDoc: tipoDoc.value,
-      numDoc: numDoc.value,
-      ...newCustomer.value
+      nombres: newCustomer.value.nombres,
+      apellidos: newCustomer.value.apellidos,
+      razonSocial: newCustomer.value.razonSocial,
+      email: newCustomer.value.correoElectronico,
+      telefono: newCustomer.value.telefono,
+      numeroDocumento: numDoc.value,
+      tipoDocumento: tipoDoc.value === 'DNI' ? '1' : '6'
     };
 
-    const response = await mockCustomersApi.addCustomer(customerData);
-    customerFound.value = response.data;
-    showCreateForm.value = false;
+    const response = await customersApi.createCustomer(customerData);
 
-    // Auto-start sale after creating customer
-    startWithCustomer();
+    if (response.success) {
+      customerFound.value = response.data;
+      showCreateForm.value = false;
+
+      // Auto-start sale after creating customer
+      startWithCustomer();
+    } else {
+      alert(response.error || 'Error al crear el cliente');
+    }
   } catch (error) {
     console.error('Error creating customer:', error);
     alert('Error al crear el cliente');
