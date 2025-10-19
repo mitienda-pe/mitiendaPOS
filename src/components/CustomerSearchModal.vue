@@ -291,8 +291,10 @@ const createCustomer = async () => {
     };
 
     const response = await customersApi.createCustomer(customerData);
+    console.log('Create customer response:', response);
 
     if (response.success) {
+      console.log('Customer data to select:', response.data);
       selectCustomer(response.data);
     } else {
       alert(response.error || 'Error al crear el cliente');

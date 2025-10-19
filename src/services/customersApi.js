@@ -134,10 +134,14 @@ export const customersApi = {
       }
 
       const response = await apiClient.post('/customers', backendData);
+      console.log('Backend response:', response.data);
+
+      const customerData = response.data.data || response.data;
+      console.log('Extracted customer data:', customerData);
 
       return {
         success: true,
-        data: response.data.data || response.data
+        data: customerData
       };
     } catch (error) {
       console.error('Error creating customer:', error);
