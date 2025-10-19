@@ -241,23 +241,37 @@ const searchByDocument = async () => {
 
       if (lookupResponse.success) {
         // Found in Decolecta - pre-fill form
-        console.log('Found in Decolecta, pre-filling form with:', lookupResponse.data);
-        lookupData.value = lookupResponse.data;
-        searchResults.value = [];
-        showCreateForm.value = true;
+        console.log('✅ Found in Decolecta!');
+        console.log('Raw lookup data:', lookupResponse.data);
 
-        if (tipoDoc.value === 'DNI') {
-          newCustomer.value.nombres = lookupData.value.nombres || '';
-          newCustomer.value.apellidos = `${lookupData.value.apellidoPaterno || ''} ${lookupData.value.apellidoMaterno || ''}`.trim();
-          newCustomer.value.razonSocial = '';
-        } else {
-          newCustomer.value.razonSocial = lookupData.value.razonSocial || '';
-          newCustomer.value.nombres = '';
-          newCustomer.value.apellidos = '';
+        try {
+          lookupData.value = lookupResponse.data;
+          searchResults.value = [];
+          showCreateForm.value = true;
+          console.log('showCreateForm set to:', showCreateForm.value);
+
+          if (tipoDoc.value === 'DNI') {
+            newCustomer.value.nombres = lookupData.value.nombres || '';
+            newCustomer.value.apellidos = `${lookupData.value.apellidoPaterno || ''} ${lookupData.value.apellidoMaterno || ''}`.trim();
+            newCustomer.value.razonSocial = '';
+            console.log('Pre-filled DNI customer:', {
+              nombres: newCustomer.value.nombres,
+              apellidos: newCustomer.value.apellidos
+            });
+          } else {
+            newCustomer.value.razonSocial = lookupData.value.razonSocial || '';
+            newCustomer.value.nombres = '';
+            newCustomer.value.apellidos = '';
+            console.log('Pre-filled RUC customer:', {
+              razonSocial: newCustomer.value.razonSocial
+            });
+          }
+          newCustomer.value.correoElectronico = '';
+          newCustomer.value.telefono = '';
+          console.log('✅ Form successfully pre-filled');
+        } catch (fillError) {
+          console.error('❌ Error pre-filling form:', fillError);
         }
-        newCustomer.value.correoElectronico = '';
-        newCustomer.value.telefono = '';
-        console.log('Form pre-filled with:', newCustomer.value);
       } else {
         // Not found in Decolecta either - show empty form
         console.log('Not found in Decolecta either, showing empty form');

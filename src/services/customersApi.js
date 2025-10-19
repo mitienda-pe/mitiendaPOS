@@ -97,6 +97,7 @@ export const customersApi = {
       console.log(`Calling Decolecta API: /customers/lookup/${documentNumber}?type=${type.toLowerCase()}`);
       const response = await apiClient.get(`/customers/lookup/${documentNumber}?type=${type.toLowerCase()}`);
       console.log('Decolecta API response:', response.data);
+      console.log('Decolecta data object:', response.data.data);
 
       return {
         success: response.data.success,
