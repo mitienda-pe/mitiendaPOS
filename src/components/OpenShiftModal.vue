@@ -20,6 +20,25 @@
                   Ingrese el monto inicial en efectivo que tiene en caja para iniciar el turno.
                 </p>
 
+                <!-- Cash Register Number -->
+                <div class="mb-4">
+                  <label for="caja-numero" class="block text-sm font-medium text-gray-700 mb-2">
+                    Número de Caja (Opcional)
+                  </label>
+                  <input
+                    id="caja-numero"
+                    ref="cajaInput"
+                    v-model="cajaNumero"
+                    type="text"
+                    placeholder="Ej: CAJA-01, POS-LIMA-01"
+                    maxlength="50"
+                    class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p class="text-xs text-gray-500 mt-1">
+                    Deje en blanco si solo tiene una caja. Use identificadores como CAJA-01, POS-LIMA-01 para múltiples cajas.
+                  </p>
+                </div>
+
                 <!-- Initial Amount -->
                 <div class="mb-4">
                   <label for="monto-inicial" class="block text-sm font-medium text-gray-700 mb-2">
@@ -111,23 +130,26 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'opened']);
 
+const cajaNumero = ref('');
 const montoInicial = ref(0);
 const notas = ref('');
 const processing = ref(false);
 const error = ref(null);
+const cajaInput = ref(null);
 const montoInput = ref(null);
 
 const isValid = computed(() => {
   return montoInicial.value >= 0;
 });
 
-// Auto-focus on amount input when modal opens
+// Auto-focus on caja input when modal opens
 watch(() => props.modelValue, (value) => {
   if (value) {
     nextTick(() => {
-      montoInput.value?.focus();
+      cajaInput.value?.focus();
     });
     // Reset form
+    cajaNumero.value = '';
     montoInicial.value = 0;
     notas.value = '';
     error.value = null;
@@ -142,6 +164,7 @@ const handleOpen = async () => {
 
   try {
     emit('opened', {
+      cajaNumero: cajaNumero.value.trim() || null,
       montoInicial: parseFloat(montoInicial.value),
       notas: notas.value.trim()
     });

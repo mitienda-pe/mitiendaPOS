@@ -34,12 +34,12 @@ export const useShiftStore = defineStore('shift', {
       }
     },
 
-    async openShift(montoInicial, notasApertura = '') {
+    async openShift(montoInicial, notasApertura = '', cajaNumero = null) {
       this.loading = true;
       this.error = null;
 
       try {
-        const response = await shiftsApi.openShift(montoInicial, notasApertura);
+        const response = await shiftsApi.openShift(montoInicial, notasApertura, cajaNumero);
 
         if (response.success) {
           this.activeShift = response.data;

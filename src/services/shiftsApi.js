@@ -1,4 +1,4 @@
-import apiClient from './apiClient';
+import apiClient from './axios';
 
 export const shiftsApi = {
   /**
@@ -26,13 +26,20 @@ export const shiftsApi = {
    * Open a new shift
    * @param {number} montoInicial - Initial cash amount
    * @param {string} notasApertura - Opening notes
+   * @param {string|null} cajaNumero - Cash register identifier (optional)
    */
-  async openShift(montoInicial, notasApertura = '') {
+  async openShift(montoInicial, notasApertura = '', cajaNumero = null) {
     try {
-      const response = await apiClient.post('/cash-register-shifts/open', {
+      const payload = {
         monto_inicial: montoInicial,
         notas_apertura: notasApertura
-      });
+      };
+
+      if (cajaNumero) {
+        payload.caja_numero = cajaNumero;
+      }
+
+      const response = await apiClient.post('/cash-register-shifts/open', payload);
 
       return {
         success: response.data.success,
