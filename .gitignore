@@ -3,8 +3,12 @@ node_modules
 /dist
 
 # local env files
+.env
 .env.local
 .env.*.local
+
+# Claude Code settings
+.claude/
 
 # Log files
 npm-debug.log*
