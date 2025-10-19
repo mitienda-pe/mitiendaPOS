@@ -94,7 +94,9 @@ export const customersApi = {
    */
   async lookupDocument(documentNumber, type = 'dni') {
     try {
+      console.log(`Calling Decolecta API: /customers/lookup/${documentNumber}?type=${type.toLowerCase()}`);
       const response = await apiClient.get(`/customers/lookup/${documentNumber}?type=${type.toLowerCase()}`);
+      console.log('Decolecta API response:', response.data);
 
       return {
         success: response.data.success,
@@ -104,6 +106,7 @@ export const customersApi = {
       };
     } catch (error) {
       console.error('Error looking up document:', error);
+      console.error('Error details:', error.response?.data);
       return {
         success: false,
         error: error.response?.data?.message || error.message || 'Error looking up document'

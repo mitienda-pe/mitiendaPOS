@@ -232,13 +232,16 @@ const searchByDocument = async () => {
       searched.value = true;
     } else {
       // Step 2: Customer not found locally, lookup in Decolecta
+      console.log('Customer not in DB, looking up in Decolecta...');
       const lookupResponse = await customersApi.lookupDocument(
         numDoc.value,
         tipoDoc.value.toLowerCase()
       );
+      console.log('Decolecta lookup response:', lookupResponse);
 
       if (lookupResponse.success) {
         // Found in Decolecta - pre-fill form
+        console.log('Found in Decolecta, pre-filling form with:', lookupResponse.data);
         lookupData.value = lookupResponse.data;
         searchResults.value = [];
         showCreateForm.value = true;
@@ -254,8 +257,10 @@ const searchByDocument = async () => {
         }
         newCustomer.value.correoElectronico = '';
         newCustomer.value.telefono = '';
+        console.log('Form pre-filled with:', newCustomer.value);
       } else {
         // Not found in Decolecta either - show empty form
+        console.log('Not found in Decolecta either, showing empty form');
         searchResults.value = [];
         showCreateForm.value = true;
         newCustomer.value.nombres = '';
