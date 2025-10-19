@@ -63,7 +63,7 @@
                     <tbody class="bg-white divide-y divide-gray-200">
                       <tr v-for="customer in searchResults" :key="customer.id">
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
-                          {{ customer.name }}
+                          {{ customer.name || `${customer.nombres || ''} ${customer.apellidos || ''}`.trim() }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                           {{ customer.document_type === '1' ? 'DNI' : 'RUC' }}: {{ customer.document_number }}
