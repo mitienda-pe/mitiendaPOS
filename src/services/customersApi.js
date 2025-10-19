@@ -70,6 +70,7 @@ export const customersApi = {
       }
 
       const response = await apiClient.get(`/customers/search-by-document?${params.toString()}`);
+      console.log('searchByDocument backend response:', response.data);
 
       return {
         success: response.data.success,

@@ -222,9 +222,11 @@ const searchByDocument = async () => {
     // Step 1: Search in our database by document number
     const documentType = tipoDoc.value === 'DNI' ? '1' : '6';
     const searchResponse = await customersApi.searchByDocument(numDoc.value, documentType);
+    console.log('Search response:', searchResponse);
 
     if (searchResponse.success && searchResponse.found) {
       // Customer exists in our database
+      console.log('Customer found in DB:', searchResponse.data);
       searchResults.value = [searchResponse.data];
       showCreateForm.value = false;
       searched.value = true;
