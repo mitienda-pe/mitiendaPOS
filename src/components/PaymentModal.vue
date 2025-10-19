@@ -30,7 +30,7 @@
                   </span>
                 </div>
                 <div v-if="customer" class="text-sm text-gray-600">
-                  Cliente: {{ customer.razonSocial || `${customer.nombres} ${customer.apellidos}` }}
+                  Cliente: {{ customer.name }}
                 </div>
               </div>
 

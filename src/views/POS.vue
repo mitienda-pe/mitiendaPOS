@@ -700,8 +700,10 @@ const getPaymentMethodName = (method) => {
           <div class="mb-4">
             <span v-if="selectedCustomer">
               <strong>Cliente:</strong>
-              {{ selectedCustomer.razonSocial || `${selectedCustomer.nombres} ${selectedCustomer.apellidos}` }}
-              {{ selectedCustomer.tipoDoc }} {{ selectedCustomer.numDoc }}
+              {{ selectedCustomer.name }}
+              <span v-if="selectedCustomer.document_number">
+                ({{ selectedCustomer.document_type === '1' ? 'DNI' : 'RUC' }}: {{ selectedCustomer.document_number }})
+              </span>
             </span>
 
             <!-- <button @click="showCustomerSearch = true"

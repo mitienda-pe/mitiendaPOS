@@ -144,7 +144,7 @@ function formatCurrency(amount) {
 // Obtener nombre del cliente
 function getCustomerName(customer) {
   if (!customer) return 'Sin cliente';
-  return customer.razonSocial || `${customer.nombres} ${customer.apellidos}`;
+  return customer.name || 'Cliente sin nombre';
 }
 
 // Retomar una venta guardada
