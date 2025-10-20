@@ -182,19 +182,38 @@ const loadOrderDetail = async () => {
 
     // Mapear la respuesta al formato esperado
     if (response) {
+      // Intentar obtener datos del cliente desde diferentes fuentes
+      let customerName = 'Cliente General';
+      let customerEmail = '';
+      let customerPhone = '';
+
+      // Prioridad 1: Campos directos de la tabla
+      if (response.tiendaventa_nombres || response.tiendaventa_apellidos) {
+        customerName = `${response.tiendaventa_nombres || ''} ${response.tiendaventa_apellidos || ''}`.trim();
+        customerEmail = response.tiendaventa_correoelectronico || '';
+        customerPhone = response.tiendaventa_telefono || '';
+      }
+      // Prioridad 2: billing_info (ventas web antiguas)
+      else if (response.billing_info) {
+        const billing = response.billing_info;
+        customerName = `${billing.name || ''} ${billing.last_name || ''}`.trim() || 'Cliente General';
+        customerEmail = billing.email || '';
+        customerPhone = billing.phone_number || '';
+      }
+
       order.value = {
         id: parseInt(response.tiendaventa_id || orderId),
-        order_number: response.tiendaventa_codigoreferencia || orderId,
+        order_number: response.tiendaventa_codigoreferencia || response.code || orderId,
         customer: {
-          name: `${response.tiendaventa_nombres || ''} ${response.tiendaventa_apellidos || ''}`.trim() || 'Cliente General',
-          email: response.tiendaventa_correoelectronico,
-          phone: response.tiendaventa_telefono
+          name: customerName,
+          email: customerEmail,
+          phone: customerPhone
         },
         cajero_nombre: response.cajero_nombre || null,
-        total: parseFloat(response.tiendaventa_totalpagar || '0'),
-        status: response.tiendaventa_pagado,
+        total: parseFloat(response.tiendaventa_totalpagar || response.total_amount || '0'),
+        status: response.tiendaventa_pagado || response.status,
         source: response.tiendaventa_origen || 'web',
-        created_at: response.tiendaventa_fecha,
+        created_at: response.tiendaventa_fecha || response.date_created,
         _rawDetail: response
       };
     } else {
