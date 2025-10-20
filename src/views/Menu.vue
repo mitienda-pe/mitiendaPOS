@@ -263,6 +263,23 @@
           </div>
         </div>
       </router-link>
+
+      <!-- Cambiar Tienda (solo si tiene múltiples tiendas) -->
+      <div v-if="authStore.hasMultipleStores" class="block">
+        <div
+          @click="showStoreSelector = true"
+          class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-purple-500 cursor-pointer">
+          <div class="flex flex-col items-center justify-center h-full text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-purple-500 mb-4" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <h2 class="text-xl font-medium text-gray-900 mb-2">Cambiar Tienda</h2>
+            <p class="text-gray-600 text-center text-sm">{{ authStore.selectedStore?.name || 'Seleccionar tienda' }}</p>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Modals -->
@@ -276,18 +293,28 @@
       :shift="shiftStore.activeShift"
       @closed="onShiftClosed"
     />
+
+    <StoreSelector
+      v-model="showStoreSelector"
+      :required="false"
+      @store-selected="onStoreSelected"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useShiftStore } from '../stores/shift';
+import { useAuthStore } from '../stores/auth';
 import OpenShiftModal from '../components/OpenShiftModal.vue';
 import CloseShiftModal from '../components/CloseShiftModal.vue';
+import StoreSelector from '../components/StoreSelector.vue';
 
 const shiftStore = useShiftStore();
+const authStore = useAuthStore();
 const showOpenShiftModal = ref(false);
 const showCloseShiftModal = ref(false);
+const showStoreSelector = ref(false);
 
 onMounted(async () => {
   // Load active shift on mount
@@ -350,5 +377,11 @@ const formatTime = (dateString) => {
     day: '2-digit',
     month: 'short'
   });
+};
+
+const onStoreSelected = (store) => {
+  // Recargar los turnos activos después de cambiar de tienda
+  shiftStore.fetchActiveShift();
+  showStoreSelector.value = false;
 };
 </script>

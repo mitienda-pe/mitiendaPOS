@@ -45,20 +45,40 @@
         </div>
       </form>
     </div>
+
+    <!-- Store Selector Modal -->
+    <StoreSelector
+      v-model="showStoreSelector"
+      :required="true"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { useAuthStore } from '../stores/auth';
+import StoreSelector from '../components/StoreSelector.vue';
 
 const authStore = useAuthStore();
 const email = ref('');
 const password = ref('');
+const showStoreSelector = ref(false);
+
+// Mostrar selector si hay múltiples tiendas y no hay tienda seleccionada
+watch(() => authStore.stores, (stores) => {
+  if (stores.length > 1 && !authStore.selectedStore) {
+    showStoreSelector.value = true;
+  }
+}, { immediate: true });
 
 const handleLogin = async () => {
   try {
     await authStore.login(email.value, password.value);
+
+    // Si hay múltiples tiendas y no hay tienda seleccionada, mostrar selector
+    if (authStore.hasMultipleStores && !authStore.selectedStore) {
+      showStoreSelector.value = true;
+    }
   } catch (error) {
     console.error('Login error:', error);
   }
