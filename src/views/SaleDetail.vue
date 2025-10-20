@@ -85,18 +85,18 @@
           <div class="mb-6 pb-6 border-b-2 border-dashed border-gray-300">
             <h2 class="text-sm font-semibold text-gray-600 uppercase mb-3">Productos</h2>
             <div class="space-y-3">
-              <div v-if="order._rawDetail?.products && order._rawDetail.products.length > 0"
-                   v-for="item in order._rawDetail.products"
+              <div v-if="getProducts().length > 0"
+                   v-for="item in getProducts()"
                    :key="item.id"
                    class="flex justify-between items-start">
                 <div class="flex-1">
-                  <p class="font-medium text-gray-900">{{ item.name || item.producto_nombre }}</p>
+                  <p class="font-medium text-gray-900">{{ item.name }}</p>
                   <p class="text-sm text-gray-600">
-                    {{ item.quantity || item.cantidad }} x {{ formatCurrency(item.price || item.precio) }}
+                    {{ item.quantity }} x {{ formatCurrency(item.price) }}
                   </p>
                 </div>
                 <p class="font-semibold text-gray-900">
-                  {{ formatCurrency((item.quantity || item.cantidad) * (item.price || item.precio)) }}
+                  {{ formatCurrency(item.total) }}
                 </p>
               </div>
               <div v-else class="text-center py-4 text-gray-500">
@@ -123,15 +123,15 @@
           <div class="space-y-2">
             <div class="flex justify-between text-gray-700">
               <span>Subtotal:</span>
-              <span class="font-medium">{{ formatCurrency(order._rawDetail?.subtotal || order.total * 0.85) }}</span>
+              <span class="font-medium">{{ formatCurrency(getSubtotal()) }}</span>
             </div>
             <div class="flex justify-between text-gray-700">
               <span>IGV (18%):</span>
-              <span class="font-medium">{{ formatCurrency(order._rawDetail?.tax || order.total * 0.15) }}</span>
+              <span class="font-medium">{{ formatCurrency(getTax()) }}</span>
             </div>
             <div class="flex justify-between text-xl font-bold text-gray-900 pt-2 border-t-2 border-gray-300">
               <span>TOTAL:</span>
-              <span class="text-blue-600">{{ formatCurrency(order.total) }}</span>
+              <span class="text-blue-600">{{ formatCurrency(getTotal()) }}</span>
             </div>
           </div>
 
@@ -264,8 +264,82 @@ const getSourceClass = (source) => {
   return classMap[source] || 'bg-blue-100 text-blue-800';
 };
 
+// Función para obtener productos desde diferentes estructuras de datos
+const getProducts = () => {
+  if (!order.value || !order.value._rawDetail) return [];
+
+  // Intentar obtener desde order_items (formato web antiguo)
+  if (order.value._rawDetail.order_items && Array.isArray(order.value._rawDetail.order_items)) {
+    return order.value._rawDetail.order_items.map(item => ({
+      id: item.id,
+      name: item.tittle || item.name || 'Producto',
+      quantity: item.quantity || 1,
+      price: parseFloat(item.price || 0),
+      total: parseFloat(item.total || 0)
+    }));
+  }
+
+  // Intentar obtener desde products (formato POS nuevo)
+  if (order.value._rawDetail.products && Array.isArray(order.value._rawDetail.products)) {
+    return order.value._rawDetail.products.map(item => ({
+      id: item.id,
+      name: item.name || item.producto_nombre || 'Producto',
+      quantity: item.quantity || item.cantidad || 1,
+      price: parseFloat(item.price || item.precio || 0),
+      total: parseFloat(item.total || ((item.quantity || item.cantidad) * (item.price || item.precio)) || 0)
+    }));
+  }
+
+  return [];
+};
+
+// Función para calcular subtotal
+const getSubtotal = () => {
+  if (!order.value) return 0;
+
+  // Si viene en el _rawDetail, usarlo
+  if (order.value._rawDetail?.subtotal) {
+    return parseFloat(order.value._rawDetail.subtotal);
+  }
+
+  // Calcular desde total_amount si existe
+  const total = getTotal();
+  return total / 1.18; // Quitar el 18% de IGV
+};
+
+// Función para calcular IGV
+const getTax = () => {
+  if (!order.value) return 0;
+
+  // Si viene en el _rawDetail, usarlo
+  if (order.value._rawDetail?.tax) {
+    return parseFloat(order.value._rawDetail.tax);
+  }
+
+  // Calcular como 18% del total
+  const total = getTotal();
+  return total - (total / 1.18);
+};
+
+// Función para obtener el total
+const getTotal = () => {
+  if (!order.value) return 0;
+
+  // Prioridad: total_amount del _rawDetail
+  if (order.value._rawDetail?.total_amount) {
+    return parseFloat(order.value._rawDetail.total_amount);
+  }
+
+  // Luego el total mapeado
+  if (order.value.total) {
+    return parseFloat(order.value.total);
+  }
+
+  return 0;
+};
+
 const printTicket = () => {
-  const products = order.value._rawDetail?.products || [];
+  const products = getProducts();
   const payments = order.value._rawDetail?.payments || [];
 
   const ticketHTML = `
@@ -304,11 +378,11 @@ const printTicket = () => {
       <div class="line"></div>
       ${products.map(item => `
         <div>
-          ${item.name || item.producto_nombre}
+          ${item.name}
           <table>
             <tr>
-              <td>${item.quantity || item.cantidad} x ${formatCurrency(item.price || item.precio)}</td>
-              <td class="right">${formatCurrency((item.quantity || item.cantidad) * (item.price || item.precio))}</td>
+              <td>${item.quantity} x ${formatCurrency(item.price)}</td>
+              <td class="right">${formatCurrency(item.total)}</td>
             </tr>
           </table>
         </div>
@@ -317,15 +391,15 @@ const printTicket = () => {
       <table>
         <tr>
           <td>Subtotal:</td>
-          <td class="right">${formatCurrency(order.value._rawDetail?.subtotal || order.value.total * 0.85)}</td>
+          <td class="right">${formatCurrency(getSubtotal())}</td>
         </tr>
         <tr>
           <td>IGV (18%):</td>
-          <td class="right">${formatCurrency(order.value._rawDetail?.tax || order.value.total * 0.15)}</td>
+          <td class="right">${formatCurrency(getTax())}</td>
         </tr>
         <tr class="total">
           <td>TOTAL:</td>
-          <td class="right">${formatCurrency(order.value.total)}</td>
+          <td class="right">${formatCurrency(getTotal())}</td>
         </tr>
       </table>
       ${payments.length > 0 ? `
