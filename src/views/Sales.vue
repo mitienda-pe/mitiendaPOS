@@ -1,38 +1,99 @@
 <template>
   <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
     <div class="px-4 py-6 sm:px-0">
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-semibold text-gray-900">Historial de Ventas</h1>
-        <div class="flex space-x-2">
-          <div class="relative">
-            <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="Buscar por cliente o número..."
-              class="p-2 pr-8 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              @input="debouncedSearch"
-            >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute right-2 top-2.5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-          </div>
-          <select
-            v-model="selectedSource"
-            class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-            @change="fetchOrders"
-          >
-            <option value="">Todas las fuentes</option>
-            <option value="pos">POS</option>
-            <option value="web">Web</option>
-            <option value="api">API</option>
-          </select>
+      <div class="mb-6">
+        <div class="flex justify-between items-center mb-4">
+          <h1 class="text-2xl font-semibold text-gray-900">Historial de Ventas</h1>
           <button
             @click="fetchOrders"
             class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             Actualizar
           </button>
+        </div>
+
+        <!-- Filtros -->
+        <div class="bg-white shadow rounded-lg p-4">
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <!-- Buscar -->
+            <div class="relative">
+              <label class="block text-xs font-medium text-gray-700 mb-1">Buscar</label>
+              <input
+                v-model="searchQuery"
+                type="text"
+                placeholder="Cliente o número..."
+                class="w-full p-2 pr-8 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                @input="debouncedSearch"
+              >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 absolute right-2 top-9 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </div>
+
+            <!-- Estado -->
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Estado</label>
+              <select
+                v-model="selectedStatus"
+                class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                @change="fetchOrders"
+              >
+                <option value="">Todos</option>
+                <option value="1">Aprobado</option>
+                <option value="2">Pendiente</option>
+                <option value="0">Rechazado</option>
+                <option value="9">Creado</option>
+              </select>
+            </div>
+
+            <!-- Fuente -->
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Fuente</label>
+              <select
+                v-model="selectedSource"
+                class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                @change="fetchOrders"
+              >
+                <option value="">Todas</option>
+                <option value="pos">POS</option>
+                <option value="web">Web</option>
+                <option value="api">API</option>
+              </select>
+            </div>
+
+            <!-- Fecha Desde -->
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Desde</label>
+              <input
+                v-model="dateFrom"
+                type="date"
+                class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                @change="fetchOrders"
+              >
+            </div>
+
+            <!-- Fecha Hasta -->
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Hasta</label>
+              <input
+                v-model="dateTo"
+                type="date"
+                class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                @change="fetchOrders"
+              >
+            </div>
+          </div>
+
+          <!-- Botón limpiar filtros -->
+          <div class="mt-3 flex justify-end">
+            <button
+              @click="clearFilters"
+              class="text-sm text-gray-600 hover:text-gray-900"
+            >
+              Limpiar filtros
+            </button>
+          </div>
         </div>
       </div>
 
@@ -135,16 +196,35 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { ordersApi } from '../services/ordersApi';
 
-const orders = ref([]);
+const allOrders = ref([]);
 const loading = ref(false);
 const error = ref(null);
 const searchQuery = ref('');
 const selectedSource = ref('');
+const selectedStatus = ref('');
+const dateFrom = ref('');
+const dateTo = ref('');
 
 let searchTimeout = null;
+
+// Filtrar órdenes en el frontend para la búsqueda
+const orders = computed(() => {
+  if (!searchQuery.value) return allOrders.value;
+
+  const query = searchQuery.value.toLowerCase();
+  return allOrders.value.filter(order => {
+    const customerName = (order.customer?.name || '').toLowerCase();
+    const orderNumber = (order.order_number || '').toString().toLowerCase();
+    const orderId = (order.id || '').toString().toLowerCase();
+
+    return customerName.includes(query) ||
+           orderNumber.includes(query) ||
+           orderId.includes(query);
+  });
+});
 
 const fetchOrders = async () => {
   loading.value = true;
@@ -152,9 +232,14 @@ const fetchOrders = async () => {
 
   try {
     const filters = {
-      limit: 50,
-      source: selectedSource.value || undefined
+      limit: 100
     };
+
+    // Agregar filtros solo si tienen valor
+    if (selectedSource.value) filters.source = selectedSource.value;
+    if (selectedStatus.value) filters.status = selectedStatus.value;
+    if (dateFrom.value) filters.date_from = dateFrom.value;
+    if (dateTo.value) filters.date_to = dateTo.value;
 
     const response = await ordersApi.getOrders(filters);
     console.log('Orders API Response:', response);
@@ -162,7 +247,7 @@ const fetchOrders = async () => {
     // La respuesta puede venir en diferentes formatos
     if (response.orders) {
       // Mapear campos de BD a formato esperado
-      orders.value = response.orders.map((order) => ({
+      allOrders.value = response.orders.map((order) => ({
         id: parseInt(order.tiendaventa_id),
         order_number: order.tiendaventa_codigoreferencia,
         customer: {
@@ -178,7 +263,7 @@ const fetchOrders = async () => {
         _raw: order
       }));
     } else if (Array.isArray(response)) {
-      orders.value = response.map((order) => ({
+      allOrders.value = response.map((order) => ({
         id: parseInt(order.tiendaventa_id || order.id),
         order_number: order.tiendaventa_codigoreferencia || order.order_number,
         customer: {
@@ -191,7 +276,7 @@ const fetchOrders = async () => {
         _raw: order
       }));
     } else {
-      orders.value = [];
+      allOrders.value = [];
     }
 
   } catch (err) {
@@ -203,10 +288,8 @@ const fetchOrders = async () => {
 };
 
 const debouncedSearch = () => {
-  clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(() => {
-    fetchOrders();
-  }, 500);
+  // El filtrado se hace automáticamente mediante la computed property
+  // No es necesario hacer fetch nuevamente
 };
 
 const formatDate = (dateString) => {
@@ -271,6 +354,15 @@ const truncateText = (text, maxLength) => {
   if (!text) return '';
   if (text.length <= maxLength) return text;
   return text.substring(0, maxLength) + '...';
+};
+
+const clearFilters = () => {
+  searchQuery.value = '';
+  selectedSource.value = '';
+  selectedStatus.value = '';
+  dateFrom.value = '';
+  dateTo.value = '';
+  fetchOrders();
 };
 
 onMounted(() => {
