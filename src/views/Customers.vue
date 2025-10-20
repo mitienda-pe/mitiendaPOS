@@ -25,13 +25,14 @@
       <div class="p-4 sm:p-6">
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <!-- Search -->
-          <div>
+          <div class="col-span-2">
             <label class="block text-sm font-medium text-gray-700">Buscar</label>
             <input
               type="text"
-              v-model="filters.search"
+              v-model="searchQuery"
+              @input="onSearchInput"
               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              placeholder="Nombre, razón social o documento..."
+              placeholder="Nombre, email, teléfono o documento..."
             />
           </div>
 
@@ -39,37 +40,14 @@
           <div>
             <label class="block text-sm font-medium text-gray-700">Por página</label>
             <select
-              v-model="filters.perPage"
+              v-model="customersStore.filters.limit"
+              @change="loadCustomers"
               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
             >
               <option :value="10">10</option>
-              <option :value="25">25</option>
+              <option :value="20">20</option>
               <option :value="50">50</option>
             </select>
-          </div>
-
-          <!-- Tipo de documento -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700">Tipo de documento</label>
-            <select
-              v-model="filters.tipoDoc"
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            >
-              <option value="">Todos</option>
-              <option value="DNI">DNI</option>
-              <option value="RUC">RUC</option>
-            </select>
-          </div>
-
-          <!-- Número de documento -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700">Número de documento</label>
-            <input
-              type="text"
-              v-model="filters.numDoc"
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              placeholder="Número de documento..."
-            />
           </div>
         </div>
       </div>
@@ -88,13 +66,10 @@
                 Nombre / Razón Social
               </th>
               <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Dirección
-              </th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Contacto
               </th>
               <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Última Compra
+                Registro
               </th>
               <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Acciones
@@ -102,23 +77,30 @@
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
-            <tr v-for="customer in customers" :key="customer.id">
+            <tr v-if="loading">
+              <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
+                Cargando...
+              </td>
+            </tr>
+            <tr v-else-if="displayedCustomers.length === 0">
+              <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
+                No se encontraron clientes
+              </td>
+            </tr>
+            <tr v-else v-for="customer in displayedCustomers" :key="customer.id">
               <td class="px-6 py-4 whitespace-nowrap text-sm">
-                <div class="font-medium text-gray-900">{{ customer.tipoDoc }}</div>
-                <div class="text-gray-500">{{ customer.numDoc }}</div>
+                <div class="font-medium text-gray-900">{{ customer.document_type }}</div>
+                <div class="text-gray-500">{{ customer.document_number }}</div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {{ customer.razonSocial || `${customer.nombres} ${customer.apellidos}` }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {{ customer.direccion }}
+                {{ customer.name }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm">
-                <div>{{ customer.email }}</div>
-                <div class="text-gray-500">{{ customer.telefono }}</div>
+                <div class="text-gray-900">{{ customer.email || '-' }}</div>
+                <div class="text-gray-500">{{ customer.phone || '-' }}</div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {{ formatDate(customer.ultimaCompra) }}
+                {{ formatDate(customer.created_at) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <button
@@ -145,15 +127,15 @@
           <div class="flex-1 flex justify-between sm:hidden">
             <button
               @click="prevPage"
-              :disabled="currentPage === 1"
-              class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              :disabled="pagination.page === 1"
+              class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
             >
               Anterior
             </button>
             <button
               @click="nextPage"
-              :disabled="currentPage === totalPages"
-              class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              :disabled="pagination.page === totalPages"
+              class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
             >
               Siguiente
             </button>
@@ -163,19 +145,19 @@
               <p class="text-sm text-gray-700">
                 Mostrando
                 <span class="font-medium">{{ startItem }}</span>
-                a
+                -
                 <span class="font-medium">{{ endItem }}</span>
                 de
-                <span class="font-medium">{{ totalItems }}</span>
-                resultados
+                <span class="font-medium">{{ pagination.total }}</span>
+                clientes
               </p>
             </div>
             <div>
               <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
                 <button
                   @click="prevPage"
-                  :disabled="currentPage === 1"
-                  class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                  :disabled="pagination.page === 1"
+                  class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
                 >
                   Anterior
                 </button>
@@ -184,7 +166,7 @@
                   :key="page"
                   @click="goToPage(page)"
                   :class="[
-                    page === currentPage
+                    page === pagination.page
                       ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'
                       : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50',
                     'relative inline-flex items-center px-4 py-2 border text-sm font-medium'
@@ -194,8 +176,8 @@
                 </button>
                 <button
                   @click="nextPage"
-                  :disabled="currentPage === totalPages"
-                  class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                  :disabled="pagination.page === totalPages"
+                  class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
                 >
                   Siguiente
                 </button>
@@ -218,39 +200,42 @@
                   Tipo de Documento
                 </label>
                 <select
-                  v-model="customerForm.tipoDoc"
+                  v-model="customerForm.document_type"
                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                   required
+                  :disabled="isEditing"
                 >
-                  <option value="DNI">DNI</option>
-                  <option value="RUC">RUC</option>
+                  <option value="1">DNI</option>
+                  <option value="6">RUC</option>
                 </select>
               </div>
 
               <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Número de {{ customerForm.tipoDoc }}
+                  Número de {{ customerForm.document_type === '1' ? 'DNI' : 'RUC' }}
                 </label>
                 <div class="flex">
                   <input
-                    v-model="customerForm.numDoc"
+                    v-model="customerForm.document_number"
                     type="text"
-                    :maxlength="customerForm.tipoDoc === 'DNI' ? 8 : 11"
+                    :maxlength="customerForm.document_type === '1' ? 8 : 11"
                     class="flex-1 rounded-l-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                     required
+                    :disabled="isEditing"
                   >
                   <button
+                    v-if="!isEditing"
                     type="button"
                     @click="consultarDocumento"
-                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-r-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    :disabled="!isValidDocument"
+                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-r-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                    :disabled="!isValidDocument || consultingDocument"
                   >
-                    Consultar
+                    {{ consultingDocument ? 'Consultando...' : 'Consultar' }}
                   </button>
                 </div>
               </div>
 
-              <template v-if="customerForm.tipoDoc === 'DNI'">
+              <template v-if="customerForm.document_type === '1'">
                 <div class="mb-4">
                   <label class="block text-sm font-medium text-gray-700 mb-2">
                     Nombres
@@ -292,19 +277,7 @@
 
               <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Dirección
-                </label>
-                <input
-                  v-model="customerForm.direccion"
-                  type="text"
-                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                  required
-                >
-              </div>
-
-              <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Email
+                  Email (opcional)
                 </label>
                 <input
                   v-model="customerForm.email"
@@ -315,10 +288,10 @@
 
               <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Teléfono
+                  Teléfono (opcional)
                 </label>
                 <input
-                  v-model="customerForm.telefono"
+                  v-model="customerForm.phone"
                   type="tel"
                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 >
@@ -393,137 +366,200 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-import { mockCustomersApi } from '../api/mockCustomers';
+import { useCustomersStore } from '../stores/customers';
+import { storeToRefs } from 'pinia';
+
+const customersStore = useCustomersStore();
+const { customers, loading, pagination } = storeToRefs(customersStore);
 
 // Data
-const customers = ref([]);
-const totalItems = ref(0);
-const currentPage = ref(1);
-const filters = ref({
-  search: '',
-  tipoDoc: '',
-  numDoc: '',
-  perPage: 10
-});
+const searchQuery = ref('');
+let searchTimeout = null;
 
 // Modal state
 const showModal = ref(false);
 const showDeleteModal = ref(false);
 const isEditing = ref(false);
+const consultingDocument = ref(false);
 const customerForm = ref({
-  tipoDoc: 'DNI',
-  numDoc: '',
+  id: null,
+  document_type: '1', // 1=DNI, 6=RUC
+  document_number: '',
   nombres: '',
   apellidos: '',
   razonSocial: '',
-  direccion: '',
   email: '',
-  telefono: ''
+  phone: ''
 });
 const customerToDelete = ref(null);
 
 // Computed properties
-const totalPages = computed(() => {
-  return Math.ceil(totalItems.value / filters.value.perPage);
+const displayedCustomers = computed(() => {
+  return customers.value.map(customer => ({
+    id: customer.id,
+    name: customer.name,
+    email: customer.email,
+    phone: customer.phone,
+    document_type: customer.document_type === '6' ? 'RUC' : 'DNI',
+    document_number: customer.document_number,
+    created_at: customer.created_at,
+    verified: customer.verified,
+    blocked: customer.blocked
+  }));
 });
 
+const totalPages = computed(() => pagination.value.totalPages);
+
 const startItem = computed(() => {
-  return (currentPage.value - 1) * filters.value.perPage + 1;
+  return (pagination.value.page - 1) * pagination.value.perPage + 1;
 });
 
 const endItem = computed(() => {
-  return Math.min(startItem.value + filters.value.perPage - 1, totalItems.value);
+  return Math.min(pagination.value.page * pagination.value.perPage, pagination.value.total);
 });
 
 const displayedPages = computed(() => {
   const pages = [];
   const maxPages = 5;
-  
+  const currentPage = pagination.value.page;
+
   if (totalPages.value <= maxPages) {
     for (let i = 1; i <= totalPages.value; i++) {
       pages.push(i);
     }
   } else {
-    let startPage = Math.max(1, currentPage.value - Math.floor(maxPages / 2));
+    let startPage = Math.max(1, currentPage - Math.floor(maxPages / 2));
     let endPage = Math.min(totalPages.value, startPage + maxPages - 1);
-    
+
     if (endPage - startPage + 1 < maxPages) {
       startPage = Math.max(1, endPage - maxPages + 1);
     }
-    
+
     for (let i = startPage; i <= endPage; i++) {
       pages.push(i);
     }
   }
-  
+
   return pages;
+});
+
+const isValidDocument = computed(() => {
+  if (!customerForm.value.document_number) return false;
+
+  if (customerForm.value.document_type === '1') {
+    // DNI: 8 dígitos
+    return customerForm.value.document_number.length === 8;
+  } else {
+    // RUC: 11 dígitos
+    return customerForm.value.document_number.length === 11;
+  }
 });
 
 // Methods
 async function loadCustomers() {
-  try {
-    const response = await mockCustomersApi.getCustomers({
-      search: filters.value.search,
-      tipoDoc: filters.value.tipoDoc,
-      numDoc: filters.value.numDoc
-    });
-    
-    customers.value = response.data;
-    totalItems.value = response.data.length;
-    
-    // Adjust current page if it's now out of bounds
-    if (currentPage.value > totalPages.value && totalPages.value > 0) {
-      currentPage.value = totalPages.value;
-    }
-  } catch (error) {
-    console.error('Error loading customers:', error);
+  await customersStore.loadCustomers();
+}
+
+// Debounced search
+function onSearchInput() {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
   }
+
+  searchTimeout = setTimeout(() => {
+    customersStore.setFilter('search', searchQuery.value);
+    customersStore.setPage(1);
+    loadCustomers();
+  }, 500);
 }
 
 async function consultarDocumento() {
-  if (!customerForm.value.tipoDoc || !customerForm.value.numDoc) {
+  if (!isValidDocument.value) {
+    alert('Por favor ingrese un número de documento válido');
     return;
   }
-  
+
+  consultingDocument.value = true;
+
   try {
-    const response = await mockCustomersApi.getCustomerByDoc(
-      customerForm.value.tipoDoc,
-      customerForm.value.numDoc
+    // Primero buscar si el cliente ya existe
+    const searchResponse = await customersStore.searchByDocument(
+      customerForm.value.document_number,
+      customerForm.value.document_type
     );
-    
-    if (response.data) {
-      // Customer found, populate form
-      Object.keys(response.data).forEach(key => {
-        if (key !== 'id' && key !== 'ultimaCompra') {
-          customerForm.value[key] = response.data[key];
-        }
-      });
-      
+
+    if (searchResponse.found) {
+      // Cliente encontrado en la base de datos
+      const customer = searchResponse.data;
+
+      customerForm.value.id = customer.id;
+      customerForm.value.nombres = customer.name.split(' ')[0] || '';
+      customerForm.value.apellidos = customer.name.split(' ').slice(1).join(' ') || '';
+      customerForm.value.email = customer.email || '';
+      customerForm.value.phone = customer.phone || '';
+
       isEditing.value = true;
+      alert('Cliente encontrado en la base de datos');
+      return;
+    }
+
+    // Si no existe, consultar a Decolecta
+    const type = customerForm.value.document_type === '1' ? 'dni' : 'ruc';
+    const lookupResponse = await customersStore.lookupDocument(
+      customerForm.value.document_number,
+      type
+    );
+
+    if (lookupResponse.success) {
+      if (type === 'dni') {
+        // Poblar datos de RENIEC
+        customerForm.value.nombres = lookupResponse.data.nombres || '';
+        customerForm.value.apellidos = `${lookupResponse.data.apellidoPaterno || ''} ${lookupResponse.data.apellidoMaterno || ''}`.trim();
+      } else {
+        // Poblar datos de SUNAT
+        customerForm.value.razonSocial = lookupResponse.data.razonSocial || '';
+      }
+
+      alert('Documento encontrado. Complete los datos restantes.');
+    } else {
+      alert(lookupResponse.error || 'No se pudo consultar el documento');
     }
   } catch (error) {
     console.error('Error consulting document:', error);
+    alert('Error al consultar documento');
+  } finally {
+    consultingDocument.value = false;
   }
 }
 
 function openAddModal() {
   customerForm.value = {
-    tipoDoc: 'DNI',
-    numDoc: '',
+    id: null,
+    document_type: '1',
+    document_number: '',
     nombres: '',
     apellidos: '',
     razonSocial: '',
-    direccion: '',
     email: '',
-    telefono: ''
+    phone: ''
   };
-  
+
   isEditing.value = false;
   showModal.value = true;
 }
 
 function editCustomer(customer) {
-  customerForm.value = { ...customer };
+  customerForm.value = {
+    id: customer.id,
+    document_type: customer.document_type === 'RUC' ? '6' : '1',
+    document_number: customer.document_number,
+    nombres: customer.name.split(' ')[0] || '',
+    apellidos: customer.name.split(' ').slice(1).join(' ') || '',
+    razonSocial: customer.document_type === 'RUC' ? customer.name : '',
+    email: customer.email || '',
+    phone: customer.phone || ''
+  };
+
   isEditing.value = true;
   showModal.value = true;
 }
@@ -531,29 +567,59 @@ function editCustomer(customer) {
 function closeModal() {
   showModal.value = false;
   customerForm.value = {
-    tipoDoc: 'DNI',
-    numDoc: '',
+    id: null,
+    document_type: '1',
+    document_number: '',
     nombres: '',
     apellidos: '',
     razonSocial: '',
-    direccion: '',
     email: '',
-    telefono: ''
+    phone: ''
   };
 }
 
 async function saveCustomer() {
   try {
-    if (isEditing.value) {
-      await mockCustomersApi.updateCustomer(customerForm.value.id, customerForm.value);
+    let result;
+
+    if (isEditing.value && customerForm.value.id) {
+      // Actualizar cliente existente
+      result = await customersStore.updateCustomer(customerForm.value.id, {
+        tiendacliente_nombres: customerForm.value.document_type === '1'
+          ? customerForm.value.nombres
+          : customerForm.value.razonSocial,
+        tiendacliente_apellidos: customerForm.value.document_type === '1'
+          ? customerForm.value.apellidos
+          : '',
+        tiendacliente_correo_electronico: customerForm.value.email,
+        tiendacliente_telefono: customerForm.value.phone
+      });
     } else {
-      await mockCustomersApi.addCustomer(customerForm.value);
+      // Crear nuevo cliente
+      result = await customersStore.createCustomer({
+        numeroDocumento: customerForm.value.document_number,
+        tipoDocumento: customerForm.value.document_type,
+        nombres: customerForm.value.document_type === '1'
+          ? customerForm.value.nombres
+          : customerForm.value.razonSocial,
+        apellidos: customerForm.value.document_type === '1'
+          ? customerForm.value.apellidos
+          : '',
+        email: customerForm.value.email,
+        telefono: customerForm.value.phone
+      });
     }
-    
-    closeModal();
-    loadCustomers();
+
+    if (result.success) {
+      closeModal();
+      loadCustomers();
+      alert(isEditing.value ? 'Cliente actualizado correctamente' : 'Cliente creado correctamente');
+    } else {
+      alert(result.error || 'Error al guardar cliente');
+    }
   } catch (error) {
     console.error('Error saving customer:', error);
+    alert('Error al guardar cliente');
   }
 }
 
@@ -569,47 +635,46 @@ function closeDeleteModal() {
 
 async function confirmDelete() {
   try {
-    await mockCustomersApi.deleteCustomer(customerToDelete.value.id);
-    closeDeleteModal();
-    loadCustomers();
+    const result = await customersStore.deleteCustomer(customerToDelete.value.id);
+
+    if (result.success) {
+      closeDeleteModal();
+      loadCustomers();
+      alert('Cliente eliminado correctamente');
+    } else {
+      alert(result.error || 'Error al eliminar cliente');
+    }
   } catch (error) {
     console.error('Error deleting customer:', error);
+    alert('Error al eliminar cliente');
   }
 }
 
 function prevPage() {
-  if (currentPage.value > 1) {
-    currentPage.value--;
-  }
+  customersStore.prevPage();
+  loadCustomers();
 }
 
 function nextPage() {
-  if (currentPage.value < totalPages.value) {
-    currentPage.value++;
-  }
+  customersStore.nextPage();
+  loadCustomers();
 }
 
 function goToPage(page) {
-  currentPage.value = page;
+  customersStore.setPage(page);
+  loadCustomers();
 }
 
 function formatDate(dateString) {
   if (!dateString) return 'N/A';
-  
+
   const date = new Date(dateString);
   return date.toLocaleDateString('es-ES', {
     year: 'numeric',
     month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+    day: 'numeric'
   });
 }
-
-// Watch for changes
-watch([filters, currentPage], () => {
-  loadCustomers();
-}, { deep: true });
 
 // Load customers on component mount
 onMounted(() => {
