@@ -10,7 +10,7 @@ export const useInventoryStore = defineStore('inventory', {
       category_id: null,
       brand_id: null,
       stock_status: 'all', // 'all', 'in_stock', 'low_stock', 'out_of_stock'
-      published: null,
+      published: true, // Por defecto solo productos publicados en POS
       page: 1,
       limit: 20
     },
@@ -252,7 +252,7 @@ export const useInventoryStore = defineStore('inventory', {
         category_id: null,
         brand_id: null,
         stock_status: 'all',
-        published: null,
+        published: true, // Mantener solo productos publicados en POS
         page: 1,
         limit: 20
       };

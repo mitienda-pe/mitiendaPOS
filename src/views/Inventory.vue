@@ -311,9 +311,13 @@
             <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
               <div>
                 <p class="text-sm text-gray-700">
-                  Mostrando productos {{ ((inventoryStore.currentPage - 1) * inventoryStore.filters.limit) + 1 }} -
-                  {{ Math.min(inventoryStore.currentPage * inventoryStore.filters.limit, inventoryStore.meta.total) }}
-                  de {{ inventoryStore.meta.total }}
+                  Mostrando
+                  <span class="font-medium">{{ ((inventoryStore.currentPage - 1) * inventoryStore.filters.limit) + 1 }}</span>
+                  -
+                  <span class="font-medium">{{ Math.min(inventoryStore.currentPage * inventoryStore.filters.limit, inventoryStore.meta.total) }}</span>
+                  de
+                  <span class="font-medium">{{ inventoryStore.meta.total }}</span>
+                  productos
                 </p>
               </div>
               <div class="flex gap-2">
