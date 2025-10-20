@@ -48,7 +48,7 @@ export const authApi = {
         status: store.tienda_plan_status_text === 'Activo' ? 'active' : 'inactive',
         // Store details for receipts/invoices
         ruc: store.tienda_ruc || '',
-        razonSocial: store.tienda_razon_social || store.tienda_nombre_comercial || '',
+        razonSocial: store.tienda_razonsocial || store.tienda_nombre_comercial || '',
         telefono: store.tienda_telefono || '',
         direccion: store.tienda_direccion || '',
         distrito: store.tienda_distrito || '',
