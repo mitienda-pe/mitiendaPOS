@@ -70,6 +70,7 @@
               <p class="text-gray-900"><span class="font-medium">Nombre:</span> {{ order.customer?.name || 'Cliente General' }}</p>
               <p v-if="order.customer?.email" class="text-gray-900"><span class="font-medium">Email:</span> {{ order.customer.email }}</p>
               <p v-if="order.customer?.phone" class="text-gray-900"><span class="font-medium">Teléfono:</span> {{ order.customer.phone }}</p>
+              <p v-if="order.cajero_nombre" class="text-gray-900"><span class="font-medium">Atendido por:</span> {{ order.cajero_nombre }}</p>
             </div>
             <div class="mt-3 flex items-center gap-4">
               <span :class="getStatusClass(order.status)" class="px-3 py-1 text-xs font-semibold rounded-full">
@@ -189,6 +190,7 @@ const loadOrderDetail = async () => {
           email: response.tiendaventa_correoelectronico,
           phone: response.tiendaventa_telefono
         },
+        cajero_nombre: response.cajero_nombre || null,
         total: parseFloat(response.tiendaventa_totalpagar || '0'),
         status: response.tiendaventa_pagado,
         source: response.tiendaventa_origen || 'web',

@@ -133,6 +133,7 @@
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cajero</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Origen</th>
@@ -149,6 +150,9 @@
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {{ truncateText(order.customer?.name || 'Cliente General', 36) }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                  {{ order.cajero_nombre || '-' }}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
                   {{ formatCurrency(order.total) }}
@@ -255,6 +259,7 @@ const fetchOrders = async () => {
           email: order.tiendaventa_correoelectronico,
           phone: order.tiendaventa_telefono
         },
+        cajero_nombre: order.cajero_nombre || null,
         total: parseFloat(order.tiendaventa_totalpagar || '0'),
         status: order.tiendaventa_pagado, // 0=rechazado, 1=pagado, 2=pendiente
         source: order.tiendaventa_origen || 'web',
@@ -269,6 +274,7 @@ const fetchOrders = async () => {
         customer: {
           name: `${order.tiendaventa_nombres || ''} ${order.tiendaventa_apellidos || ''}`.trim() || 'Cliente General'
         },
+        cajero_nombre: order.cajero_nombre || null,
         total: parseFloat(order.tiendaventa_totalpagar || order.total || '0'),
         status: order.tiendaventa_pagado || order.status,
         source: order.tiendaventa_origen || order.source || 'web',
