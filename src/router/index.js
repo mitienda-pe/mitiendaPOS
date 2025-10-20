@@ -79,6 +79,12 @@ const routes = [
     meta: { requiresAuth: true, roles: ['cajero', 'supervisor', 'administrador'] }
   },
   {
+    path: '/sales/:id',
+    name: 'SaleDetail',
+    component: () => import('../views/SaleDetail.vue'),
+    meta: { requiresAuth: true, roles: ['cajero', 'supervisor', 'administrador'] }
+  },
+  {
     path: '/promotions',
     name: 'Promotions',
     component: Promotions,
