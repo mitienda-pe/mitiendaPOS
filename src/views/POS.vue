@@ -280,6 +280,10 @@ const handlePaymentCompleted = async () => {
     // Preparar datos de la orden
     const orderData = {
       customer_id: selectedCustomer.value ? selectedCustomer.value.id : null,
+      customer_name: selectedCustomer.value ? selectedCustomer.value.name : 'Cliente General',
+      customer_email: selectedCustomer.value?.email || '',
+      customer_phone: selectedCustomer.value?.phone || '',
+      customer_document: selectedCustomer.value?.document_number || '',
       document_type: documentType.value, // 'boleta' o 'factura'
       items: cartItems.value.map(item => ({
         product_id: item.id,
