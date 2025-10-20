@@ -203,14 +203,20 @@
 import { ref, computed, onMounted } from 'vue';
 import { ordersApi } from '../services/ordersApi';
 
+// Función para obtener fecha de hoy en formato YYYY-MM-DD
+const getTodayDate = () => {
+  const today = new Date();
+  return today.toISOString().split('T')[0];
+};
+
 const allOrders = ref([]);
 const loading = ref(false);
 const error = ref(null);
 const searchQuery = ref('');
-const selectedSource = ref('');
-const selectedStatus = ref('');
-const dateFrom = ref('');
-const dateTo = ref('');
+const selectedSource = ref('web'); // Default: Web
+const selectedStatus = ref('1'); // Default: Aprobado (1)
+const dateFrom = ref(getTodayDate()); // Default: Hoy
+const dateTo = ref(getTodayDate()); // Default: Hoy
 
 let searchTimeout = null;
 
@@ -364,10 +370,10 @@ const truncateText = (text, maxLength) => {
 
 const clearFilters = () => {
   searchQuery.value = '';
-  selectedSource.value = '';
-  selectedStatus.value = '';
-  dateFrom.value = '';
-  dateTo.value = '';
+  selectedSource.value = 'web';
+  selectedStatus.value = '1';
+  dateFrom.value = getTodayDate();
+  dateTo.value = getTodayDate();
   fetchOrders();
 };
 
