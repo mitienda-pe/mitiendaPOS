@@ -61,16 +61,16 @@
                 <div class="flex items-start justify-between">
                   <div>
                     <p class="text-sm font-medium text-gray-900">
-                      {{ customerFound.razonSocial || `${customerFound.nombres} ${customerFound.apellidos}` }}
+                      {{ customerFound.name || customerFound.razonSocial || `${customerFound.nombres || ''} ${customerFound.apellidos || ''}`.trim() || 'Cliente' }}
                     </p>
                     <p class="text-xs text-gray-600">
-                      {{ customerFound.tipoDoc }}: {{ customerFound.numDoc }}
+                      {{ customerFound.document_type === '1' ? 'DNI' : customerFound.document_type === '6' ? 'RUC' : customerFound.tipoDoc }}: {{ customerFound.document_number || customerFound.numDoc }}
                     </p>
-                    <p v-if="customerFound.correoElectronico" class="text-xs text-gray-600">
-                      {{ customerFound.correoElectronico }}
+                    <p v-if="customerFound.email || customerFound.correoElectronico" class="text-xs text-gray-600">
+                      {{ customerFound.email || customerFound.correoElectronico }}
                     </p>
-                    <p v-if="customerFound.telefono" class="text-xs text-gray-600">
-                      {{ customerFound.telefono }}
+                    <p v-if="customerFound.phone || customerFound.telefono" class="text-xs text-gray-600">
+                      {{ customerFound.phone || customerFound.telefono }}
                     </p>
                   </div>
                   <button
