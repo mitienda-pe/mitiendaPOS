@@ -65,11 +65,13 @@ const password = ref('');
 const showStoreSelector = ref(false);
 
 // Mostrar selector si hay múltiples tiendas y no hay tienda seleccionada
+// IMPORTANTE: No usar immediate: true para evitar mostrar el modal en cada render
 watch(() => authStore.stores, (stores) => {
-  if (stores.length > 1 && !authStore.selectedStore) {
+  // Solo mostrar si está autenticado, tiene múltiples tiendas y no hay tienda seleccionada
+  if (authStore.isAuthenticated && stores.length > 1 && !authStore.selectedStore) {
     showStoreSelector.value = true;
   }
-}, { immediate: true });
+});
 
 const handleLogin = async () => {
   try {
