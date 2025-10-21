@@ -143,13 +143,23 @@ export const useCartStore = defineStore('cart', {
      * @param {Object} authorization - Opcional: datos de autorización si carrito está bloqueado
      */
     addItem(product, authorization = null) {
+      console.log('🛒 [CART] addItem called:', {
+        product: product.nombre,
+        status: this.status,
+        canAddProducts: this.canAddProducts,
+        hasAuthorization: !!authorization,
+        authData: authorization
+      });
+
       // Validar estado
       if (!this.canAddProducts && !authorization) {
+        console.error('❌ [CART] Cannot add products - invalid state');
         throw new Error('No se pueden agregar productos. Carrito en estado: ' + this.status);
       }
 
       // Si está bloqueado y no hay autorización, lanzar error
       if (this.status === 'BLOQUEADO' && !authorization) {
+        console.error('❌ [CART] Cart blocked - requires authorization');
         throw new Error('Carrito bloqueado. Se requiere PIN del cajero para agregar productos.');
       }
 
@@ -237,11 +247,27 @@ export const useCartStore = defineStore('cart', {
      * SIEMPRE requiere PIN supervisor si no está ABIERTO
      */
     removeItem(productId, supervisorAuth = null) {
+      console.log('🗑️ [CART] removeItem called:', {
+        productId,
+        status: this.status,
+        canRemoveProducts: this.canRemoveProducts,
+        hasSupervisorAuth: !!supervisorAuth,
+        authData: supervisorAuth
+      });
+
       // Si no está ABIERTO, DEBE tener autorización de supervisor
       if (!this.canRemoveProducts && !supervisorAuth) {
+        console.error('❌ [CART] Cannot remove - requires supervisor authorization');
         throw new Error('Requiere PIN de supervisor para eliminar productos del carrito bloqueado');
       }
 
+      // Validar que el supervisor tiene el rol correcto
+      if (supervisorAuth && !['supervisor', 'administrador'].includes(supervisorAuth.role)) {
+        console.error('❌ [CART] Invalid role for removal:', supervisorAuth.role);
+        throw new Error('Solo supervisores y administradores pueden eliminar productos del carrito bloqueado');
+      }
+
+      console.log('✅ [CART] Item removed successfully');
       this.items = this.items.filter(i => i.id !== productId);
       this.unsavedChanges = true;
 

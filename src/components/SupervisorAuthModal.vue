@@ -117,6 +117,7 @@
 
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue';
+import { employeesApi } from '../services/employeesApi';
 
 const props = defineProps({
   modelValue: {
@@ -252,31 +253,51 @@ const handlePaste = (event) => {
 const authorize = async () => {
   if (!isComplete.value || loading.value) return;
 
+  console.log('🔐 [AUTH] Attempting authorization:', {
+    pin: pin.value,
+    action: props.action
+  });
+
   loading.value = true;
   error.value = '';
 
   try {
-    // TODO: Reemplazar con llamada real al API
-    // const response = await employeesApi.validateSupervisorPin(pin.value);
+    // Llamar al API real de validación de PIN
+    const response = await employeesApi.validatePin(pin.value);
 
-    // MOCK: Simular validación (PIN: 123456 = supervisor, 654321 = admin)
-    await new Promise(resolve => setTimeout(resolve, 800));
+    console.log('🔐 [AUTH] API response:', response);
 
-    const mockResponse = mockValidatePin(pin.value);
+    // Si error === 0, significa éxito
+    if (response.error === 0 && response.data) {
+      const employee = response.data;
 
-    if (mockResponse.success && ['supervisor', 'administrador'].includes(mockResponse.role)) {
-      emit('authorized', {
-        employeeId: mockResponse.employeeId,
-        employeeName: mockResponse.employeeName,
-        role: mockResponse.role,
-        action: props.action,
-        timestamp: new Date().toISOString()
-      });
-      emit('update:modelValue', false);
-      attempts.value = 0;
+      // Verificar que tenga rol de supervisor o administrador
+      if (['supervisor', 'administrador'].includes(employee.role)) {
+        const authData = {
+          employeeId: employee.id,
+          employeeName: employee.name,
+          role: employee.role,
+          action: props.action,
+          timestamp: new Date().toISOString()
+        };
+
+        console.log('✅ [AUTH] Authorization successful:', authData);
+
+        emit('authorized', authData);
+        emit('update:modelValue', false);
+        attempts.value = 0;
+      } else {
+        // Empleado encontrado pero sin permisos de supervisor
+        attempts.value++;
+        error.value = `El usuario ${employee.name} no tiene permisos de supervisor`;
+        console.warn('⚠️ [AUTH] Employee found but insufficient permissions:', employee.role);
+        resetPin();
+      }
     } else {
+      // PIN incorrecto o empleado no encontrado
       attempts.value++;
-      error.value = mockResponse.error || 'PIN incorrecto o sin permisos de supervisor';
+      error.value = response.message || 'PIN incorrecto o empleado no encontrado';
+      console.warn('⚠️ [AUTH] Invalid PIN or employee not found');
 
       // Bloquear después de 3 intentos
       if (attempts.value >= 3) {
@@ -289,8 +310,17 @@ const authorize = async () => {
       }
     }
   } catch (err) {
-    error.value = 'Error al validar PIN. Intente nuevamente.';
-    console.error('Error validating PIN:', err);
+    attempts.value++;
+    error.value = 'Error al validar PIN. Verifique su conexión.';
+    console.error('❌ [AUTH] Error validating PIN:', err);
+
+    if (attempts.value >= 3) {
+      setTimeout(() => {
+        cancel();
+      }, 3000);
+    } else {
+      resetPin();
+    }
   } finally {
     loading.value = false;
   }
@@ -313,32 +343,6 @@ const resetForm = () => {
   resetPin();
   error.value = '';
   loading.value = false;
-};
-
-// MOCK: Reemplazar con API real
-const mockValidatePin = (pin) => {
-  // Simular base de datos de empleados
-  const employees = {
-    '123456': { id: 1, name: 'Juan Supervisor', role: 'supervisor' },
-    '654321': { id: 2, name: 'María Admin', role: 'administrador' },
-    '111111': { id: 3, name: 'Pedro Cajero', role: 'cajero' }
-  };
-
-  const employee = employees[pin];
-
-  if (employee) {
-    return {
-      success: true,
-      employeeId: employee.id,
-      employeeName: employee.name,
-      role: employee.role
-    };
-  }
-
-  return {
-    success: false,
-    error: 'PIN incorrecto'
-  };
 };
 </script>
 

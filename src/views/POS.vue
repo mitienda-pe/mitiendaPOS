@@ -549,38 +549,50 @@ const removePayment = (index) => {
 const onSupervisorAuthorized = (authData) => {
   const { type, data } = pendingAction.value;
 
+  console.log('✅ [POS] Supervisor authorized:', {
+    action: type,
+    authData,
+    pendingData: data
+  });
+
   try {
     switch (type) {
       case 'add_item_blocked':
         // Agregar producto con autorización de cajero
+        console.log('➕ [POS] Adding item with authorization');
         cartStore.addItem(data, authData);
         break;
 
       case 'increment_quantity':
+        console.log('⬆️ [POS] Incrementing quantity with authorization');
         cartStore.incrementQuantity(data.id, authData);
         break;
 
       case 'decrement_quantity':
+        console.log('⬇️ [POS] Decrementing quantity with authorization');
         cartStore.decrementQuantity(data.id, authData);
         break;
 
       case 'remove_item':
         // Quitar producto requiere supervisor
+        console.log('🗑️ [POS] Removing item with supervisor authorization');
         cartStore.removeItem(data.id, authData);
         break;
 
       case 'remove_payment':
         // Quitar pago requiere supervisor
+        console.log('💳 [POS] Removing payment with supervisor authorization');
         cartStore.removePayment(data.index, authData);
         break;
 
       default:
-        console.warn('Acción no manejada:', type);
+        console.warn('⚠️ [POS] Unhandled action:', type);
     }
 
     // Limpiar acción pendiente
     pendingAction.value = { type: null, data: null };
   } catch (error) {
+    console.error('❌ [POS] Error executing authorized action:', error);
     alert(error.message);
   }
 };
