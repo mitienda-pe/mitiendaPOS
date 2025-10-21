@@ -90,26 +90,66 @@
                 <p class="text-xs text-gray-600 mb-3">Complete los datos para crear un nuevo cliente:</p>
 
                 <div class="space-y-2">
-                  <input
-                    v-model="newCustomer.nombres"
-                    type="text"
-                    placeholder="Nombres"
-                    class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
-                  />
-                  <input
-                    v-if="tipoDoc === 'DNI'"
-                    v-model="newCustomer.apellidos"
-                    type="text"
-                    placeholder="Apellidos"
-                    class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
-                  />
-                  <input
-                    v-else
-                    v-model="newCustomer.razonSocial"
-                    type="text"
-                    placeholder="Razón Social"
-                    class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
-                  />
+                  <!-- DNI: Nombres y Apellidos -->
+                  <template v-if="tipoDoc === 'DNI'">
+                    <input
+                      v-model="newCustomer.nombres"
+                      type="text"
+                      placeholder="Nombres"
+                      class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
+                      required
+                    />
+                    <input
+                      v-model="newCustomer.apellidos"
+                      type="text"
+                      placeholder="Apellidos"
+                      class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
+                      required
+                    />
+                  </template>
+
+                  <!-- RUC: Razón Social -->
+                  <template v-else>
+                    <input
+                      v-model="newCustomer.razonSocial"
+                      type="text"
+                      placeholder="Razón Social"
+                      class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
+                      required
+                    />
+
+                    <!-- Dirección (solo para RUC) -->
+                    <input
+                      v-model="newCustomer.direccion"
+                      type="text"
+                      placeholder="Dirección"
+                      class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
+                    />
+
+                    <!-- Ubigeo (grid de 3 columnas) -->
+                    <div class="grid grid-cols-3 gap-2">
+                      <input
+                        v-model="newCustomer.departamento"
+                        type="text"
+                        placeholder="Departamento"
+                        class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
+                      />
+                      <input
+                        v-model="newCustomer.provincia"
+                        type="text"
+                        placeholder="Provincia"
+                        class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
+                      />
+                      <input
+                        v-model="newCustomer.distrito"
+                        type="text"
+                        placeholder="Distrito"
+                        class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
+                      />
+                    </div>
+                  </template>
+
+                  <!-- Email y Teléfono (para ambos tipos) -->
                   <input
                     v-model="newCustomer.correoElectronico"
                     type="email"
@@ -122,6 +162,7 @@
                     placeholder="Teléfono (opcional)"
                     class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
                   />
+
                   <button
                     @click="createAndSelectCustomer"
                     :disabled="!isNewCustomerValid"
@@ -179,7 +220,11 @@ const newCustomer = ref({
   apellidos: '',
   razonSocial: '',
   correoElectronico: '',
-  telefono: ''
+  telefono: '',
+  direccion: '',
+  departamento: '',
+  provincia: '',
+  distrito: ''
 });
 
 // Auto-focus on document input when modal opens
@@ -252,8 +297,16 @@ const searchCustomer = async () => {
           newCustomer.value.nombres = lookupData.value.nombres || '';
           newCustomer.value.apellidos = `${lookupData.value.apellidoPaterno || ''} ${lookupData.value.apellidoMaterno || ''}`.trim();
           newCustomer.value.razonSocial = '';
+          newCustomer.value.direccion = '';
+          newCustomer.value.departamento = '';
+          newCustomer.value.provincia = '';
+          newCustomer.value.distrito = '';
         } else {
           newCustomer.value.razonSocial = lookupData.value.razonSocial || '';
+          newCustomer.value.direccion = lookupData.value.direccion || '';
+          newCustomer.value.departamento = lookupData.value.departamento || '';
+          newCustomer.value.provincia = lookupData.value.provincia || '';
+          newCustomer.value.distrito = lookupData.value.distrito || '';
           newCustomer.value.nombres = '';
           newCustomer.value.apellidos = '';
         }
@@ -268,6 +321,10 @@ const searchCustomer = async () => {
         newCustomer.value.razonSocial = '';
         newCustomer.value.correoElectronico = '';
         newCustomer.value.telefono = '';
+        newCustomer.value.direccion = '';
+        newCustomer.value.departamento = '';
+        newCustomer.value.provincia = '';
+        newCustomer.value.distrito = '';
       }
     }
   } catch (error) {
@@ -287,7 +344,11 @@ const createAndSelectCustomer = async () => {
       email: newCustomer.value.correoElectronico,
       telefono: newCustomer.value.telefono,
       numeroDocumento: numDoc.value,
-      tipoDocumento: tipoDoc.value === 'DNI' ? '1' : '6'
+      tipoDocumento: tipoDoc.value === 'DNI' ? '1' : '6',
+      direccion: newCustomer.value.direccion,
+      departamento: newCustomer.value.departamento,
+      provincia: newCustomer.value.provincia,
+      distrito: newCustomer.value.distrito
     };
 
     const response = await customersApi.createCustomer(customerData);
@@ -338,7 +399,11 @@ const resetForm = () => {
     apellidos: '',
     razonSocial: '',
     correoElectronico: '',
-    telefono: ''
+    telefono: '',
+    direccion: '',
+    departamento: '',
+    provincia: '',
+    distrito: ''
   };
 };
 </script>
