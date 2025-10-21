@@ -83,9 +83,18 @@
 
                 <!-- Real Cash Count -->
                 <div class="mb-4">
-                  <label for="monto-real" class="block text-sm font-medium text-gray-700 mb-2">
-                    Efectivo Real Contado *
-                  </label>
+                  <div class="flex justify-between items-center mb-2">
+                    <label for="monto-real" class="block text-sm font-medium text-gray-700">
+                      Efectivo Real Contado *
+                    </label>
+                    <button
+                      type="button"
+                      @click="showBreakdown = !showBreakdown"
+                      class="text-xs text-blue-600 hover:text-blue-800 underline"
+                    >
+                      {{ showBreakdown ? 'Ocultar' : 'Desglosar' }} denominaciones
+                    </button>
+                  </div>
                   <div class="relative">
                     <span class="absolute left-3 top-2 text-gray-500">S/</span>
                     <input
@@ -96,14 +105,32 @@
                       step="0.01"
                       min="0"
                       placeholder="0.00"
-                      class="pl-10 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-lg font-medium"
+                      :readonly="showBreakdown"
+                      :class="[
+                        'pl-10 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-lg font-medium',
+                        showBreakdown ? 'bg-gray-100 cursor-not-allowed' : ''
+                      ]"
                       @input="calculateDifference"
                       @keyup.enter="handleClose"
                     />
                   </div>
-                  <p class="text-xs text-gray-500 mt-1">
+                  <p v-if="!showBreakdown" class="text-xs text-gray-500 mt-1">
                     Cuente el efectivo real que tiene en caja y registre el monto exacto
                   </p>
+                  <p v-else class="text-xs text-gray-500 mt-1">
+                    El monto se calcula automáticamente del desglose
+                  </p>
+                </div>
+
+                <!-- Desglose de denominaciones (opcional) -->
+                <div v-if="showBreakdown" class="mb-4">
+                  <CashBreakdownInput
+                    v-model="denominationCounts"
+                    :expected-amount="expectedCash"
+                    title="Arqueo de Cierre - Conteo de denominaciones"
+                    total-label="Efectivo Real Contado"
+                    @update:total="handleBreakdownTotal"
+                  />
                 </div>
 
                 <!-- Difference -->
@@ -180,6 +207,7 @@
 
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue';
+import CashBreakdownInput from './CashBreakdownInput.vue';
 
 const props = defineProps({
   modelValue: Boolean,
@@ -194,6 +222,15 @@ const processing = ref(false);
 const error = ref(null);
 const difference = ref(0);
 const montoInput = ref(null);
+
+// Toggle para mostrar/ocultar desglose
+const showBreakdown = ref(false);
+
+// Contadores por denominación
+const denominationCounts = ref({
+  200: 0, 100: 0, 50: 0, 20: 0, 10: 0,
+  5: 0, 2: 0, 1: 0, 0.50: 0, 0.20: 0, 0.10: 0
+});
 
 const expectedCash = computed(() => {
   if (!props.shift) return 0;
@@ -227,6 +264,11 @@ watch(() => props.modelValue, (value) => {
     notas.value = '';
     error.value = null;
     difference.value = 0;
+    showBreakdown.value = false;
+    // Reset denomination counts
+    Object.keys(denominationCounts.value).forEach(key => {
+      denominationCounts.value[key] = 0;
+    });
   }
 });
 
@@ -238,6 +280,11 @@ const calculateDifference = () => {
   }
 };
 
+const handleBreakdownTotal = (total) => {
+  montoReal.value = total;
+  calculateDifference();
+};
+
 const handleClose = async () => {
   if (!isValid.value || processing.value) return;
 
@@ -245,10 +292,17 @@ const handleClose = async () => {
   processing.value = true;
 
   try {
-    emit('closed', {
+    const data = {
       montoReal: parseFloat(montoReal.value),
       notas: notas.value.trim()
-    });
+    };
+
+    // Si usó desglose, agregarlo
+    if (showBreakdown.value) {
+      data.breakdown = { ...denominationCounts.value };
+    }
+
+    emit('closed', data);
   } catch (err) {
     error.value = err.message || 'Error al cerrar el turno';
   } finally {
