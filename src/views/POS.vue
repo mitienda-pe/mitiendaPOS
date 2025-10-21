@@ -466,7 +466,10 @@ const handleClickOutside = (event) => {
 };
 
 const handleCustomerSelect = (customer) => {
+  console.log('🎯 POS: Customer selected:', customer);
+  console.log('🎯 POS: Customer name:', customer?.name);
   selectedCustomer.value = customer;
+  console.log('🎯 POS: selectedCustomer updated:', selectedCustomer.value);
 };
 
 // Lifecycle hooks

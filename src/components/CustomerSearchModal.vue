@@ -325,6 +325,7 @@ const searchByDocument = async () => {
 };
 
 const selectCustomer = (customer) => {
+  console.log('✨ Selecting customer:', customer);
   emit('select', customer);
   closeModal();
 };
