@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import { useShiftStore } from '../stores/shift';
 
 // Lazy-loaded components
 const Login = () => import('../views/Login.vue');
@@ -34,7 +35,7 @@ const routes = [
     path: '/pos',
     name: 'POS',
     component: POS,
-    meta: { requiresAuth: true, roles: ['cajero', 'supervisor', 'administrador'] }
+    meta: { requiresAuth: true, requiresActiveShift: true, roles: ['cajero', 'supervisor', 'administrador'] }
   },
   {
     path: '/dashboard',
@@ -120,20 +121,47 @@ const router = createRouter({
 });
 
 // Navigation guard
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
+  const shiftStore = useShiftStore();
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
+  const requiresActiveShift = to.meta.requiresActiveShift;
   const requiredRoles = to.meta.roles;
 
+  // Check authentication
   if (requiresAuth && !authStore.isAuthenticated) {
     next('/login');
-  } else if (requiresAuth && requiredRoles && !requiredRoles.includes(authStore.userRole)) {
-    next('/unauthorized');
-  } else if (to.path === '/login' && authStore.isAuthenticated) {
-    next('/');
-  } else {
-    next();
+    return;
   }
+
+  // Check role permissions
+  if (requiresAuth && requiredRoles && !requiredRoles.includes(authStore.userRole)) {
+    next('/unauthorized');
+    return;
+  }
+
+  // Check active shift for POS
+  if (requiresActiveShift) {
+    // Ensure shift store is loaded
+    if (!shiftStore.activeShift) {
+      await shiftStore.fetchActiveShift();
+    }
+
+    if (!shiftStore.hasActiveShift) {
+      console.warn('🚫 [ROUTER] Access to POS denied - No active shift');
+      alert('⚠️ Debes abrir un turno de caja para acceder al POS');
+      next('/menu');
+      return;
+    }
+  }
+
+  // Redirect to menu if already authenticated and trying to access login
+  if (to.path === '/login' && authStore.isAuthenticated) {
+    next('/');
+    return;
+  }
+
+  next();
 });
 
 export default router;

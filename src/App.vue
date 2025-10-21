@@ -22,10 +22,15 @@
             <div class="hidden md:block">
               <div class="ml-4 flex items-center md:ml-6">
                 <div class="ml-3 relative">
-                  <div class="flex items-center">
-                    <span class="text-gray-300 text-sm mr-4">{{ authStore.user?.name }}</span>
+                  <div class="flex items-center space-x-4">
+                    <!-- Store and User Info -->
+                    <div class="text-right">
+                      <p class="text-gray-300 text-sm font-medium">{{ authStore.selectedStore?.name || 'Sin tienda' }}</p>
+                      <p class="text-gray-400 text-xs">{{ authStore.user?.name || 'Usuario' }}</p>
+                    </div>
+                    <!-- Logout Button -->
                     <button @click="authStore.logout"
-                      class="bg-gray-700 text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                      class="bg-gray-700 text-gray-300 hover:bg-red-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
                       Cerrar Sesión
                     </button>
                   </div>

@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useAuthStore } from '../stores/auth';
 import { useCartStore } from '../stores/cart';
+import { useShiftStore } from '../stores/shift';
 import { productsApi } from '../services/productsApi';
 import { ordersApi } from '../services/ordersApi';
 import { mockCustomersApi } from '../api/mockCustomers';
@@ -17,6 +18,7 @@ import SupervisorAuthModal from '../components/SupervisorAuthModal.vue';
 const authStore = useAuthStore();
 const savedSalesStore = useSavedSalesStore();
 const cartStore = useCartStore();
+const shiftStore = useShiftStore();
 
 // Cart store refs (reactivos)
 const { items: cartItems, payments, customer: selectedCustomer, status: cartStatus, currentSaleId, documentType } = storeToRefs(cartStore);
@@ -250,6 +252,13 @@ const resumeSavedSale = (sale) => {
 };
 
 const processPayment = () => {
+  // Validar que hay turno de caja abierto
+  if (!shiftStore.hasActiveShift) {
+    console.error('❌ [POS] No active shift - cannot process payment');
+    alert('⚠️ No hay turno de caja abierto. No se pueden registrar pagos.\n\nDebes abrir un turno primero desde el menú principal.');
+    return;
+  }
+
   // Solo mostrar el modal si hay un saldo pendiente
   if (remainingAmount.value > 0) {
     showPaymentModal.value = true;
@@ -260,7 +269,15 @@ const processPayment = () => {
 };
 
 const handlePaymentAdded = (paymentData) => {
+  // Validar turno abierto antes de agregar pago
+  if (!shiftStore.hasActiveShift) {
+    console.error('❌ [POS] No active shift - cannot add payment');
+    alert('⚠️ No hay turno de caja abierto. No se pueden registrar pagos.');
+    return;
+  }
+
   try {
+    console.log('💳 [POS] Adding payment - shift active:', shiftStore.activeShift?.id);
     cartStore.addPayment({
       method: paymentData.method,
       methodName: getPaymentMethodName(paymentData.method),
