@@ -11,7 +11,9 @@
               </div>
               <div class="hidden md:block">
                 <div class="ml-10 flex items-baseline space-x-4">
-                  <router-link v-if="['cajero', 'supervisor', 'administrador'].includes(authStore.userRole)" to="/menu"
+                  <router-link
+                    v-if="showMenuButton && ['cajero', 'supervisor', 'administrador'].includes(authStore.userRole)"
+                    to="/menu"
                     class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
                     active-class="bg-gray-900 text-white">
                     Menú Principal
@@ -76,14 +78,18 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from './stores/auth';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 
 const authStore = useAuthStore();
 const router = useRouter();
+const route = useRoute();
 const errorMessage = ref('');
 const isLoading = ref(true);
+
+// Computed para ocultar botón "Menú Principal" cuando ya estás en el menú
+const showMenuButton = computed(() => route.path !== '/menu');
 
 // Global error handler
 window.onerror = (message) => {
