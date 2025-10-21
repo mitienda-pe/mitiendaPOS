@@ -116,17 +116,31 @@ export const useAuthStore = defineStore('auth', {
       try {
         const response = await authApi.getProfile();
         if (response.success) {
+          // Preservar campos importantes del user actual si existen
+          const currentName = this.user?.name;
+          const currentEmail = this.user?.email;
+
           // TEMPORAL: Forzar rol de administrador
           this.user = {
             ...response.data,
+            // Preservar name y email si el API no los retorna
+            name: response.data.name || currentName || response.data.user?.name || 'Usuario',
+            email: response.data.email || currentEmail || response.data.user?.email,
             role: 'administrador'
           };
+
+          console.log('👤 [AUTH] User profile updated:', {
+            name: this.user.name,
+            email: this.user.email,
+            role: this.user.role
+          });
+
           localStorage.setItem('user', JSON.stringify(this.user));
         }
       } catch (error) {
         console.error('Error fetching user profile:', error);
-        this.logout();
-        throw error;
+        // No hacer logout si solo falla el perfil, mantener sesión
+        console.warn('⚠️ [AUTH] Keeping session despite profile fetch error');
       }
     },
 
@@ -156,6 +170,12 @@ export const useAuthStore = defineStore('auth', {
       const storedUser = getStoredUser();
       const storedStore = JSON.parse(localStorage.getItem('selected_store') || 'null');
 
+      console.log('🔍 [AUTH] checkSession - stored data:', {
+        hasToken: !!accessToken,
+        storedUser,
+        storedStore
+      });
+
       if (!accessToken || !refreshToken) {
         this.logout();
         return false;
@@ -168,19 +188,27 @@ export const useAuthStore = defineStore('auth', {
       this.selectedStore = storedStore;
 
       console.log('🔄 [AUTH] Session restored from localStorage:', {
-        user: this.user?.name,
-        store: this.selectedStore?.name
+        userName: this.user?.name,
+        userEmail: this.user?.email,
+        storeName: this.selectedStore?.name
       });
 
       try {
         // Actualizar datos del servidor (en background)
+        console.log('📡 [AUTH] Fetching fresh data from server...');
         await this.fetchUserProfile();
         await this.fetchStores();
+
+        console.log('✅ [AUTH] Session check complete:', {
+          userName: this.user?.name,
+          storeName: this.selectedStore?.name
+        });
+
         return true;
       } catch (error) {
-        console.error('Error checking session:', error);
-        this.logout();
-        return false;
+        console.error('❌ [AUTH] Error checking session:', error);
+        // No hacer logout, mantener sesión con datos de localStorage
+        return true;
       }
     }
   },
