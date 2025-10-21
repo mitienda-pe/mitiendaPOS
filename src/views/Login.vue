@@ -55,7 +55,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import StoreSelector from '../components/StoreSelector.vue';
 
@@ -64,20 +64,12 @@ const email = ref('');
 const password = ref('');
 const showStoreSelector = ref(false);
 
-// Mostrar selector si hay múltiples tiendas y no hay tienda seleccionada
-// IMPORTANTE: No usar immediate: true para evitar mostrar el modal en cada render
-watch(() => authStore.stores, (stores) => {
-  // Solo mostrar si está autenticado, tiene múltiples tiendas y no hay tienda seleccionada
-  if (authStore.isAuthenticated && stores.length > 1 && !authStore.selectedStore) {
-    showStoreSelector.value = true;
-  }
-});
-
 const handleLogin = async () => {
   try {
     await authStore.login(email.value, password.value);
 
     // Si hay múltiples tiendas y no hay tienda seleccionada, mostrar selector
+    // Esto solo sucede cuando no hay VITE_DEFAULT_STORE_ID configurado
     if (authStore.hasMultipleStores && !authStore.selectedStore) {
       showStoreSelector.value = true;
     }
