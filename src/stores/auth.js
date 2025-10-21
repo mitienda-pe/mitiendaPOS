@@ -59,26 +59,13 @@ export const useAuthStore = defineStore('auth', {
           // Obtener las tiendas del usuario
           await this.fetchStores();
 
-          // Seleccionar tienda por defecto (configurable por .env)
-          const defaultStoreId = import.meta.env.VITE_DEFAULT_STORE_ID
-            ? parseInt(import.meta.env.VITE_DEFAULT_STORE_ID)
-            : null;
-
-          if (defaultStoreId) {
-            // Si hay una tienda por defecto configurada, intentar seleccionarla
-            const targetStore = this.stores.find(s => s.id === defaultStoreId);
-            if (targetStore) {
-              await this.selectStore(targetStore.id);
-            } else {
-              console.warn(`Store ${defaultStoreId} not found in user's stores`);
-            }
-          } else if (this.stores.length === 1) {
-            // Si solo tiene una tienda, seleccionarla automáticamente
+          // Si solo tiene una tienda, seleccionarla automáticamente
+          if (this.stores.length === 1) {
             await this.selectStore(this.stores[0].id);
+            // Redirigir al menú principal
+            router.push('/menu');
           }
-
-          // Redirigir al menú principal
-          router.push('/menu');
+          // Si tiene múltiples tiendas, el selector se mostrará desde Login.vue
         } else {
           this.error = response.message || 'Error de autenticación';
           throw new Error(this.error);
