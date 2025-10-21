@@ -485,3 +485,210 @@ Una vez confirmes, procedo a:
 - Crear las migraciones
 - Actualizar el API de productos
 - Continuar con el store de carrito
+
+---
+
+## 6. Movimientos de Caja: Tabla `turnocaja_movimientos` ⚠️ PENDIENTE
+
+### Estado
+⚠️ **PENDIENTE CREAR** - Crítico para funcionamiento correcto del POS
+
+### Problema Identificado
+Cuando se realiza una venta en efectivo, el turno de caja **NO se actualiza** automáticamente. Al cerrar el turno:
+- ❌ Solo aparece el monto inicial
+- ❌ No se registran las ventas en efectivo
+- ❌ El efectivo esperado es incorrecto
+- ❌ No hay trazabilidad de movimientos
+
+### Solución
+Crear tabla `turnocaja_movimientos` para registrar TODOS los movimientos de efectivo:
+- ✅ Ventas (automáticas desde POS)
+- ✅ Entradas manuales (fondo adicional, devoluciones)
+- ✅ Salidas manuales (retiros para banco, préstamos, gastos)
+- ✅ Ajustes (correcciones, billetes falsos)
+
+### Migración SQL
+**Archivo**: `/app/Database/Migrations/2025-01-21-create-turnocaja-movimientos-table.sql`
+
+```sql
+CREATE TABLE IF NOT EXISTS `turnocaja_movimientos` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `turnocaja_id` INT UNSIGNED NOT NULL,
+  `tienda_id` INT UNSIGNED NOT NULL,
+  `tipo` ENUM('entrada', 'salida', 'venta', 'ajuste') NOT NULL,
+  `metodo_pago` VARCHAR(50) NULL COMMENT 'efectivo, tarjeta, yape, plin, transferencia, qr',
+  `monto` DECIMAL(10,2) NOT NULL,
+  `concepto` VARCHAR(200) NOT NULL,
+  `referencia` VARCHAR(100) NULL COMMENT 'ID venta, comprobante, etc.',
+  `notas` TEXT NULL,
+  `usuario_id` INT UNSIGNED NOT NULL,
+  `fecha_registro` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `eliminado` TINYINT(1) DEFAULT 0,
+  `fecha_eliminacion` DATETIME NULL,
+  `eliminado_por` INT UNSIGNED NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_turnocaja` (`turnocaja_id`),
+  KEY `idx_tienda` (`tienda_id`),
+  KEY `idx_tipo` (`tipo`),
+  KEY `idx_metodo_pago` (`metodo_pago`),
+  KEY `idx_fecha` (`fecha_registro`),
+  KEY `idx_eliminado` (`eliminado`),
+  KEY `idx_reporte_turno_tipo` (`turnocaja_id`, `tipo`, `metodo_pago`),
+  KEY `idx_reporte_tienda_fecha` (`tienda_id`, `fecha_registro`),
+  CONSTRAINT `fk_movimiento_turno` FOREIGN KEY (`turnocaja_id`)
+    REFERENCES `turnocaja` (`turnocaja_id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_movimiento_tienda` FOREIGN KEY (`tienda_id`)
+    REFERENCES `tiendas` (`tienda_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
+### API Pendiente
+
+#### 1. Modelo: `TurnoCajaMovimientosModel.php`
+```php
+class TurnoCajaMovimientosModel extends Model
+{
+    protected $table = 'turnocaja_movimientos';
+    protected $primaryKey = 'id';
+    protected $allowedFields = [
+        'turnocaja_id', 'tienda_id', 'tipo', 'metodo_pago',
+        'monto', 'concepto', 'referencia', 'notas', 'usuario_id'
+    ];
+
+    // Obtener totales por turno
+    public function getTotalesPorTurno($turnocaja_id) {
+        // Suma ventas por método de pago
+        // Retorna: ['efectivo' => X, 'tarjeta' => Y, ...]
+    }
+
+    // Listar movimientos de un turno
+    public function getMovimientosPorTurno($turnocaja_id) {
+        // Retorna lista ordenada por fecha
+    }
+}
+```
+
+#### 2. Controller: Actualizar `CashRegisterShift.php`
+
+**Nuevo endpoint**: `POST /api/v1/cash-register-shifts/movements`
+```php
+public function registerMovement()
+{
+    $data = $this->request->getJSON(true);
+
+    // Validar turno activo
+    // Insertar movimiento
+    // Retornar confirmación
+}
+```
+
+**Modificar**: `close()` - Calcular totales desde movimientos
+```php
+public function close($id)
+{
+    // 1. Obtener movimientos
+    $movimientosModel = new TurnoCajaMovimientosModel();
+    $totales = $movimientosModel->getTotalesPorTurno($id);
+
+    // 2. Actualizar turno con totales
+    $updateData = [
+        'turnocaja_total_efectivo' => $totales['efectivo'],
+        'turnocaja_total_tarjeta' => $totales['tarjeta'],
+        // ...
+    ];
+}
+```
+
+### Frontend Pendiente
+
+#### 1. API Service: `cashMovementsApi.js`
+```javascript
+export const cashMovementsApi = {
+  async registerMovement(data) { /* ... */ },
+  async getShiftMovements(shiftId) { /* ... */ },
+  async registerIncome(monto, concepto) { /* ... */ },
+  async registerWithdrawal(monto, concepto) { /* ... */ }
+};
+```
+
+#### 2. Integración en `POS.vue`
+```javascript
+// Al completar venta, registrar cada pago como movimiento
+for (const payment of cartStore.payments) {
+  await shiftsApi.registerMovement({
+    tipo: 'venta',
+    metodo_pago: payment.method,
+    monto: payment.amount,
+    concepto: 'Venta POS',
+    referencia: `VENTA-${ventaId}`
+  });
+}
+```
+
+#### 3. Nuevo componente: `CashMovementModal.vue`
+- Botones "Ingreso" y "Retiro" en menú de turno
+- Modal para registrar entradas/salidas manuales
+- Validación de supervisor para salidas
+
+### Flujo Completo
+
+```
+APERTURA TURNO:
+  Monto inicial: S/ 500
+
+VENTA 1 (Efectivo S/ 150):
+  → POST /movements { tipo: 'venta', metodo: 'efectivo', monto: 150 }
+  → Registro en turnocaja_movimientos
+
+VENTA 2 (Tarjeta S/ 200):
+  → POST /movements { tipo: 'venta', metodo: 'tarjeta', monto: 200 }
+
+INGRESO MANUAL (S/ 300):
+  → POST /movements { tipo: 'entrada', metodo: 'efectivo', monto: 300 }
+
+RETIRO PARA BANCO (S/ 400):
+  → POST /movements { tipo: 'salida', metodo: 'efectivo', monto: 400 }
+
+CIERRE TURNO:
+  Backend calcula:
+    Efectivo esperado = 500 + 150 + 300 - 400 = S/ 550
+    Total ventas = 150 + 200 = S/ 350
+
+  Cajero cuenta: S/ 550 ✓ Cuadrado
+```
+
+### Documentación Completa
+Ver archivo `SISTEMA_MOVIMIENTOS_CAJA.md` para:
+- Arquitectura detallada
+- Ejemplos de uso
+- Plan de implementación
+- Scripts de migración
+
+### Prioridad
+🔴 **CRÍTICO** - Sin esta tabla el POS no funciona correctamente
+
+### Estado de migración
+⚠️ **PENDIENTE CREAR Y EJECUTAR**:
+```bash
+# 1. Crear la tabla
+mysql -u root -p mitienda < app/Database/Migrations/2025-01-21-create-turnocaja-movimientos-table.sql
+
+# 2. Crear el modelo TurnoCajaMovimientosModel.php
+# 3. Actualizar CashRegisterShift.php
+# 4. Crear cashMovementsApi.js en frontend
+# 5. Integrar en POS.vue
+```
+
+---
+
+## Resumen de campos pendientes (ACTUALIZADO)
+
+| Tabla | Campo | Tipo | Propósito | Estado | Prioridad |
+|-------|-------|------|-----------|--------|-----------|
+| `turnocaja_movimientos` | **TABLA COMPLETA** | - | Registro de transacciones | ⚠️ Pendiente | 🔴 CRÍTICO |
+| `tiendausuarios` | **TABLA COMPLETA** | - | Empleados/cajeros POS | ✅ Creada | 🔴 Alta |
+| `producto` | `producto_publicado_pos` | TINYINT(1) | Publicación exclusiva POS | ⚠️ Pendiente | 🔴 Alta |
+| `tiendasdirecciones` | `tienda_pos_activo` | TINYINT(1) | Identificar tiendas con POS | ⚠️ Pendiente | 🟡 Media |
+| `empleados` | `empleado_sucursal_id` | INT | Asignación a sucursal | ⚠️ Pendiente | 🟡 Media |
+| Nueva tabla | `pos_sesiones` | - | Tracking de sesiones POS | ⚠️ Pendiente | 🟢 Baja |
+
