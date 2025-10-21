@@ -141,13 +141,92 @@
               <div v-if="paymentMethod" class="mb-4 p-3 border rounded-lg">
                 <!-- Campos específicos según el método de pago -->
                 <div v-if="paymentMethod === 'efectivo'" class="mb-3">
+                  <!-- Sugerencias de montos óptimos -->
+                  <div v-if="paymentSuggestions.length > 0" class="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div class="text-xs font-medium text-blue-900 mb-2 flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M12 16v-4"></path>
+                        <path d="M12 8h.01"></path>
+                      </svg>
+                      Montos sugeridos (minimiza vuelto):
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                      <button
+                        v-for="(suggestion, index) in paymentSuggestions.slice(0, 6)"
+                        :key="index"
+                        @click="applySuggestion(suggestion)"
+                        :class="[
+                          'px-2 py-1 text-xs rounded transition-colors',
+                          suggestion.optimal
+                            ? 'bg-green-100 hover:bg-green-200 border border-green-400 text-green-900 font-medium'
+                            : 'bg-white hover:bg-gray-100 border border-gray-300 text-gray-700'
+                        ]"
+                        type="button"
+                      >
+                        <div class="font-medium">S/ {{ suggestion.amount.toFixed(2) }}</div>
+                        <div class="text-[10px] leading-tight" :class="suggestion.optimal ? 'text-green-700' : 'text-gray-500'">
+                          {{ suggestion.change === 0 ? 'Exacto' : `Vuelto: ${suggestion.change.toFixed(2)}` }}
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
                   <RightToLeftMoneyInput v-model="cashAmount" label="Monto Entregado"
                     helpText="Ingrese el monto entregado por el cliente" />
-                  <div class="flex justify-between mt-2">
-                    <span class="text-sm font-medium">Cambio:</span>
-                    <span class="text-sm font-medium" :class="change >= 0 ? 'text-green-600' : 'text-red-600'">
-                      {{ formatCurrency(change) }}
-                    </span>
+
+                  <!-- Validaciones y advertencias -->
+                  <div v-if="cashValidation && cashAmount > 0" class="mt-2">
+                    <!-- Errores -->
+                    <div v-if="cashValidation.errors.length > 0" class="text-xs text-red-600 mb-1">
+                      <div v-for="(error, idx) in cashValidation.errors" :key="idx" class="flex items-start">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none"
+                          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <line x1="12" y1="8" x2="12" y2="12"></line>
+                          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        {{ error }}
+                      </div>
+                    </div>
+
+                    <!-- Advertencias -->
+                    <div v-if="cashValidation.warnings.length > 0" class="text-xs text-amber-600 mb-1">
+                      <div v-for="(warning, idx) in cashValidation.warnings" :key="idx" class="flex items-start">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none"
+                          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                          <line x1="12" y1="9" x2="12" y2="13"></line>
+                          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                        {{ warning }}
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Información del cambio -->
+                  <div class="mt-2 p-2 bg-gray-50 rounded border border-gray-200">
+                    <div class="flex justify-between mb-1">
+                      <span class="text-sm font-medium">Cambio:</span>
+                      <span class="text-sm font-bold" :class="change >= 0 ? 'text-green-600' : 'text-red-600'">
+                        {{ formatCurrency(change) }}
+                      </span>
+                    </div>
+
+                    <!-- Desglose del vuelto -->
+                    <div v-if="changeBreakdownDisplay && changeBreakdownDisplay.breakdown.length > 0" class="text-xs text-gray-600 mt-1">
+                      <div class="font-medium mb-1">Desglose del vuelto:</div>
+                      <div class="flex flex-wrap gap-1">
+                        <span
+                          v-for="(item, idx) in changeBreakdownDisplay.breakdown"
+                          :key="idx"
+                          class="px-1.5 py-0.5 bg-white border border-gray-300 rounded text-[10px]"
+                        >
+                          {{ item.count }}x {{ formatDenomination(item.value) }}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -425,6 +504,12 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import RightToLeftMoneyInput from './RightToLeftMoneyInput.vue';
+import {
+  suggestOptimalPayments,
+  validateCashPayment,
+  calculateChangeBreakdown,
+  roundToValidAmount
+} from '../utils/cashDenominations.js';
 
 const props = defineProps({
   modelValue: {
@@ -477,6 +562,11 @@ const emailAddress = ref('');
 const showWhatsAppForm = ref(false);
 const phoneNumber = ref('');
 
+// Estados para sugerencias y validaciones de efectivo
+const paymentSuggestions = ref([]);
+const cashValidation = ref(null);
+const changeBreakdownDisplay = ref(null);
+
 // Validaciones
 const isPaymentValid = computed(() => {
   if (!paymentMethod.value) return false;
@@ -488,6 +578,13 @@ const isPaymentValid = computed(() => {
 
   if (paymentMethod.value !== 'efectivo' && paymentAmount.value <= 0) {
     return false;
+  }
+
+  // Para efectivo, validar que sea un pago válido (sin errores de validación)
+  if (paymentMethod.value === 'efectivo' && cashValidation.value) {
+    if (cashValidation.value.errors.length > 0) {
+      return false;
+    }
   }
 
   // Validar campos específicos por método de pago
@@ -523,17 +620,58 @@ const selectPaymentMethod = (method) => {
   currentReference.value = '';
   cardCode.value = '';
   giftCardCode.value = '';
+  cashValidation.value = null;
+  changeBreakdownDisplay.value = null;
+
+  // Si es efectivo, generar sugerencias de pago
+  if (method === 'efectivo') {
+    paymentSuggestions.value = suggestOptimalPayments(props.remainingAmount);
+    console.log('💡 [PaymentModal] Sugerencias de pago generadas:', paymentSuggestions.value);
+  } else {
+    paymentSuggestions.value = [];
+  }
 };
 
 const calculateChange = () => {
-  // Redondear a 2 decimales
-  cashAmount.value = Math.round(cashAmount.value * 100) / 100;
+  // Para efectivo: redondear a 0.10 (sin monedas de 0.01 y 0.05)
+  const roundedCash = roundToValidAmount(cashAmount.value);
+
+  // Si el redondeo cambió el valor, actualizarlo
+  if (Math.abs(cashAmount.value - roundedCash) > 0.001) {
+    cashAmount.value = roundedCash;
+  }
 
   // El monto del pago es el total restante (lo que se debe cobrar)
   paymentAmount.value = props.remainingAmount;
 
   // El cambio es lo que sobra del efectivo entregado
-  change.value = Math.max(0, Math.round((cashAmount.value - props.remainingAmount) * 100) / 100);
+  const rawChange = cashAmount.value - props.remainingAmount;
+  change.value = Math.max(0, roundToValidAmount(rawChange));
+
+  // Validar el pago en efectivo
+  cashValidation.value = validateCashPayment(cashAmount.value, props.remainingAmount);
+
+  // Calcular desglose del vuelto
+  if (change.value > 0) {
+    changeBreakdownDisplay.value = calculateChangeBreakdown(change.value);
+    console.log('💵 [PaymentModal] Desglose del vuelto:', changeBreakdownDisplay.value);
+  } else {
+    changeBreakdownDisplay.value = null;
+  }
+};
+
+const applySuggestion = (suggestion) => {
+  console.log('✨ [PaymentModal] Aplicando sugerencia:', suggestion);
+  cashAmount.value = suggestion.amount;
+  // calculateChange se ejecutará automáticamente por el watcher
+};
+
+const formatDenomination = (value) => {
+  if (value >= 1) {
+    return `S/ ${value}`;
+  } else {
+    return `S/ ${value.toFixed(2)}`;
+  }
 };
 
 const getPaymentMethodName = (method) => {
@@ -557,6 +695,14 @@ const addPayment = () => {
     case 'efectivo':
       amount = props.remainingAmount; // Siempre cobrar el total restante
       reference = `Cambio: ${formatCurrency(change.value)}`;
+
+      // Agregar desglose del vuelto a la referencia si existe
+      if (changeBreakdownDisplay.value && changeBreakdownDisplay.value.breakdown.length > 0) {
+        const breakdown = changeBreakdownDisplay.value.breakdown
+          .map(item => `${item.count}x${formatDenomination(item.value)}`)
+          .join(', ');
+        reference += ` (${breakdown})`;
+      }
       break;
     case 'tarjeta':
       amount = Math.min(paymentAmount.value, props.remainingAmount);
@@ -574,6 +720,12 @@ const addPayment = () => {
       amount = Math.min(paymentAmount.value, props.remainingAmount);
       reference = '';
   }
+
+  console.log('💳 [PaymentModal] Agregando pago:', {
+    method: paymentMethod.value,
+    amount,
+    reference
+  });
 
   // Emitir el evento con los datos del pago
   emit('payment-added', {
@@ -611,6 +763,9 @@ const resetForm = () => {
   emailAddress.value = '';
   showWhatsAppForm.value = false;
   phoneNumber.value = '';
+  paymentSuggestions.value = [];
+  cashValidation.value = null;
+  changeBreakdownDisplay.value = null;
 };
 
 // Propiedades computadas para el ticket
