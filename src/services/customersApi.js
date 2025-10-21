@@ -154,6 +154,10 @@ export const customersApi = {
         backendData.tiendacliente_apellidos = '';
       }
 
+      // Note: Address fields (direccion, departamento, provincia, distrito) from Decolecta
+      // are NOT saved to tiendasclientes table (they go to tiendasclientes_direcciones)
+      // For POS, we only need the basic customer info
+
       const response = await apiClient.post('/customers', backendData);
       console.log('Backend response:', response.data);
 
