@@ -285,19 +285,29 @@ POST /api/v1/cash-register-shifts/movements
 5. ✅ **Detección de diferencias** - Alertas de faltantes/sobrantes
 6. ✅ **Reportes precisos** - Por cajero, por método, por fecha
 
-## 📝 Tareas Pendientes
+## 📝 Tareas Completadas
 
-### Backend
-- [ ] Crear migración para tabla `turnocaja_movimientos`
-- [ ] Crear modelo `TurnoCajaMovimientosModel`
-- [ ] Agregar endpoint `POST /movements`
-- [ ] Agregar endpoint `GET /{shift_id}/movements`
-- [ ] Modificar método `close()` para calcular totales
-- [ ] Agregar método `getTotalesPorTurno()` en modelo
+### Backend ✅
+- [x] Crear migración para tabla `turnocaja_movimientos`
+- [x] Crear modelo `TurnoCajaMovimientosModel`
+- [x] Agregar endpoint `POST /movements`
+- [x] Agregar endpoint `GET /{shift_id}/movements`
+- [x] Agregar endpoint `GET /{shift_id}/movements-summary`
+- [x] Modificar método `close()` para calcular totales
+- [x] Agregar método `getTotalesPorTurno()` en modelo
+- [x] Agregar método `getResumenPorTipo()` en modelo
+- [x] Actualizar rutas en Routes.php
 
-### Frontend
-- [ ] Crear `cashMovementsApi.js`
-- [ ] Integrar registro de movimientos en `POS.vue`
+### Frontend ✅
+- [x] Crear `cashMovementsApi.js`
+- [x] Integrar registro de movimientos en `POS.vue`
+
+### Tareas Pendientes
+
+#### Base de datos
+- [ ] **CRÍTICO**: Ejecutar migración SQL en producción para crear tabla `turnocaja_movimientos`
+
+#### Frontend (Mejoras futuras)
 - [ ] Crear componente `CashMovementModal` para entradas/salidas manuales
 - [ ] Agregar botones "Ingreso" y "Retiro" en menú de turno
 - [ ] Mostrar lista de movimientos en arqueo de cierre
