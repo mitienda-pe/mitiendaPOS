@@ -20,10 +20,21 @@
               <!-- Resumen de la venta -->
               <div class="mb-4 p-3 bg-gray-50 rounded-lg">
                 <div class="flex justify-between mb-2">
-                  <span class="font-medium">Total a pagar:</span>
+                  <span class="font-medium">Total:</span>
                   <span class="font-bold text-lg">{{ formatCurrency(total) }}</span>
                 </div>
-                <div class="flex justify-between mb-2">
+                <!-- Mostrar redondeo si ya se aplicó (hay pago en efectivo) -->
+                <div v-if="roundingApplied !== 0" class="flex justify-between mb-2 text-xs border-t border-dashed border-gray-300 pt-1">
+                  <span>{{ roundingApplied > 0 ? 'Redondeo (+):' : 'Redondeo (-):' }}</span>
+                  <span :class="roundingApplied > 0 ? 'text-red-600' : 'text-green-600'">
+                    {{ formatCurrency(Math.abs(roundingApplied)) }}
+                  </span>
+                </div>
+                <div v-if="roundingApplied !== 0" class="flex justify-between mb-2">
+                  <span class="font-medium text-sm">Total a pagar:</span>
+                  <span class="font-bold text-lg">{{ formatCurrency(total + roundingApplied) }}</span>
+                </div>
+                <div class="flex justify-between mb-2 border-t border-gray-300 pt-2">
                   <span class="font-medium">Saldo pendiente:</span>
                   <span class="font-bold text-lg" :class="remainingAmount === 0 ? 'text-green-600' : 'text-red-600'">
                     {{ formatCurrency(remainingAmount) }}
@@ -358,6 +369,17 @@
                     <span>Total:</span>
                     <span>{{ formatCurrency(props.total) }}</span>
                   </div>
+                  <!-- Redondeo (solo si aplica) -->
+                  <div v-if="roundingApplied !== 0" class="flex justify-between text-xs mt-1 border-t border-dashed border-gray-300 pt-1">
+                    <span>{{ roundingApplied > 0 ? 'Redondeo (+):' : 'Redondeo (-):' }}</span>
+                    <span :class="roundingApplied > 0 ? 'text-red-600' : 'text-green-600'">
+                      {{ formatCurrency(Math.abs(roundingApplied)) }}
+                    </span>
+                  </div>
+                  <div v-if="roundingApplied !== 0" class="flex justify-between font-bold text-sm border-t border-gray-300 pt-1 mt-1">
+                    <span>Total a Pagar:</span>
+                    <span>{{ formatCurrency(props.total + roundingApplied) }}</span>
+                  </div>
                   <div class="mt-2">
                     <div>Forma de pago:</div>
                     <div v-for="(payment, index) in props.payments" :key="index">
@@ -690,11 +712,24 @@ const getPaymentMethodName = (method) => {
 const addPayment = () => {
   let reference = '';
   let amount = 0;
+  let roundingAmount = 0;
 
   switch (paymentMethod.value) {
     case 'efectivo':
       amount = props.remainingAmount; // Siempre cobrar el total restante
       reference = `Cambio: ${formatCurrency(change.value)}`;
+
+      // Calcular redondeo aplicado (solo para el primer pago en efectivo)
+      // El redondeo es la diferencia entre el total original y el total redondeado
+      const totalBeforeRounding = props.total;
+      const roundedTotal = roundToValidAmount(totalBeforeRounding);
+      roundingAmount = roundToValidAmount(roundedTotal - totalBeforeRounding);
+
+      console.log('💰 [PaymentModal] Calculando redondeo:', {
+        totalOriginal: totalBeforeRounding,
+        totalRedondeado: roundedTotal,
+        redondeo: roundingAmount
+      });
 
       // Agregar desglose del vuelto a la referencia si existe
       if (changeBreakdownDisplay.value && changeBreakdownDisplay.value.breakdown.length > 0) {
@@ -724,16 +759,24 @@ const addPayment = () => {
   console.log('💳 [PaymentModal] Agregando pago:', {
     method: paymentMethod.value,
     amount,
-    reference
+    reference,
+    roundingAmount
   });
 
   // Emitir el evento con los datos del pago
-  emit('payment-added', {
+  const paymentData = {
     method: paymentMethod.value,
     methodName: getPaymentMethodName(paymentMethod.value),
     amount: amount,
     reference: reference
-  });
+  };
+
+  // Agregar redondeo solo si es efectivo y hay redondeo
+  if (paymentMethod.value === 'efectivo' && roundingAmount !== 0) {
+    paymentData.roundingAmount = roundingAmount;
+  }
+
+  emit('payment-added', paymentData);
 
   // Cerrar el modal después de agregar el pago
   closeModal();
@@ -786,6 +829,12 @@ const totalChange = computed(() => {
   });
 
   return Math.round(totalChangeAmount * 100) / 100;
+});
+
+const roundingApplied = computed(() => {
+  // Buscar el redondeo en el primer pago de efectivo
+  const cashPayment = props.payments.find(p => p.method === 'efectivo');
+  return cashPayment?.roundingAmount || 0;
 });
 
 const printTicket = () => {

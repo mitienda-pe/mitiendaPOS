@@ -19,6 +19,9 @@ export const useCartStore = defineStore('cart', {
     currentSaleId: null,
     unsavedChanges: false,
 
+    // Redondeo aplicado (solo para efectivo)
+    roundingAdjustment: 0, // Monto del redondeo aplicado (puede ser positivo o negativo)
+
     // Para autorizaciones pendientes
     pendingAuthorization: null // { action: 'remove_item', data: {...}, resolve, reject }
   }),
@@ -80,12 +83,19 @@ export const useCartStore = defineStore('cart', {
       return this.subtotal + this.tax;
     },
 
+    // Total con redondeo aplicado (para efectivo)
+    totalWithRounding(state) {
+      return this.total + state.roundingAdjustment;
+    },
+
     totalPaid: (state) => {
       return state.payments.reduce((sum, payment) => sum + parseFloat(payment.amount || 0), 0);
     },
 
     remainingAmount(state) {
-      return Math.max(0, Math.round((this.total - this.totalPaid) * 100) / 100);
+      // Usar total con redondeo si aplica
+      const totalToPay = state.roundingAdjustment !== 0 ? this.totalWithRounding : this.total;
+      return Math.max(0, Math.round((totalToPay - this.totalPaid) * 100) / 100);
     },
 
     totalChange: (state) => {
@@ -304,6 +314,12 @@ export const useCartStore = defineStore('cart', {
         timestamp: new Date().toISOString()
       });
 
+      // Si es efectivo y es el primer pago, aplicar redondeo
+      if (payment.method === 'efectivo' && this.payments.length === 1 && payment.roundingAmount) {
+        this.roundingAdjustment = payment.roundingAmount;
+        console.log('💰 [CART] Redondeo aplicado:', this.roundingAdjustment);
+      }
+
       // Cambiar estado a BLOQUEADO al agregar primer pago
       if (this.payments.length === 1 && this.status === 'ABIERTO') {
         this.status = 'BLOQUEADO';
@@ -408,6 +424,7 @@ export const useCartStore = defineStore('cart', {
       this.currentSaleId = null;
       this.unsavedChanges = false;
       this.pendingAuthorization = null;
+      this.roundingAdjustment = 0;
     },
 
     /**
