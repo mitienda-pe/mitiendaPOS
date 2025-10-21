@@ -41,9 +41,18 @@
 
                 <!-- Initial Amount -->
                 <div class="mb-4">
-                  <label for="monto-inicial" class="block text-sm font-medium text-gray-700 mb-2">
-                    Monto Inicial en Efectivo *
-                  </label>
+                  <div class="flex justify-between items-center mb-2">
+                    <label for="monto-inicial" class="block text-sm font-medium text-gray-700">
+                      Monto Inicial en Efectivo *
+                    </label>
+                    <button
+                      type="button"
+                      @click="showBreakdown = !showBreakdown"
+                      class="text-xs text-blue-600 hover:text-blue-800 underline"
+                    >
+                      {{ showBreakdown ? 'Ocultar' : 'Desglosar' }} denominaciones
+                    </button>
+                  </div>
                   <div class="relative">
                     <span class="absolute left-3 top-2 text-gray-500">S/</span>
                     <input
@@ -54,9 +63,83 @@
                       step="0.01"
                       min="0"
                       placeholder="0.00"
-                      class="pl-10 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      :readonly="showBreakdown"
+                      :class="[
+                        'pl-10 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500',
+                        showBreakdown ? 'bg-gray-100 cursor-not-allowed' : ''
+                      ]"
                       @keyup.enter="handleOpen"
                     />
+                  </div>
+                  <p v-if="showBreakdown" class="text-xs text-gray-500 mt-1">
+                    El monto se calcula automáticamente del desglose
+                  </p>
+                </div>
+
+                <!-- Desglose de denominaciones (opcional) -->
+                <div v-if="showBreakdown" class="mb-4 p-3 border border-gray-300 rounded-lg bg-gray-50">
+                  <h4 class="text-sm font-medium text-gray-700 mb-3">Arqueo - Conteo de denominaciones</h4>
+
+                  <!-- Billetes -->
+                  <div class="mb-3">
+                    <h5 class="text-xs font-medium text-gray-600 mb-2 uppercase">Billetes</h5>
+                    <div class="grid grid-cols-2 gap-2">
+                      <div v-for="bill in DENOMINATIONS.bills" :key="bill" class="flex items-center space-x-2">
+                        <label class="text-xs font-medium text-gray-700 w-16">S/ {{ bill }}</label>
+                        <input
+                          type="number"
+                          v-model.number="denominationCounts[bill]"
+                          min="0"
+                          step="1"
+                          placeholder="0"
+                          class="flex-1 px-2 py-1 text-sm border rounded focus:ring-1 focus:ring-blue-500"
+                        />
+                        <span class="text-xs text-gray-500 w-16 text-right">
+                          S/ {{ (bill * (denominationCounts[bill] || 0)).toFixed(2) }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Monedas -->
+                  <div>
+                    <h5 class="text-xs font-medium text-gray-600 mb-2 uppercase">Monedas</h5>
+                    <div class="grid grid-cols-2 gap-2">
+                      <div v-for="coin in DENOMINATIONS.coins" :key="coin" class="flex items-center space-x-2">
+                        <label class="text-xs font-medium text-gray-700 w-16">S/ {{ coin.toFixed(2) }}</label>
+                        <input
+                          type="number"
+                          v-model.number="denominationCounts[coin]"
+                          min="0"
+                          step="1"
+                          placeholder="0"
+                          class="flex-1 px-2 py-1 text-sm border rounded focus:ring-1 focus:ring-blue-500"
+                        />
+                        <span class="text-xs text-gray-500 w-16 text-right">
+                          S/ {{ (coin * (denominationCounts[coin] || 0)).toFixed(2) }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Total del desglose -->
+                  <div class="mt-3 pt-3 border-t border-gray-300">
+                    <div class="flex justify-between items-center">
+                      <span class="text-sm font-medium text-gray-700">Total contado:</span>
+                      <span class="text-lg font-bold text-gray-900">S/ {{ breakdownTotal.toFixed(2) }}</span>
+                    </div>
+
+                    <!-- Diferencia (si la hay) -->
+                    <div v-if="Math.abs(breakdownDifference) > 0.01" class="mt-2 p-2 rounded" :class="breakdownMatches ? 'bg-green-50' : 'bg-red-50'">
+                      <div class="flex items-center justify-between text-sm">
+                        <span :class="breakdownMatches ? 'text-green-700' : 'text-red-700'">
+                          {{ breakdownMatches ? '✓ Coincide' : '✗ No coincide' }}
+                        </span>
+                        <span :class="breakdownMatches ? 'text-green-700 font-medium' : 'text-red-700 font-medium'">
+                          Diferencia: S/ {{ Math.abs(breakdownDifference).toFixed(2) }}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -123,6 +206,7 @@
 
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue';
+import { DENOMINATIONS } from '../utils/cashDenominations.js';
 
 const props = defineProps({
   modelValue: Boolean
@@ -138,8 +222,51 @@ const error = ref(null);
 const cajaInput = ref(null);
 const montoInput = ref(null);
 
+// Toggle para mostrar/ocultar desglose
+const showBreakdown = ref(false);
+
+// Contadores por denominación
+const denominationCounts = ref({
+  // Billetes
+  200: 0,
+  100: 0,
+  50: 0,
+  20: 0,
+  10: 0,
+  // Monedas
+  5: 0,
+  2: 0,
+  1: 0,
+  0.50: 0,
+  0.20: 0,
+  0.10: 0
+});
+
+// Calcular total del desglose
+const breakdownTotal = computed(() => {
+  let total = 0;
+  for (const [denomination, count] of Object.entries(denominationCounts.value)) {
+    total += parseFloat(denomination) * parseInt(count || 0);
+  }
+  return Math.round(total * 100) / 100;
+});
+
+// Diferencia entre monto declarado y desglose
+const breakdownDifference = computed(() => {
+  if (!showBreakdown.value) return 0;
+  return Math.round((montoInicial.value - breakdownTotal.value) * 100) / 100;
+});
+
+// Verificar si el desglose coincide
+const breakdownMatches = computed(() => {
+  if (!showBreakdown.value) return true; // Si no usa desglose, siempre válido
+  return Math.abs(breakdownDifference.value) < 0.01; // Tolerancia de 1 centavo
+});
+
 const isValid = computed(() => {
-  return montoInicial.value >= 0;
+  if (montoInicial.value < 0) return false;
+  if (showBreakdown.value && !breakdownMatches.value) return false;
+  return true;
 });
 
 // Auto-focus on caja input when modal opens
@@ -153,6 +280,18 @@ watch(() => props.modelValue, (value) => {
     montoInicial.value = 0;
     notas.value = '';
     error.value = null;
+    showBreakdown.value = false;
+    // Reset denomination counts
+    Object.keys(denominationCounts.value).forEach(key => {
+      denominationCounts.value[key] = 0;
+    });
+  }
+});
+
+// Watch desglose para autocompletar monto inicial
+watch(breakdownTotal, (newTotal) => {
+  if (showBreakdown.value && newTotal > 0) {
+    montoInicial.value = newTotal;
   }
 });
 
@@ -163,11 +302,18 @@ const handleOpen = async () => {
   processing.value = true;
 
   try {
-    emit('opened', {
+    const data = {
       cajaNumero: cajaNumero.value.trim() || null,
       montoInicial: parseFloat(montoInicial.value),
       notas: notas.value.trim()
-    });
+    };
+
+    // Si usó desglose, agregarlo
+    if (showBreakdown.value) {
+      data.breakdown = { ...denominationCounts.value };
+    }
+
+    emit('opened', data);
   } catch (err) {
     error.value = err.message || 'Error al abrir el turno';
   } finally {
