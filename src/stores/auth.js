@@ -153,17 +153,27 @@ export const useAuthStore = defineStore('auth', {
     async checkSession() {
       const accessToken = localStorage.getItem('access_token');
       const refreshToken = localStorage.getItem('refresh_token');
+      const storedUser = getStoredUser();
+      const storedStore = JSON.parse(localStorage.getItem('selected_store') || 'null');
 
       if (!accessToken || !refreshToken) {
         this.logout();
         return false;
       }
 
-      // Restaurar sesión
+      // Restaurar sesión desde localStorage
       this.accessToken = accessToken;
       this.refreshToken = refreshToken;
+      this.user = storedUser;
+      this.selectedStore = storedStore;
+
+      console.log('🔄 [AUTH] Session restored from localStorage:', {
+        user: this.user?.name,
+        store: this.selectedStore?.name
+      });
 
       try {
+        // Actualizar datos del servidor (en background)
         await this.fetchUserProfile();
         await this.fetchStores();
         return true;
