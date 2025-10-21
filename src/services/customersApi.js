@@ -102,10 +102,18 @@ export const customersApi = {
    */
   async lookupDocument(documentNumber, type = 'dni') {
     try {
-      console.log(`Calling Decolecta API: /customers/lookup/${documentNumber}?type=${type.toLowerCase()}`);
+      console.log(`🔎 Calling Decolecta API: /customers/lookup/${documentNumber}?type=${type.toLowerCase()}`);
       const response = await apiClient.get(`/customers/lookup/${documentNumber}?type=${type.toLowerCase()}`);
-      console.log('Decolecta API response:', response.data);
-      console.log('Decolecta data object:', response.data.data);
+      console.log('📦 Decolecta API response:', response.data);
+      console.log('📋 Decolecta data object:', response.data.data);
+
+      if (type.toLowerCase() === 'ruc') {
+        console.log('🏢 RUC Fields analysis:');
+        console.log('   - razonSocial:', response.data.data?.razonSocial);
+        console.log('   - nombre:', response.data.data?.nombre);
+        console.log('   - All field keys:', Object.keys(response.data.data || {}));
+        console.log('   - Full data:', JSON.stringify(response.data.data, null, 2));
+      }
 
       return {
         success: response.data.success,
