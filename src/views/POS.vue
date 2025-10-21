@@ -1,6 +1,8 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import { storeToRefs } from 'pinia';
 import { useAuthStore } from '../stores/auth';
+import { useCartStore } from '../stores/cart';
 import { productsApi } from '../services/productsApi';
 import { ordersApi } from '../services/ordersApi';
 import { mockCustomersApi } from '../api/mockCustomers';
@@ -9,32 +11,39 @@ import CustomerSearchModal from '../components/CustomerSearchModal.vue';
 import PaymentModal from '../components/PaymentModal.vue';
 import SavedSalesModal from '../components/SavedSalesModal.vue';
 import StartSaleModal from '../components/StartSaleModal.vue';
+import SupervisorAuthModal from '../components/SupervisorAuthModal.vue';
 
-// State
+// Stores
 const authStore = useAuthStore();
 const savedSalesStore = useSavedSalesStore();
+const cartStore = useCartStore();
+
+// Cart store refs (reactivos)
+const { items: cartItems, payments, customer: selectedCustomer, status: cartStatus, currentSaleId, documentType } = storeToRefs(cartStore);
+
+// Local state (no relacionado con carrito)
 const customers = ref([]);
 const categories = ref([]);
 const allProducts = ref([]);
 const barcode = ref('');
 const barcodeInput = ref(null);
-const cartItems = ref([]);
-const selectedCustomer = ref(null);
 const searchQuery = ref('');
 const searchResults = ref([]);
+const productSearchQuery = ref('');
+const productCategoryFilter = ref('');
+const productSearchResults = ref([]);
+
+// Modals
 const showProductModal = ref(false);
 const showPaymentModal = ref(false);
 const showCustomerSearch = ref(false);
 const showSavedSalesModal = ref(false);
 const showStartSaleModal = ref(false);
-const saleHasUnsavedChanges = ref(false);
-const productSearchQuery = ref('');
-const productCategoryFilter = ref('');
-const productSearchResults = ref([]);
-const payments = ref([]);
-const currentSaleId = ref(null);
-const documentType = ref('boleta'); // Tipo de documento (boleta o factura)
-const showTicket = ref(false); // Variable para controlar la visualización del ticket
+const showSupervisorAuth = ref(false);
+const showTicket = ref(false);
+
+// Autorización pendiente
+const pendingAction = ref({ type: null, data: null });
 
 // Computed properties
 const filteredProducts = computed(() => {
@@ -57,34 +66,13 @@ const filteredProducts = computed(() => {
   return filtered;
 });
 
-const subtotal = computed(() => {
-  return cartItems.value.reduce((sum, item) => sum + calculateSubtotal(item), 0);
-});
-
-const tax = computed(() => subtotal.value * 0.18);
-const total = computed(() => subtotal.value + tax.value);
-const totalPaid = computed(() => {
-  return payments.value.reduce((sum, payment) => sum + payment.amount, 0);
-});
-const remainingAmount = computed(() => {
-  return Math.round((total.value - totalPaid.value) * 100) / 100;
-});
-
-// Calcular el cambio total de los pagos en efectivo
-const totalChange = computed(() => {
-  const cashPayments = payments.value.filter(p => p.method === 'efectivo');
-  let totalChangeAmount = 0;
-
-  cashPayments.forEach(payment => {
-    // Extraer el cambio de la referencia
-    const match = payment.reference?.match(/Cambio: S\/\s*([\d.]+)/);
-    if (match) {
-      totalChangeAmount += parseFloat(match[1]);
-    }
-  });
-
-  return Math.round(totalChangeAmount * 100) / 100;
-});
+// Usar getters del cart store
+const subtotal = computed(() => cartStore.subtotal);
+const tax = computed(() => cartStore.tax);
+const total = computed(() => cartStore.total);
+const totalPaid = computed(() => cartStore.totalPaid);
+const remainingAmount = computed(() => cartStore.remainingAmount);
+const totalChange = computed(() => cartStore.totalChange);
 
 // Methods
 const formatCurrency = (amount) => {
@@ -136,45 +124,63 @@ const handleBarcodeInput = async () => {
 };
 
 const addToCart = (product) => {
-  const existingItem = cartItems.value.find(item => item.id === product.id);
-
-  if (existingItem) {
-    // Check if we have enough stock
-    if (existingItem.quantity < product.stock) {
-      existingItem.quantity++;
-      saleHasUnsavedChanges.value = true;
-    } else {
-      alert('No hay suficiente stock disponible');
+  try {
+    // Si el carrito está bloqueado, requiere autorización
+    if (cartStore.status === 'BLOQUEADO') {
+      pendingAction.value = { type: 'add_item_blocked', data: product };
+      showSupervisorAuth.value = true;
+      return;
     }
-  } else {
-    cartItems.value.push({
-      ...product,
-      quantity: 1
-    });
-    saleHasUnsavedChanges.value = true;
+
+    cartStore.addItem(product);
+  } catch (error) {
+    alert(error.message);
   }
 };
 
 const incrementQuantity = (item) => {
-  const product = cartItems.value.find(i => i.id === item.id);
-  if (product && product.quantity < product.stock) {
-    item.quantity++;
-    saleHasUnsavedChanges.value = true;
-  } else {
-    alert('No hay suficiente stock disponible');
+  try {
+    // Si el carrito está bloqueado, requiere autorización
+    if (!cartStore.canEditQuantity) {
+      pendingAction.value = { type: 'increment_quantity', data: item };
+      showSupervisorAuth.value = true;
+      return;
+    }
+
+    cartStore.incrementQuantity(item.id);
+  } catch (error) {
+    alert(error.message);
   }
 };
 
 const decrementQuantity = (item) => {
-  if (item.quantity > 1) {
-    item.quantity--;
-    saleHasUnsavedChanges.value = true;
+  try {
+    // Si el carrito está bloqueado, requiere autorización
+    if (!cartStore.canEditQuantity) {
+      pendingAction.value = { type: 'decrement_quantity', data: item };
+      showSupervisorAuth.value = true;
+      return;
+    }
+
+    cartStore.decrementQuantity(item.id);
+  } catch (error) {
+    alert(error.message);
   }
 };
 
 const removeItem = (item) => {
-  cartItems.value = cartItems.value.filter(i => i.id !== item.id);
-  saleHasUnsavedChanges.value = true;
+  try {
+    // Si el carrito está bloqueado o pagado, SIEMPRE requiere supervisor
+    if (!cartStore.canRemoveProducts) {
+      pendingAction.value = { type: 'remove_item', data: item };
+      showSupervisorAuth.value = true;
+      return;
+    }
+
+    cartStore.removeItem(item.id);
+  } catch (error) {
+    alert(error.message);
+  }
 };
 
 // Guardar la venta actual para más tarde
@@ -254,15 +260,19 @@ const processPayment = () => {
 };
 
 const handlePaymentAdded = (paymentData) => {
-  payments.value.push({
-    method: paymentData.method,
-    methodName: getPaymentMethodName(paymentData.method),
-    amount: paymentData.amount,
-    reference: paymentData.reference
-  });
+  try {
+    cartStore.addPayment({
+      method: paymentData.method,
+      methodName: getPaymentMethodName(paymentData.method),
+      amount: paymentData.amount,
+      reference: paymentData.reference
+    });
 
-  // Ya no procesamos la venta automáticamente cuando el saldo llega a cero
-  // Esto permite al usuario ver el resumen de la orden
+    // Ya no procesamos la venta automáticamente cuando el saldo llega a cero
+    // Esto permite al usuario ver el resumen de la orden
+  } catch (error) {
+    alert(error.message);
+  }
 };
 
 const processingOrder = ref(false);
@@ -346,10 +356,7 @@ const cancelSale = () => {
 };
 
 const resetSale = () => {
-  cartItems.value = [];
-  selectedCustomer.value = null;
-  currentSaleId.value = null;
-  payments.value = [];
+  cartStore.reset();
   searchQuery.value = '';
   searchResults.value = [];
   saleHasUnsavedChanges.value = false;
@@ -533,7 +540,54 @@ watch(showPaymentModal, (newValue) => {
 });
 
 const removePayment = (index) => {
-  payments.value.splice(index, 1);
+  // SIEMPRE requiere PIN de supervisor
+  pendingAction.value = { type: 'remove_payment', data: { index } };
+  showSupervisorAuth.value = true;
+};
+
+// Handler para cuando el supervisor autoriza
+const onSupervisorAuthorized = (authData) => {
+  const { type, data } = pendingAction.value;
+
+  try {
+    switch (type) {
+      case 'add_item_blocked':
+        // Agregar producto con autorización de cajero
+        cartStore.addItem(data, authData);
+        break;
+
+      case 'increment_quantity':
+        cartStore.incrementQuantity(data.id, authData);
+        break;
+
+      case 'decrement_quantity':
+        cartStore.decrementQuantity(data.id, authData);
+        break;
+
+      case 'remove_item':
+        // Quitar producto requiere supervisor
+        cartStore.removeItem(data.id, authData);
+        break;
+
+      case 'remove_payment':
+        // Quitar pago requiere supervisor
+        cartStore.removePayment(data.index, authData);
+        break;
+
+      default:
+        console.warn('Acción no manejada:', type);
+    }
+
+    // Limpiar acción pendiente
+    pendingAction.value = { type: null, data: null };
+  } catch (error) {
+    alert(error.message);
+  }
+};
+
+// Handler para cuando se cancela la autorización
+const onSupervisorCancelled = () => {
+  pendingAction.value = { type: null, data: null };
 };
 
 const getPaymentMethodName = (method) => {
@@ -904,4 +958,12 @@ const getPaymentMethodName = (method) => {
 
   <!-- Saved Sales Modal -->
   <SavedSalesModal v-model="showSavedSalesModal" @resume-sale="resumeSavedSale" />
+
+  <!-- Supervisor Authorization Modal -->
+  <SupervisorAuthModal
+    v-model="showSupervisorAuth"
+    :action="pendingAction.type"
+    @authorized="onSupervisorAuthorized"
+    @cancelled="onSupervisorCancelled"
+  />
 </template>
