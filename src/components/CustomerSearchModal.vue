@@ -89,49 +89,68 @@
 
               <!-- Create New Customer Form -->
               <div v-if="showCreateForm" class="mt-4 p-4 border rounded-lg bg-yellow-50">
-                <h4 class="text-sm font-medium text-gray-800 mb-2">Cliente no encontrado</h4>
-                <p class="text-xs text-gray-600 mb-3">Complete los datos para crear un nuevo cliente:</p>
+                <h4 class="text-sm font-medium text-gray-800 mb-2">
+                  {{ lookupData ? '✓ Datos encontrados en RENIEC/SUNAT' : 'Cliente no encontrado' }}
+                </h4>
+                <p class="text-xs text-gray-600 mb-3">
+                  {{ lookupData ? 'Verifica los datos y completa la información:' : 'Complete los datos para crear un nuevo cliente:' }}
+                </p>
 
                 <div class="space-y-2">
-                  <input
-                    v-if="tipoDoc === 'DNI'"
-                    v-model="newCustomer.nombres"
-                    type="text"
-                    placeholder="Nombres"
-                    class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
-                  />
-                  <input
-                    v-if="tipoDoc === 'DNI'"
-                    v-model="newCustomer.apellidos"
-                    type="text"
-                    placeholder="Apellidos"
-                    class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
-                  />
-                  <input
-                    v-else
-                    v-model="newCustomer.razonSocial"
-                    type="text"
-                    placeholder="Razón Social"
-                    class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
-                  />
-                  <input
-                    v-model="newCustomer.correoElectronico"
-                    type="email"
-                    placeholder="Correo electrónico (opcional)"
-                    class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
-                  />
-                  <input
-                    v-model="newCustomer.telefono"
-                    type="tel"
-                    placeholder="Teléfono (opcional)"
-                    class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
-                  />
+                  <div v-if="tipoDoc === 'DNI'">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Nombres</label>
+                    <input
+                      v-model="newCustomer.nombres"
+                      type="text"
+                      placeholder="Nombres"
+                      class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
+                      required
+                    />
+                  </div>
+                  <div v-if="tipoDoc === 'DNI'">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Apellidos</label>
+                    <input
+                      v-model="newCustomer.apellidos"
+                      type="text"
+                      placeholder="Apellidos"
+                      class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
+                      required
+                    />
+                  </div>
+                  <div v-else>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Razón Social</label>
+                    <input
+                      v-model="newCustomer.razonSocial"
+                      type="text"
+                      placeholder="Razón Social"
+                      class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Email (opcional)</label>
+                    <input
+                      v-model="newCustomer.correoElectronico"
+                      type="email"
+                      placeholder="correo@ejemplo.com"
+                      class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Teléfono (opcional)</label>
+                    <input
+                      v-model="newCustomer.telefono"
+                      type="tel"
+                      placeholder="987654321"
+                      class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
+                    />
+                  </div>
                   <button
                     @click="createCustomer"
                     :disabled="!isNewCustomerValid"
-                    class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                    class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
                   >
-                    Crear y Seleccionar
+                    Crear y Seleccionar Cliente
                   </button>
                 </div>
               </div>
@@ -214,22 +233,33 @@ const searchByDocument = async () => {
     return;
   }
 
+  // Prevent duplicate searches
+  if (searching.value) {
+    console.log('⚠️ Already searching, skipping duplicate request');
+    return;
+  }
+
   searching.value = true;
   searched.value = false;
   lookupData.value = null;
+  searchResults.value = [];
+  showCreateForm.value = false;
 
   try {
     // Step 1: Search in our database by document number
     const documentType = tipoDoc.value === 'DNI' ? '1' : '6';
+    console.log(`🔍 Searching ${tipoDoc.value} ${numDoc.value} in database...`);
     const searchResponse = await customersApi.searchByDocument(numDoc.value, documentType);
-    console.log('Search response:', searchResponse);
+    console.log('📋 Search response:', searchResponse);
 
     if (searchResponse.success && searchResponse.found) {
       // Customer exists in our database
-      console.log('Customer found in DB:', searchResponse.data);
+      console.log('✅ Customer found in DB:', searchResponse.data);
+      console.log('👤 Customer name:', searchResponse.data.name);
       searchResults.value = [searchResponse.data];
       showCreateForm.value = false;
       searched.value = true;
+      console.log('📊 State updated - searchResults:', searchResults.value.length, 'showCreateForm:', showCreateForm.value);
     } else {
       // Step 2: Customer not found locally, lookup in Decolecta
       console.log('Customer not in DB, looking up in Decolecta...');
