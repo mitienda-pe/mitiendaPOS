@@ -256,10 +256,15 @@ const searchByDocument = async () => {
       // Customer exists in our database
       console.log('✅ Customer found in DB:', searchResponse.data);
       console.log('👤 Customer name:', searchResponse.data.name);
+      console.log('📝 Setting searchResults to array with customer...');
       searchResults.value = [searchResponse.data];
       showCreateForm.value = false;
       searched.value = true;
-      console.log('📊 State updated - searchResults:', searchResults.value.length, 'showCreateForm:', showCreateForm.value);
+      console.log('📊 State updated:');
+      console.log('   - searchResults.length:', searchResults.value.length);
+      console.log('   - searchResults[0]:', searchResults.value[0]);
+      console.log('   - showCreateForm:', showCreateForm.value);
+      console.log('   - searched:', searched.value);
     } else {
       // Step 2: Customer not found locally, lookup in Decolecta
       console.log('Customer not in DB, looking up in Decolecta...');

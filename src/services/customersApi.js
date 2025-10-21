@@ -69,8 +69,16 @@ export const customersApi = {
         params.append('document_type', documentType);
       }
 
+      console.log('🔎 API: Searching customer by document:', documentNumber, 'type:', documentType);
       const response = await apiClient.get(`/customers/search-by-document?${params.toString()}`);
-      console.log('searchByDocument backend response:', response.data);
+      console.log('📦 API: searchByDocument response:', response.data);
+
+      if (response.data.found) {
+        console.log('✅ API: Customer found:', response.data.data);
+        console.log('👤 API: Customer name:', response.data.data?.name);
+      } else {
+        console.log('❌ API: Customer NOT found in database');
+      }
 
       return {
         success: response.data.success,
