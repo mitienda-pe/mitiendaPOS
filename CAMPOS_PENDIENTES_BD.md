@@ -357,18 +357,89 @@ CREATE TABLE pos_sesiones (
 
 ---
 
+## 5. Empleados/Cajeros: Tabla `tiendausuarios` ✅ COMPLETADO
+
+### Propósito
+Gestionar empleados/cajeros del POS con autenticación por PIN y control de roles.
+
+### Estado
+✅ **IMPLEMENTADO** - Ver archivo `/app/Database/Migrations/2025-01-21-create-tiendausuarios-table.sql`
+
+### Estructura creada
+
+```sql
+CREATE TABLE tiendausuarios (
+  tiendausuario_id INT(11) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  usuario_id INT(11) UNSIGNED NOT NULL,
+  tienda_id INT(11) UNSIGNED NOT NULL,
+  tiendausuario_pin VARCHAR(6) NOT NULL,
+  tiendausuario_rol ENUM('cajero', 'supervisor', 'administrador') NOT NULL DEFAULT 'cajero',
+  tiendausuario_activo TINYINT(1) NOT NULL DEFAULT 1,
+  tiendausuario_sucursal_id INT(11) UNSIGNED NULL,
+  tiendausuario_fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  tiendausuario_fecha_modificacion DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+
+  UNIQUE KEY idx_pin_tienda (tiendausuario_pin, tienda_id),
+  KEY idx_usuario (usuario_id),
+  KEY idx_tienda (tienda_id),
+  KEY idx_sucursal (tiendausuario_sucursal_id),
+  KEY idx_activo_rol (tiendausuario_activo, tiendausuario_rol),
+  KEY idx_pin_lookup (tiendausuario_pin, tienda_id, tiendausuario_activo)
+);
+```
+
+### Documentación completa
+Ver archivo `MODULO_EMPLEADOS.md` para:
+- Arquitectura completa (backend + frontend)
+- Flujo de validación de PIN
+- Roles y permisos
+- Guía de configuración
+
+### API Implementada
+- ✅ `EmployeeModel.php` - Modelo con métodos CRUD
+- ✅ `Employee.php` - Controller con 7 endpoints REST
+- ✅ `employeesApi.js` - Servicio frontend
+- ✅ `SupervisorAuthModal.vue` - Modal de autorización
+
+### Estado de migración
+⚠️ **PENDIENTE EJECUTAR** en servidor de producción:
+```bash
+ssh mtserv
+cd /var/www/api2.mitienda.pe
+mysql -u root -p mitienda < app/Database/Migrations/2025-01-21-create-tiendausuarios-table.sql
+```
+
+---
+
 ## Resumen de campos pendientes
 
-| Tabla | Campo | Tipo | Propósito | Prioridad |
-|-------|-------|------|-----------|-----------|
-| `producto` | `producto_publicado_pos` | TINYINT(1) | Publicación exclusiva POS | 🔴 Alta |
-| `tiendasdirecciones` | `tienda_pos_activo` | TINYINT(1) | Identificar tiendas con POS | 🟡 Media |
-| `empleados` | `empleado_sucursal_id` | INT | Asignación a sucursal | 🟡 Media |
-| Nueva tabla | `pos_sesiones` | - | Tracking de sesiones POS | 🟢 Baja |
+| Tabla | Campo | Tipo | Propósito | Estado | Prioridad |
+|-------|-------|------|-----------|--------|-----------|
+| `tiendausuarios` | **TABLA COMPLETA** | - | Empleados/cajeros POS | ✅ Creada | 🔴 Alta |
+| `producto` | `producto_publicado_pos` | TINYINT(1) | Publicación exclusiva POS | ⚠️ Pendiente | 🔴 Alta |
+| `tiendasdirecciones` | `tienda_pos_activo` | TINYINT(1) | Identificar tiendas con POS | ⚠️ Pendiente | 🟡 Media |
+| `empleados` | `empleado_sucursal_id` | INT | Asignación a sucursal | ⚠️ Pendiente | 🟡 Media |
+| Nueva tabla | `pos_sesiones` | - | Tracking de sesiones POS | ⚠️ Pendiente | 🟢 Baja |
 
 ---
 
 ## Plan de ejecución
+
+### ✅ Fase 0: Empleados/Cajeros (COMPLETADO)
+```bash
+# ✅ 1. Tabla tiendausuarios creada
+# ✅ 2. API de empleados implementada (EmployeeModel + Employee controller)
+# ✅ 3. Frontend con validación real de PIN
+# ✅ 4. SupervisorAuthModal integrado con API
+
+# ⚠️ PENDIENTE: Ejecutar migración en producción
+ssh mtserv
+cd /var/www/api2.mitienda.pe
+mysql -u root -p mitienda < app/Database/Migrations/2025-01-21-create-tiendausuarios-table.sql
+
+# ⚠️ PENDIENTE: Crear empleados de prueba
+# Ver MODULO_EMPLEADOS.md sección "Configuración Inicial"
+```
 
 ### Fase 1: Inmediato (necesario para MVP)
 ```bash
@@ -386,10 +457,10 @@ php spark migrate
 # 3. Validar en login que sucursal tenga POS activo
 ```
 
-### Fase 3: Mediano plazo (cuando se implemente gestión de empleados)
+### Fase 3: Mediano plazo (cuando se necesite rotación)
 ```bash
-# 1. Agregar empleado_sucursal_id o tabla empleados_sucursales
-# 2. Implementar asignación de empleados a sucursales
+# 1. Usar tiendausuario_sucursal_id (ya existe en tiendausuarios)
+# 2. Implementar asignación de empleados a sucursales en UI
 # 3. Permitir rotación de empleados
 ```
 
