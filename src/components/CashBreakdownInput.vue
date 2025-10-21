@@ -13,11 +13,12 @@
             :value="counts[bill] || 0"
             @input="updateCount(bill, $event.target.value)"
             min="0"
+            max="999"
             step="1"
             placeholder="0"
-            class="flex-1 px-2 py-1 text-sm border rounded focus:ring-1 focus:ring-blue-500"
+            class="w-16 px-2 py-1 text-sm text-center border rounded focus:ring-1 focus:ring-blue-500"
           />
-          <span class="text-xs text-gray-500 w-16 text-right">
+          <span class="text-xs text-gray-500 w-20 text-right">
             S/ {{ (bill * (counts[bill] || 0)).toFixed(2) }}
           </span>
         </div>
@@ -35,11 +36,12 @@
             :value="counts[coin] || 0"
             @input="updateCount(coin, $event.target.value)"
             min="0"
+            max="999"
             step="1"
             placeholder="0"
-            class="flex-1 px-2 py-1 text-sm border rounded focus:ring-1 focus:ring-blue-500"
+            class="w-16 px-2 py-1 text-sm text-center border rounded focus:ring-1 focus:ring-blue-500"
           />
-          <span class="text-xs text-gray-500 w-16 text-right">
+          <span class="text-xs text-gray-500 w-20 text-right">
             S/ {{ (coin * (counts[coin] || 0)).toFixed(2) }}
           </span>
         </div>
@@ -117,7 +119,11 @@ const matches = computed(() => {
 
 const updateCount = (denomination, value) => {
   const newCounts = { ...counts.value };
-  newCounts[denomination] = parseInt(value) || 0;
+  // Solo aceptar números enteros, máximo 3 dígitos
+  let intValue = parseInt(value) || 0;
+  if (intValue < 0) intValue = 0;
+  if (intValue > 999) intValue = 999;
+  newCounts[denomination] = intValue;
   emit('update:modelValue', newCounts);
   emit('update:total', total.value);
 };
