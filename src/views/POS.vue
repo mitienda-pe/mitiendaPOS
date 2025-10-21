@@ -8,6 +8,7 @@ import { productsApi } from '../services/productsApi';
 import { ordersApi } from '../services/ordersApi';
 import { mockCustomersApi } from '../api/mockCustomers';
 import { useSavedSalesStore } from '../stores/savedSales';
+import { cashMovementsApi } from '../services/cashMovementsApi';
 import CustomerSearchModal from '../components/CustomerSearchModal.vue';
 import PaymentModal from '../components/PaymentModal.vue';
 import SavedSalesModal from '../components/SavedSalesModal.vue';
@@ -345,6 +346,41 @@ const handlePaymentCompleted = async () => {
       for (const item of cartItems.value) {
         const updatedStock = item.stock - item.quantity;
         await productsApi.updateStock(item.id, updatedStock);
+      }
+
+      // Registrar movimientos de caja por cada pago
+      if (shiftStore.hasActiveShift) {
+        const shiftId = shiftStore.activeShift.id;
+        const saleReference = `VENTA-${response.data.order_id || response.data.id || Date.now()}`;
+        const customerName = selectedCustomer.value?.name || 'Cliente General';
+
+        console.log('💰 [POS] Registering cash movements for shift:', shiftId);
+
+        for (const payment of payments.value) {
+          try {
+            await cashMovementsApi.registerSale(
+              shiftId,
+              payment.method,
+              payment.amount,
+              saleReference,
+              customerName
+            );
+            console.log(`✅ [POS] Movement registered: ${payment.method} - S/ ${payment.amount}`);
+          } catch (movementError) {
+            console.error('❌ [POS] Error registering movement:', movementError);
+            // No interrumpir el flujo si falla el registro de movimiento
+            // La venta ya se completó exitosamente
+          }
+        }
+
+        // Actualizar turno activo para reflejar los nuevos totales
+        try {
+          await shiftStore.fetchActiveShift();
+        } catch (shiftError) {
+          console.error('Error updating shift data:', shiftError);
+        }
+      } else {
+        console.warn('⚠️ [POS] No active shift - movements not registered');
       }
 
       // Si esta venta estaba guardada, eliminarla de las ventas guardadas
