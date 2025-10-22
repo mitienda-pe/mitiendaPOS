@@ -36,6 +36,9 @@ const productSearchQuery = ref('');
 const productCategoryFilter = ref('');
 const productSearchResults = ref([]);
 
+// Sale state tracking
+const saleHasUnsavedChanges = ref(false);
+
 // Modals
 const showProductModal = ref(false);
 const showPaymentModal = ref(false);
