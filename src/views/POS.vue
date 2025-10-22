@@ -15,6 +15,7 @@ import SavedSalesModal from '../components/SavedSalesModal.vue';
 import StartSaleModal from '../components/StartSaleModal.vue';
 import SupervisorAuthModal from '../components/SupervisorAuthModal.vue';
 import ConfirmProductsModal from '../components/ConfirmProductsModal.vue';
+import MergeSalesModal from '../components/MergeSalesModal.vue';
 
 // Stores
 const authStore = useAuthStore();
@@ -49,6 +50,10 @@ const showStartSaleModal = ref(false);
 const showSupervisorAuth = ref(false);
 const showTicket = ref(false);
 const showConfirmProducts = ref(false);
+const showMergeSales = ref(false);
+
+// Datos para el modal de fusión
+const existingSaleForMerge = ref(null);
 
 // Autorización pendiente
 const pendingAction = ref({ type: null, data: null });
@@ -232,7 +237,20 @@ const saveSaleForLater = () => {
 
   // Estado C: Carrito con productos y documento registrado
   if (state === 'C') {
-    // Guardar la venta y mostrar mensaje de éxito
+    // Verificar si el cliente ya tiene una venta guardada
+    const customerDoc = selectedCustomer.value?.documento;
+    if (customerDoc) {
+      const existingSales = savedSalesStore.findSalesByCustomer(customerDoc);
+
+      // Si hay ventas guardadas del mismo cliente, mostrar modal de fusión
+      if (existingSales.length > 0) {
+        existingSaleForMerge.value = existingSales[0]; // Tomar la primera (más reciente)
+        showMergeSales.value = true;
+        return;
+      }
+    }
+
+    // No hay conflicto, guardar normalmente
     autoSaveSale();
     saleHasUnsavedChanges.value = false;
     alert('✅ Venta guardada correctamente');
@@ -284,6 +302,33 @@ const handleDeleteProducts = () => {
   resetSale();
   currentSaleId.value = null;
   showStartSaleModal.value = true;
+};
+
+// Manejar fusión de ventas
+const handleMergeSales = (data) => {
+  const { existingSaleId, mergedItems } = data;
+
+  // Actualizar la venta guardada con los items fusionados
+  savedSalesStore.updateSale(existingSaleId, {
+    items: mergedItems,
+    customer: selectedCustomer.value,
+    payments: payments.value,
+    documentType: documentType.value
+  });
+
+  // Limpiar el carrito actual
+  resetSale();
+  saleHasUnsavedChanges.value = false;
+
+  alert('✅ Ventas fusionadas correctamente. La venta se encuentra en "Ventas Guardadas".');
+};
+
+// Manejar creación de nueva venta independiente
+const handleCreateNewSale = () => {
+  // Guardar la venta actual como una nueva venta independiente
+  autoSaveSale();
+  saleHasUnsavedChanges.value = false;
+  alert('✅ Nueva venta independiente guardada correctamente.');
 };
 
 // Manejar inicio de venta desde el modal
@@ -1120,5 +1165,16 @@ const getPaymentMethodName = (method) => {
     :product-count="cartItems.length"
     @keep="handleKeepProducts"
     @delete="handleDeleteProducts"
+  />
+
+  <!-- Merge Sales Modal -->
+  <MergeSalesModal
+    v-if="existingSaleForMerge"
+    v-model="showMergeSales"
+    :existing-sale="existingSaleForMerge"
+    :current-sale="{ items: cartItems, payments: payments, customer: selectedCustomer }"
+    :customer-name="selectedCustomer?.nombre || selectedCustomer?.razonSocial || 'Cliente'"
+    @merge="handleMergeSales"
+    @create-new="handleCreateNewSale"
   />
 </template>

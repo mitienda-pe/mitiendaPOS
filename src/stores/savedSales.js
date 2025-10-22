@@ -48,7 +48,7 @@ export const useSavedSalesStore = defineStore('savedSales', () => {
       // Mantener el ID y timestamp originales
       const originalId = savedSales.value[index].id;
       const originalTimestamp = savedSales.value[index].timestamp;
-      
+
       savedSales.value[index] = {
         id: originalId,
         timestamp: originalTimestamp,
@@ -57,12 +57,23 @@ export const useSavedSalesStore = defineStore('savedSales', () => {
     }
   }
 
+  // Buscar ventas guardadas del mismo cliente (por documento)
+  function findSalesByCustomer(customerDocument) {
+    if (!customerDocument) return [];
+
+    return savedSales.value.filter(sale =>
+      sale.customer &&
+      sale.customer.documento === customerDocument
+    );
+  }
+
   return {
     savedSales,
     saveSale,
     getSavedSales,
     getSaleById,
     deleteSavedSale,
-    updateSale
+    updateSale,
+    findSalesByCustomer
   };
 });
