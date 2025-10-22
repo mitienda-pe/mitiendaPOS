@@ -14,6 +14,7 @@ import PaymentModal from '../components/PaymentModal.vue';
 import SavedSalesModal from '../components/SavedSalesModal.vue';
 import StartSaleModal from '../components/StartSaleModal.vue';
 import SupervisorAuthModal from '../components/SupervisorAuthModal.vue';
+import ConfirmProductsModal from '../components/ConfirmProductsModal.vue';
 
 // Stores
 const authStore = useAuthStore();
@@ -47,6 +48,7 @@ const showSavedSalesModal = ref(false);
 const showStartSaleModal = ref(false);
 const showSupervisorAuth = ref(false);
 const showTicket = ref(false);
+const showConfirmProducts = ref(false);
 
 // Autorización pendiente
 const pendingAction = ref({ type: null, data: null });
@@ -252,23 +254,8 @@ const newSale = () => {
 
   // Estado B: Carrito con productos, sin documento
   if (state === 'B') {
-    // Preguntar si desea eliminar productos o incorporarlos
-    const choice = confirm(
-      '⚠️ Tienes productos en el carrito sin documento de cliente.\n\n' +
-      '¿Deseas incorporar estos productos a la nueva venta?\n\n' +
-      '• OK = Incorporar productos\n' +
-      '• Cancelar = Eliminar productos'
-    );
-
-    if (choice) {
-      // Incorporar: solo abrir modal para capturar documento, mantener productos
-      showStartSaleModal.value = true;
-    } else {
-      // Eliminar: limpiar carrito y abrir modal
-      resetSale();
-      currentSaleId.value = null;
-      showStartSaleModal.value = true;
-    }
+    // Mostrar modal de confirmación personalizado
+    showConfirmProducts.value = true;
     return;
   }
 
@@ -284,6 +271,19 @@ const newSale = () => {
     currentSaleId.value = null;
     showStartSaleModal.value = true;
   }
+};
+
+// Manejar la respuesta del modal de confirmación de productos
+const handleKeepProducts = () => {
+  // Mantener productos, solo abrir modal para capturar documento
+  showStartSaleModal.value = true;
+};
+
+const handleDeleteProducts = () => {
+  // Eliminar productos y abrir modal para nueva venta
+  resetSale();
+  currentSaleId.value = null;
+  showStartSaleModal.value = true;
 };
 
 // Manejar inicio de venta desde el modal
@@ -1111,5 +1111,14 @@ const getPaymentMethodName = (method) => {
     :action="pendingAction.type"
     @authorized="onSupervisorAuthorized"
     @cancelled="onSupervisorCancelled"
+  />
+
+  <!-- Confirm Products Modal -->
+  <ConfirmProductsModal
+    v-model="showConfirmProducts"
+    :products="cartItems"
+    :product-count="cartItems.length"
+    @keep="handleKeepProducts"
+    @delete="handleDeleteProducts"
   />
 </template>
