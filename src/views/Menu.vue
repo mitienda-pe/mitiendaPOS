@@ -245,14 +245,9 @@
           <div class="flex flex-col items-center justify-center h-full text-center">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-emerald-500 mb-4" viewBox="0 0 24 24"
               fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-              <circle cx="8" cy="14" r="1"></circle>
-              <circle cx="12" cy="14" r="1"></circle>
-              <circle cx="16" cy="14" r="1"></circle>
-              <circle cx="8" cy="17" r="1"></circle>
-              <circle cx="12" cy="17" r="1"></circle>
-              <circle cx="16" cy="17" r="1"></circle>
+              <rect width="20" height="14" x="2" y="3" rx="2"/>
+              <line x1="8" x2="16" y1="21" y2="21"/>
+              <line x1="12" x2="12" y1="17" y2="21"/>
             </svg>
             <h2 class="text-xl font-medium text-gray-900 mb-2">Cajas</h2>
             <p class="text-gray-600 text-center">Administra las cajas registradoras</p>
