@@ -153,8 +153,8 @@
         </div>
       </router-link>
 
-      <!-- 7. Descuentos y Promociones -->
-      <router-link to="/promotions" class="block">
+      <!-- 7. Descuentos y Promociones (Próximamente) -->
+      <!-- <router-link to="/promotions" class="block">
         <div
           class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-pink-500">
           <div class="flex flex-col items-center justify-center h-full text-center">
@@ -168,10 +168,10 @@
             <p class="text-gray-600 text-center">Gestiona ofertas y promociones</p>
           </div>
         </div>
-      </router-link>
+      </router-link> -->
 
-      <!-- 8. Vales y Tarjetas de Regalo -->
-      <router-link to="/vouchers" class="block">
+      <!-- 8. Vales y Tarjetas de Regalo (Próximamente) -->
+      <!-- <router-link to="/vouchers" class="block">
         <div
           class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-yellow-500">
           <div class="flex flex-col items-center justify-center h-full text-center">
@@ -186,7 +186,7 @@
             <p class="text-gray-600 text-center">Gestiona vales de consumo y tarjetas de regalo</p>
           </div>
         </div>
-      </router-link>
+      </router-link> -->
 
       <!-- 9. Clientes -->
       <router-link to="/customers" class="block">
@@ -238,7 +238,47 @@
         </div>
       </router-link>
 
-      <!-- 12. Preferencias -->
+      <!-- 12. Cajas (Próximamente) -->
+      <router-link to="/cash-registers" class="block">
+        <div
+          class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-emerald-500">
+          <div class="flex flex-col items-center justify-center h-full text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-emerald-500 mb-4" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+              <circle cx="8" cy="14" r="1"></circle>
+              <circle cx="12" cy="14" r="1"></circle>
+              <circle cx="16" cy="14" r="1"></circle>
+              <circle cx="8" cy="17" r="1"></circle>
+              <circle cx="12" cy="17" r="1"></circle>
+              <circle cx="16" cy="17" r="1"></circle>
+            </svg>
+            <h2 class="text-xl font-medium text-gray-900 mb-2">Cajas</h2>
+            <p class="text-gray-600 text-center">Administra las cajas registradoras</p>
+          </div>
+        </div>
+      </router-link>
+
+      <!-- 13. Usuarios (Próximamente) -->
+      <router-link to="/users" class="block">
+        <div
+          class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-slate-500">
+          <div class="flex flex-col items-center justify-center h-full text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-slate-500 mb-4" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <h2 class="text-xl font-medium text-gray-900 mb-2">Usuarios</h2>
+            <p class="text-gray-600 text-center">Gestiona usuarios y permisos</p>
+          </div>
+        </div>
+      </router-link>
+
+      <!-- 14. Preferencias -->
       <router-link to="/preferences" class="block">
         <div
           class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-gray-500">
