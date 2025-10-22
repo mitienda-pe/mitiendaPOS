@@ -21,14 +21,13 @@
 
       <!-- 2. Turnos de Caja (Caja) - DINÁMICO -->
       <div class="block">
-        <div
-          class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full"
+        <div class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full"
           :class="shiftStore.hasActiveShift ? 'border-l-4 border-green-500' : 'border-l-4 border-red-500'">
           <div class="flex flex-col items-center justify-center h-full text-center">
             <svg xmlns="http://www.w3.org/2000/svg"
-                 :class="shiftStore.hasActiveShift ? 'text-green-500' : 'text-red-500'"
-                 class="h-16 w-16 mb-4" viewBox="0 0 24 24" fill="none"
-                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              :class="shiftStore.hasActiveShift ? 'text-green-500' : 'text-red-500'" class="h-16 w-16 mb-4"
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
               <rect x="2" y="5" width="20" height="14" rx="2"></rect>
               <line x1="2" y1="10" x2="22" y2="10"></line>
             </svg>
@@ -47,29 +46,22 @@
                   {{ shiftStore.activeShift.caja_numero }}
                 </p>
               </div>
-              <button
-                @click="handleCloseShift"
-                class="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
-              >
+              <button @click="handleCloseShift"
+                class="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium">
                 Cerrar Turno
               </button>
             </div>
 
             <div v-else class="w-full">
               <p class="text-gray-600 text-sm mb-3">No hay turno activo</p>
-              <button
-                @click="handleOpenShift"
-                class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-              >
+              <button @click="handleOpenShift"
+                class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
                 Abrir Turno
               </button>
             </div>
 
             <!-- Link al historial -->
-            <router-link
-              to="/shifts"
-              class="text-xs text-blue-600 hover:text-blue-800 mt-3 underline"
-            >
+            <router-link to="/shifts" class="text-xs text-blue-600 hover:text-blue-800 mt-3 underline">
               Ver historial de turnos
             </router-link>
           </div>
@@ -93,7 +85,46 @@
         </div>
       </router-link>
 
-      <!-- 4. Inventario -->
+      <!-- 4. Ventas -->
+      <router-link to="/sales" class="block">
+        <div
+          class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-cyan-500">
+          <div class="flex flex-col items-center justify-center h-full text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-cyan-500 mb-4" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 3v18h18"></path>
+              <path
+                d="M18.4 8.64L18.57 8.8a2 2 0 0 1 0 2.83l-8.49 8.48a2 2 0 0 1-2.83 0l-.17-.17a2 2 0 0 1 0-2.83l8.49-8.48a2 2 0 0 1 2.83 0Z">
+              </path>
+              <path d="M15 8h5v5"></path>
+              <path d="M18 11l-7 7"></path>
+            </svg>
+            <h2 class="text-xl font-medium text-gray-900 mb-2">Ventas</h2>
+            <p class="text-gray-600 text-center">Consulta el historial de ventas</p>
+          </div>
+        </div>
+      </router-link>
+
+      <!-- 5. Documentos -->
+      <router-link to="/documents" class="block">
+        <div
+          class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-amber-500">
+          <div class="flex flex-col items-center justify-center h-full text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-amber-500 mb-4" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <h2 class="text-xl font-medium text-gray-900 mb-2">Documentos</h2>
+            <p class="text-gray-600 text-center">Gestiona documentos y comprobantes</p>
+          </div>
+        </div>
+      </router-link>
+
+      <!-- 6. Inventario -->
       <router-link to="/inventory" class="block">
         <div
           class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-green-500">
@@ -122,62 +153,7 @@
         </div>
       </router-link>
 
-      <!-- 5. Ventas -->
-      <router-link to="/sales" class="block">
-        <div
-          class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-cyan-500">
-          <div class="flex flex-col items-center justify-center h-full text-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-cyan-500 mb-4" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 3v18h18"></path>
-              <path
-                d="M18.4 8.64L18.57 8.8a2 2 0 0 1 0 2.83l-8.49 8.48a2 2 0 0 1-2.83 0l-.17-.17a2 2 0 0 1 0-2.83l8.49-8.48a2 2 0 0 1 2.83 0Z">
-              </path>
-              <path d="M15 8h5v5"></path>
-              <path d="M18 11l-7 7"></path>
-            </svg>
-            <h2 class="text-xl font-medium text-gray-900 mb-2">Ventas</h2>
-            <p class="text-gray-600 text-center">Consulta el historial de ventas</p>
-          </div>
-        </div>
-      </router-link>
-
-      <!-- 6. Clientes -->
-      <router-link to="/customers" class="block">
-        <div
-          class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-purple-500">
-          <div class="flex flex-col items-center justify-center h-full text-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-purple-500 mb-4" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-            <h2 class="text-xl font-medium text-gray-900 mb-2">Clientes</h2>
-            <p class="text-gray-600 text-center">Administra tu cartera de clientes</p>
-          </div>
-        </div>
-      </router-link>
-
-      <!-- 7. Documentos -->
-      <router-link to="/documents" class="block">
-        <div
-          class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-amber-500">
-          <div class="flex flex-col items-center justify-center h-full text-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-amber-500 mb-4" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="16" y1="13" x2="8" y2="13"></line>
-              <line x1="16" y1="17" x2="8" y2="17"></line>
-              <polyline points="10 9 9 9 8 9"></polyline>
-            </svg>
-            <h2 class="text-xl font-medium text-gray-900 mb-2">Documentos</h2>
-            <p class="text-gray-600 text-center">Gestiona documentos y comprobantes</p>
-          </div>
-        </div>
-      </router-link>
-
-      <!-- 8. Descuentos y Promociones -->
+      <!-- 7. Descuentos y Promociones -->
       <router-link to="/promotions" class="block">
         <div
           class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-pink-500">
@@ -194,25 +170,7 @@
         </div>
       </router-link>
 
-      <!-- 9. Cambios y devoluciones -->
-      <router-link to="/returns" class="block">
-        <div
-          class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-teal-500">
-          <div class="flex flex-col items-center justify-center h-full text-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-teal-500 mb-4" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-              <path d="M3 3v5h5"></path>
-              <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path>
-              <path d="M16 16h5v5"></path>
-            </svg>
-            <h2 class="text-xl font-medium text-gray-900 mb-2">Cambios y devoluciones</h2>
-            <p class="text-gray-600 text-center">Gestiona cambios y devoluciones de productos</p>
-          </div>
-        </div>
-      </router-link>
-
-      <!-- 10. Vales y Tarjetas de Regalo -->
+      <!-- 8. Vales y Tarjetas de Regalo -->
       <router-link to="/vouchers" class="block">
         <div
           class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-yellow-500">
@@ -226,6 +184,40 @@
             </svg>
             <h2 class="text-xl font-medium text-gray-900 mb-2">Vales y Tarjetas de Regalo</h2>
             <p class="text-gray-600 text-center">Gestiona vales de consumo y tarjetas de regalo</p>
+          </div>
+        </div>
+      </router-link>
+
+      <!-- 9. Clientes -->
+      <router-link to="/customers" class="block">
+        <div
+          class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-purple-500">
+          <div class="flex flex-col items-center justify-center h-full text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-purple-500 mb-4" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <h2 class="text-xl font-medium text-gray-900 mb-2">Clientes</h2>
+            <p class="text-gray-600 text-center">Administra tu cartera de clientes</p>
+          </div>
+        </div>
+      </router-link>
+
+      <!-- 10. Cambios y devoluciones -->
+      <router-link to="/returns" class="block">
+        <div
+          class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-teal-500">
+          <div class="flex flex-col items-center justify-center h-full text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-teal-500 mb-4" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+              <path d="M3 3v5h5"></path>
+              <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path>
+              <path d="M16 16h5v5"></path>
+            </svg>
+            <h2 class="text-xl font-medium text-gray-900 mb-2">Cambios y devoluciones</h2>
+            <p class="text-gray-600 text-center">Gestiona cambios y devoluciones de productos</p>
           </div>
         </div>
       </router-link>
@@ -268,16 +260,9 @@
     </div>
 
     <!-- Modals -->
-    <OpenShiftModal
-      v-model="showOpenShiftModal"
-      @opened="onShiftOpened"
-    />
+    <OpenShiftModal v-model="showOpenShiftModal" @opened="onShiftOpened" />
 
-    <CloseShiftModal
-      v-model="showCloseShiftModal"
-      :shift="shiftStore.activeShift"
-      @closed="onShiftClosed"
-    />
+    <CloseShiftModal v-model="showCloseShiftModal" :shift="shiftStore.activeShift" @closed="onShiftClosed" />
   </div>
 </template>
 
