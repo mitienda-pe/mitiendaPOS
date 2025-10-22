@@ -288,6 +288,19 @@ const newSale = () => {
 
 // Manejar inicio de venta desde el modal
 const handleStartSale = (data) => {
+  const state = saleState.value;
+
+  // Si estamos en Estado B (productos sin documento), NO limpiar el carrito
+  // Solo agregar el cliente
+  if (state === 'B') {
+    if (data.customer) {
+      selectedCustomer.value = data.customer;
+    }
+    saleHasUnsavedChanges.value = true; // Marcar como cambios sin guardar
+    return;
+  }
+
+  // En cualquier otro caso (A o C), limpiar y empezar de nuevo
   resetSale();
   if (data.customer) {
     selectedCustomer.value = data.customer;
