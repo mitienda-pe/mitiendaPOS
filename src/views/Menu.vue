@@ -28,8 +28,10 @@
               :class="shiftStore.hasActiveShift ? 'text-green-500' : 'text-red-500'" class="h-16 w-16 mb-4"
               viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
               stroke-linejoin="round">
-              <rect x="2" y="5" width="20" height="14" rx="2"></rect>
-              <line x1="2" y1="10" x2="22" y2="10"></line>
+              <circle cx="8" cy="8" r="6"/>
+              <path d="M18.09 10.37A6 6 0 1 1 10.34 18"/>
+              <path d="M7 6h1v4"/>
+              <path d="m16.71 13.88.7.71-2.82 2.82"/>
             </svg>
 
             <h2 class="text-xl font-medium text-gray-900 mb-2">Caja</h2>
