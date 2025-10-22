@@ -1,0 +1,236 @@
+<template>
+  <div v-if="modelValue" class="fixed z-50 inset-0 overflow-y-auto">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+      <div class="fixed inset-0 bg-gray-900 bg-opacity-90 transition-opacity" @click="closeScanner"></div>
+      <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+        <div class="bg-white px-4 pt-5 pb-4 sm:p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 7V5a2 2 0 0 1 2-2h2"/>
+                <path d="M17 3h2a2 2 0 0 1 2 2v2"/>
+                <path d="M21 17v2a2 2 0 0 1-2 2h-2"/>
+                <path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
+                <rect width="10" height="10" x="7" y="7" rx="1"/>
+              </svg>
+              Escanear Código de Barras
+            </h3>
+            <button @click="closeScanner" class="text-gray-400 hover:text-gray-500 focus:outline-none">
+              <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Vista de cámara -->
+          <div class="relative">
+            <div id="barcode-scanner" class="w-full bg-black rounded-lg overflow-hidden" style="min-height: 400px;">
+              <!-- QuaggaJS se montará aquí -->
+            </div>
+
+            <!-- Overlay con guía visual -->
+            <div class="absolute inset-0 pointer-events-none flex items-center justify-center">
+              <div class="border-2 border-green-500 rounded-lg" style="width: 80%; height: 40%; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);"></div>
+            </div>
+          </div>
+
+          <!-- Instrucciones -->
+          <div class="mt-4 p-3 bg-blue-50 rounded-lg">
+            <p class="text-sm text-blue-800 text-center">
+              📸 Posiciona el código de barras dentro del área verde
+            </p>
+          </div>
+
+          <!-- Resultado -->
+          <div v-if="lastDetected" class="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-green-800">Código detectado:</p>
+                <p class="text-lg font-bold text-green-900 mt-1">{{ lastDetected }}</p>
+              </div>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Estado del escáner -->
+          <div v-if="!isScanning && !error" class="mt-4 text-center">
+            <div class="inline-flex items-center px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg">
+              <svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Iniciando cámara...
+            </div>
+          </div>
+
+          <!-- Error -->
+          <div v-if="error" class="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p class="text-sm font-medium text-red-800">⚠️ Error al acceder a la cámara</p>
+            <p class="text-sm text-red-600 mt-1">{{ error }}</p>
+            <button @click="retryScanner" class="mt-3 px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700">
+              Reintentar
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+          <button @click="closeScanner" type="button" class="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, watch, onUnmounted } from 'vue';
+import Quagga from '@ericblade/quagga2';
+
+const props = defineProps({
+  modelValue: {
+    type: Boolean,
+    required: true
+  }
+});
+
+const emit = defineEmits(['update:modelValue', 'detected']);
+
+const isScanning = ref(false);
+const lastDetected = ref('');
+const error = ref('');
+
+// Iniciar el escáner
+const startScanner = async () => {
+  error.value = '';
+  isScanning.value = false;
+
+  try {
+    await Quagga.init({
+      inputStream: {
+        name: 'Live',
+        type: 'LiveStream',
+        target: '#barcode-scanner',
+        constraints: {
+          width: { min: 640, ideal: 1280, max: 1920 },
+          height: { min: 480, ideal: 720, max: 1080 },
+          facingMode: 'environment', // Cámara trasera
+          aspectRatio: { min: 1, max: 2 }
+        }
+      },
+      locator: {
+        patchSize: 'medium',
+        halfSample: true
+      },
+      numOfWorkers: 4,
+      decoder: {
+        readers: [
+          'ean_reader',      // EAN-13, EAN-8
+          'code_128_reader', // Code 128
+          'code_39_reader',  // Code 39
+          'upc_reader',      // UPC-A, UPC-E
+          'ean_8_reader',
+          'code_39_vin_reader'
+        ]
+      },
+      locate: true
+    }, (err) => {
+      if (err) {
+        console.error('QuaggaJS Error:', err);
+        error.value = err.message || 'No se pudo acceder a la cámara. Verifica los permisos.';
+        isScanning.value = false;
+        return;
+      }
+
+      console.log('✅ QuaggaJS initialized successfully');
+      Quagga.start();
+      isScanning.value = true;
+    });
+
+    // Evento de detección
+    Quagga.onDetected((result) => {
+      if (result && result.codeResult && result.codeResult.code) {
+        const code = result.codeResult.code;
+        console.log('📦 Barcode detected:', code);
+
+        // Actualizar último código detectado
+        lastDetected.value = code;
+
+        // Emitir el código detectado
+        emit('detected', code);
+
+        // Opcional: Cerrar automáticamente después de detectar
+        setTimeout(() => {
+          closeScanner();
+        }, 1500);
+      }
+    });
+
+  } catch (err) {
+    console.error('Error starting scanner:', err);
+    error.value = 'Error al iniciar el escáner. Por favor, intenta nuevamente.';
+    isScanning.value = false;
+  }
+};
+
+// Detener el escáner
+const stopScanner = () => {
+  try {
+    if (isScanning.value) {
+      Quagga.stop();
+      isScanning.value = false;
+      console.log('🛑 Scanner stopped');
+    }
+  } catch (err) {
+    console.error('Error stopping scanner:', err);
+  }
+};
+
+// Cerrar modal
+const closeScanner = () => {
+  stopScanner();
+  lastDetected.value = '';
+  error.value = '';
+  emit('update:modelValue', false);
+};
+
+// Reintentar
+const retryScanner = () => {
+  stopScanner();
+  setTimeout(() => {
+    startScanner();
+  }, 500);
+};
+
+// Observar cambios en modelValue
+watch(() => props.modelValue, (newValue) => {
+  if (newValue) {
+    // Dar tiempo para que el DOM se monte
+    setTimeout(() => {
+      startScanner();
+    }, 300);
+  } else {
+    stopScanner();
+  }
+});
+
+// Limpiar al desmontar
+onUnmounted(() => {
+  stopScanner();
+});
+</script>
+
+<style scoped>
+#barcode-scanner video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+#barcode-scanner canvas {
+  display: none;
+}
+</style>

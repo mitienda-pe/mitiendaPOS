@@ -16,6 +16,7 @@ import StartSaleModal from '../components/StartSaleModal.vue';
 import SupervisorAuthModal from '../components/SupervisorAuthModal.vue';
 import ConfirmProductsModal from '../components/ConfirmProductsModal.vue';
 import MergeSalesModal from '../components/MergeSalesModal.vue';
+import BarcodeScanner from '../components/BarcodeScanner.vue';
 
 // Stores
 const authStore = useAuthStore();
@@ -51,6 +52,7 @@ const showSupervisorAuth = ref(false);
 const showTicket = ref(false);
 const showConfirmProducts = ref(false);
 const showMergeSales = ref(false);
+const showBarcodeScanner = ref(false);
 
 // Datos para el modal de fusión
 const existingSaleForMerge = ref(null);
@@ -155,6 +157,22 @@ const handleBarcodeInput = async () => {
     console.error('Error searching product:', error);
     alert('Error al buscar el producto');
   }
+};
+
+// Abrir scanner de código de barras con cámara
+const openBarcodeScanner = () => {
+  showBarcodeScanner.value = true;
+};
+
+// Manejar código detectado por el scanner
+const handleBarcodeDetected = async (code) => {
+  console.log('📦 Barcode detected:', code);
+
+  // Establecer el código en el input
+  barcode.value = code;
+
+  // Buscar y agregar el producto
+  await handleBarcodeInput();
 };
 
 const addToCart = (product) => {
@@ -811,12 +829,18 @@ const getPaymentMethodName = (method) => {
         <div class="flex-1 overflow-auto p-6">
           <!-- Barcode Scanner -->
           <div class="mb-6 search-container relative">
-            <div class="flex">
+            <div class="flex gap-2">
               <input ref="barcodeInput" v-model="barcode" type="text"
                 placeholder="Escanear código de barras o buscar producto..."
-                class="flex-grow p-2 border rounded-l-lg focus:ring-2 focus:ring-blue-500"
+                class="flex-grow p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                 @keyup.enter="handleBarcodeInput" @input="searchProducts">
-              <button @click="showProductList" class="bg-blue-500 text-white p-2 rounded-r-lg hover:bg-blue-600">
+              <button @click="openBarcodeScanner" class="bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 flex items-center justify-center" title="Escanear con cámara">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+                  <circle cx="12" cy="13" r="3"/>
+                </svg>
+              </button>
+              <button @click="showProductList" class="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600 flex items-center justify-center" title="Buscar en catálogo">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none"
                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="11" cy="11" r="8"></circle>
@@ -1176,5 +1200,11 @@ const getPaymentMethodName = (method) => {
     :customer-name="selectedCustomer?.nombre || selectedCustomer?.razonSocial || 'Cliente'"
     @merge="handleMergeSales"
     @create-new="handleCreateNewSale"
+  />
+
+  <!-- Barcode Scanner Modal -->
+  <BarcodeScanner
+    v-model="showBarcodeScanner"
+    @detected="handleBarcodeDetected"
   />
 </template>
