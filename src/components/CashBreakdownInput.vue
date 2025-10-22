@@ -5,9 +5,9 @@
     <!-- Billetes -->
     <div class="mb-3">
       <h5 class="text-xs font-medium text-gray-600 mb-2 uppercase">Billetes</h5>
-      <div class="grid grid-cols-2 gap-2">
-        <div v-for="bill in DENOMINATIONS.bills" :key="bill" class="flex items-center space-x-2">
-          <label class="text-xs font-medium text-gray-700 w-16">S/ {{ bill }}</label>
+      <div class="grid grid-cols-1 gap-2">
+        <div v-for="bill in DENOMINATIONS.bills" :key="bill" class="flex items-center justify-between gap-2">
+          <label class="text-xs font-medium text-gray-700 min-w-[60px]">S/ {{ bill }}</label>
           <input
             type="number"
             :value="counts[bill] || 0"
@@ -16,9 +16,9 @@
             max="999"
             step="1"
             placeholder="0"
-            class="w-16 px-2 py-1 text-sm text-center border rounded focus:ring-1 focus:ring-blue-500"
+            class="w-14 px-1 py-1 text-sm text-center border rounded focus:ring-1 focus:ring-blue-500"
           />
-          <span class="text-xs text-gray-500 w-20 text-right">
+          <span class="text-xs text-gray-500 min-w-[70px] text-right">
             S/ {{ (bill * (counts[bill] || 0)).toFixed(2) }}
           </span>
         </div>
@@ -28,9 +28,9 @@
     <!-- Monedas -->
     <div>
       <h5 class="text-xs font-medium text-gray-600 mb-2 uppercase">Monedas</h5>
-      <div class="grid grid-cols-2 gap-2">
-        <div v-for="coin in DENOMINATIONS.coins" :key="coin" class="flex items-center space-x-2">
-          <label class="text-xs font-medium text-gray-700 w-16">S/ {{ coin.toFixed(2) }}</label>
+      <div class="grid grid-cols-1 gap-2">
+        <div v-for="coin in DENOMINATIONS.coins" :key="coin" class="flex items-center justify-between gap-2">
+          <label class="text-xs font-medium text-gray-700 min-w-[60px]">S/ {{ coin.toFixed(2) }}</label>
           <input
             type="number"
             :value="counts[coin] || 0"
@@ -39,9 +39,9 @@
             max="999"
             step="1"
             placeholder="0"
-            class="w-16 px-2 py-1 text-sm text-center border rounded focus:ring-1 focus:ring-blue-500"
+            class="w-14 px-1 py-1 text-sm text-center border rounded focus:ring-1 focus:ring-blue-500"
           />
-          <span class="text-xs text-gray-500 w-20 text-right">
+          <span class="text-xs text-gray-500 min-w-[70px] text-right">
             S/ {{ (coin * (counts[coin] || 0)).toFixed(2) }}
           </span>
         </div>
