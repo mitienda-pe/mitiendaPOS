@@ -113,30 +113,41 @@ const startScanner = async () => {
       inputStream: {
         name: 'Live',
         type: 'LiveStream',
-        target: '#barcode-scanner',
+        target: document.querySelector('#barcode-scanner'),
         constraints: {
-          width: { min: 640, ideal: 1280, max: 1920 },
-          height: { min: 480, ideal: 720, max: 1080 },
-          facingMode: 'environment', // Cámara trasera
-          aspectRatio: { min: 1, max: 2 }
+          width: 640,
+          height: 480,
+          facingMode: 'environment' // Cámara trasera
+        },
+        area: { // Área de escaneo
+          top: '20%',
+          right: '10%',
+          left: '10%',
+          bottom: '20%'
         }
       },
       locator: {
         patchSize: 'medium',
         halfSample: true
       },
-      numOfWorkers: 4,
+      numOfWorkers: navigator.hardwareConcurrency || 4,
       decoder: {
         readers: [
           'ean_reader',      // EAN-13, EAN-8
           'code_128_reader', // Code 128
           'code_39_reader',  // Code 39
           'upc_reader',      // UPC-A, UPC-E
-          'ean_8_reader',
-          'code_39_vin_reader'
-        ]
+          'ean_8_reader'
+        ],
+        debug: {
+          drawBoundingBox: true,
+          showFrequency: false,
+          drawScanline: true,
+          showPattern: false
+        }
       },
-      locate: true
+      locate: true,
+      frequency: 10
     }, (err) => {
       if (err) {
         console.error('QuaggaJS Error:', err);
@@ -224,13 +235,24 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+#barcode-scanner {
+  position: relative;
+}
+
 #barcode-scanner video {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 
 #barcode-scanner canvas {
-  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+#barcode-scanner canvas.drawingBuffer {
+  display: block;
 }
 </style>
