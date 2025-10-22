@@ -168,6 +168,7 @@
                         v-for="(suggestion, index) in paymentSuggestions.slice(0, 6)"
                         :key="index"
                         @click="applySuggestion(suggestion)"
+                        tabindex="-1"
                         :class="[
                           'px-2 py-1 text-xs rounded transition-colors',
                           suggestion.optimal
