@@ -72,6 +72,27 @@ const filteredProducts = computed(() => {
   return filtered;
 });
 
+// Detectar el estado actual de la venta (A, B o C)
+const saleState = computed(() => {
+  const hasProducts = cartItems.value.length > 0;
+  const hasCustomerDocument = selectedCustomer.value && selectedCustomer.value.documento;
+
+  if (!hasProducts && !hasCustomerDocument) {
+    return 'A'; // Carrito vacío, sin documento
+  }
+
+  if (hasProducts && !hasCustomerDocument) {
+    return 'B'; // Carrito con productos, sin documento
+  }
+
+  if (hasProducts && hasCustomerDocument) {
+    return 'C'; // Carrito con productos y documento registrado
+  }
+
+  // Caso: no hay productos pero hay documento (iniciado venta, sin productos aún)
+  return 'A';
+});
+
 // Usar getters del cart store
 const subtotal = computed(() => cartStore.subtotal);
 const tax = computed(() => cartStore.tax);
@@ -189,36 +210,80 @@ const removeItem = (item) => {
   }
 };
 
-// Guardar la venta actual para más tarde
+// Guardar la venta actual para más tarde (Botón "Guardar Venta")
 const saveSaleForLater = () => {
-  if (cartItems.value.length === 0) {
-    alert('No hay productos en la venta para guardar');
+  const state = saleState.value;
+
+  // Estado A: Carrito vacío, sin documento
+  if (state === 'A') {
+    // Mostrar modal "Iniciar Venta" para capturar documento del cliente
+    showStartSaleModal.value = true;
     return;
   }
 
-  autoSaveSale();
-  saleHasUnsavedChanges.value = false;
-  // Mostrar mensaje de confirmación
-  alert('Venta guardada correctamente');
-};
-
-// Iniciar una nueva venta
-const newSale = () => {
-  // Si hay productos en el carrito y no está guardada, preguntar
-  if (cartItems.value.length > 0 && saleHasUnsavedChanges.value) {
-    if (confirm('¿Desea guardar la venta actual antes de iniciar una nueva?')) {
-      saveSaleForLater();
-    } else {
-      // Usuario eligió eliminar
-      resetSale();
-    }
+  // Estado B: Carrito con productos, sin documento
+  if (state === 'B') {
+    // Mostrar modal "Iniciar Venta" para capturar documento del cliente
+    showStartSaleModal.value = true;
+    return;
   }
 
-  // Limpiar el ID de la venta actual
-  currentSaleId.value = null;
+  // Estado C: Carrito con productos y documento registrado
+  if (state === 'C') {
+    // Guardar la venta y mostrar mensaje de éxito
+    autoSaveSale();
+    saleHasUnsavedChanges.value = false;
+    alert('✅ Venta guardada correctamente');
+  }
+};
 
-  // Abrir el modal de inicio de venta
-  showStartSaleModal.value = true;
+// Iniciar una nueva venta (Botón "Nueva Venta")
+const newSale = () => {
+  const state = saleState.value;
+
+  // Estado A: Carrito vacío, sin documento
+  if (state === 'A') {
+    // Simplemente mostrar el modal "Iniciar Nueva Venta"
+    resetSale();
+    currentSaleId.value = null;
+    showStartSaleModal.value = true;
+    return;
+  }
+
+  // Estado B: Carrito con productos, sin documento
+  if (state === 'B') {
+    // Preguntar si desea eliminar productos o incorporarlos
+    const choice = confirm(
+      '⚠️ Tienes productos en el carrito sin documento de cliente.\n\n' +
+      '¿Deseas incorporar estos productos a la nueva venta?\n\n' +
+      '• OK = Incorporar productos\n' +
+      '• Cancelar = Eliminar productos'
+    );
+
+    if (choice) {
+      // Incorporar: solo abrir modal para capturar documento, mantener productos
+      showStartSaleModal.value = true;
+    } else {
+      // Eliminar: limpiar carrito y abrir modal
+      resetSale();
+      currentSaleId.value = null;
+      showStartSaleModal.value = true;
+    }
+    return;
+  }
+
+  // Estado C: Carrito con productos y documento registrado
+  if (state === 'C') {
+    // Guardar venta anterior y crear nueva con modal
+    autoSaveSale();
+    saleHasUnsavedChanges.value = false;
+    alert('✅ Venta anterior guardada correctamente');
+
+    // Limpiar y abrir modal para nueva venta
+    resetSale();
+    currentSaleId.value = null;
+    showStartSaleModal.value = true;
+  }
 };
 
 // Manejar inicio de venta desde el modal
