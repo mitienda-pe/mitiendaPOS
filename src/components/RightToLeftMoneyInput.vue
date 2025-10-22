@@ -116,11 +116,14 @@ const emitChange = (numericValue) => {
 
 // Maneja las teclas presionadas
 const handleKeyDown = (e) => {
+    console.log('🔢 [MoneyInput] Key pressed:', e.key, 'Current internal value:', internalValue.value);
+
     // Permitir solo teclas numéricas, backspace, delete, tab, y flechas
     const allowedKeys = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
     const isNumericKey = /^[0-9]$/.test(e.key);
 
     if (!isNumericKey && !allowedKeys.includes(e.key)) {
+        console.log('⛔ [MoneyInput] Key not allowed:', e.key);
         e.preventDefault();
         return;
     }
@@ -129,6 +132,7 @@ const handleKeyDown = (e) => {
     if (isNumericKey) {
         e.preventDefault();
         const newValue = internalValue.value + e.key;
+        console.log('➕ [MoneyInput] Adding digit, new value:', newValue);
         processInput(newValue);
     }
 
@@ -136,6 +140,7 @@ const handleKeyDown = (e) => {
     if (e.key === 'Backspace') {
         e.preventDefault();
         const newValue = internalValue.value.slice(0, -1);
+        console.log('⬅️ [MoneyInput] Backspace, new value:', newValue);
         processInput(newValue);
     }
 };
