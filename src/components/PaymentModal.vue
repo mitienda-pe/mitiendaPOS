@@ -656,13 +656,8 @@ const selectPaymentMethod = (method) => {
 };
 
 const calculateChange = () => {
-  // Para efectivo: redondear a 0.10 (sin monedas de 0.01 y 0.05)
-  const roundedCash = roundToValidAmount(cashAmount.value);
-
-  // Si el redondeo cambió el valor, actualizarlo
-  if (Math.abs(cashAmount.value - roundedCash) > 0.001) {
-    cashAmount.value = roundedCash;
-  }
+  // NO redondear cashAmount mientras el usuario escribe
+  // Solo usar el valor ingresado tal cual
 
   // El monto del pago es el total restante (lo que se debe cobrar)
   paymentAmount.value = props.remainingAmount;
