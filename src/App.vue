@@ -27,9 +27,25 @@
                   <div class="flex items-center space-x-4">
                     <!-- Store and User Info -->
                     <div class="text-right">
-                      <p class="text-gray-300 text-sm font-medium">{{ authStore.selectedStore?.name || 'Sin tienda' }}</p>
-                      <p class="text-gray-400 text-xs">{{ authStore.user?.name || 'Usuario' }}</p>
+                      <p class="text-gray-300 text-sm font-medium">
+                        {{ authStore.selectedStore?.name || 'Sin tienda' }}
+                        <span v-if="authStore.user?.name" class="text-gray-400">• {{ authStore.user.name }}</span>
+                      </p>
+                      <!-- Cajero activo en POS -->
+                      <p v-if="cashierStore.isCashierAuthenticated" class="text-green-400 text-xs">
+                        🧑‍💼 {{ cashierStore.cashierName }}
+                        <span v-if="cashierStore.workLocation" class="text-gray-400">• {{ cashierStore.workLocation }}</span>
+                      </p>
+                      <p v-else class="text-gray-500 text-xs italic">Sin cajero autenticado</p>
                     </div>
+                    <!-- Lock Button (only if cashier is authenticated) -->
+                    <button
+                      v-if="cashierStore.isCashierAuthenticated"
+                      @click="handleLock"
+                      class="bg-gray-700 text-gray-300 hover:bg-yellow-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                      title="Bloquear caja">
+                      🔒 Bloquear
+                    </button>
                     <!-- Logout Button -->
                     <button @click="authStore.logout"
                       class="bg-gray-700 text-gray-300 hover:bg-red-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
@@ -58,6 +74,14 @@
       </div>
     </div>
 
+    <!-- Lock Screen Modal -->
+    <LockScreenModal
+      v-model="showLockScreen"
+      :cashierInfo="lockScreenInfo"
+      :lockReason="cashierStore.lockReason"
+      @unlocked="handleUnlock"
+    />
+
     <!-- Main Content -->
     <main class="flex-1 overflow-hidden">
       <router-view v-if="!isLoading"></router-view>
@@ -78,18 +102,104 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue';
 import { useAuthStore } from './stores/auth';
+import { useCashierStore } from './stores/cashier';
 import { useRouter, useRoute } from 'vue-router';
+import LockScreenModal from './components/LockScreenModal.vue';
 
 const authStore = useAuthStore();
+const cashierStore = useCashierStore();
 const router = useRouter();
 const route = useRoute();
 const errorMessage = ref('');
 const isLoading = ref(true);
+const showLockScreen = ref(false);
+
+// Configuración de inactividad
+const INACTIVITY_TIMEOUT = 3 * 60 * 1000; // 3 minutos en milisegundos
+let inactivityTimer = null;
+let lastActivity = Date.now();
+
+// Info para el lock screen
+const lockScreenInfo = computed(() => {
+  if (!cashierStore.cashier) return null;
+  return {
+    nombre: cashierStore.cashierName,
+    sucursal: cashierStore.sucursal?.nombre || cashierStore.sucursal?.tiendadireccion_nombresucursal || 'Sucursal',
+    cajaNumero: cashierStore.cajaNumero
+  };
+});
 
 // Computed para ocultar botón "Menú Principal" cuando ya estás en el menú
 const showMenuButton = computed(() => route.path !== '/menu');
+
+// Bloqueo manual
+const handleLock = () => {
+  cashierStore.lock('Bloqueo manual');
+  showLockScreen.value = true;
+};
+
+// Desbloqueo
+const handleUnlock = () => {
+  cashierStore.unlock();
+  resetInactivityTimer();
+};
+
+// Resetear timer de inactividad
+const resetInactivityTimer = () => {
+  lastActivity = Date.now();
+
+  if (inactivityTimer) {
+    clearTimeout(inactivityTimer);
+  }
+
+  // Solo activar timer si hay cajero autenticado y no está bloqueado
+  if (cashierStore.isCashierAuthenticated && !cashierStore.locked) {
+    inactivityTimer = setTimeout(() => {
+      // Bloquear por inactividad
+      cashierStore.lock('Inactividad detectada');
+      showLockScreen.value = true;
+      console.log('⏱️ [APP] Caja bloqueada por inactividad');
+    }, INACTIVITY_TIMEOUT);
+  }
+};
+
+// Detectar actividad del usuario
+const handleUserActivity = () => {
+  // Solo resetear si hay cajero autenticado y no está bloqueado
+  if (cashierStore.isCashierAuthenticated && !cashierStore.locked) {
+    resetInactivityTimer();
+  }
+};
+
+// Watch para mostrar lock screen cuando se bloquea
+watch(() => cashierStore.locked, (isLocked) => {
+  showLockScreen.value = isLocked;
+
+  if (isLocked) {
+    // Detener el timer cuando se bloquea
+    if (inactivityTimer) {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = null;
+    }
+  } else {
+    // Reiniciar timer cuando se desbloquea
+    resetInactivityTimer();
+  }
+});
+
+// Watch para iniciar/detener timer cuando cambia autenticación
+watch(() => cashierStore.isCashierAuthenticated, (isAuth) => {
+  if (isAuth) {
+    resetInactivityTimer();
+  } else {
+    if (inactivityTimer) {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = null;
+    }
+  }
+});
 
 // Global error handler
 window.onerror = (message) => {
@@ -106,12 +216,36 @@ onMounted(async () => {
     if (!hasValidSession && router.currentRoute.value.name !== 'login') {
       router.push('/login');
     }
+
+    // Configurar listeners de actividad
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    events.forEach(event => {
+      document.addEventListener(event, handleUserActivity, true);
+    });
+
+    // Iniciar timer si hay cajero autenticado
+    if (cashierStore.isCashierAuthenticated) {
+      resetInactivityTimer();
+    }
   } catch (error) {
     console.error('Error checking session:', error);
     errorMessage.value = 'Error al verificar la sesión';
   } finally {
     isLoading.value = false;
   }
+});
+
+// Cleanup
+onBeforeUnmount(() => {
+  if (inactivityTimer) {
+    clearTimeout(inactivityTimer);
+  }
+
+  // Remover listeners
+  const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+  events.forEach(event => {
+    document.removeEventListener(event, handleUserActivity, true);
+  });
 });
 </script>
 

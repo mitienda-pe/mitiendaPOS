@@ -12,6 +12,8 @@ export const useCashierStore = defineStore('cashier', {
     sucursal: null, // Sucursal seleccionada
     cajaNumero: null, // Número de caja
     authenticated: false,
+    locked: false, // Estado de bloqueo
+    lockReason: null, // Razón del bloqueo (manual, inactividad, etc)
     loading: false,
     error: null,
   }),
@@ -102,6 +104,24 @@ export const useCashierStore = defineStore('cashier', {
     },
 
     /**
+     * Bloquear caja (requiere PIN para desbloquear)
+     */
+    lock(reason = 'Manual') {
+      this.locked = true;
+      this.lockReason = reason;
+      console.log(`🔒 [CASHIER] Caja bloqueada - Razón: ${reason}`);
+    },
+
+    /**
+     * Desbloquear caja
+     */
+    unlock() {
+      this.locked = false;
+      this.lockReason = null;
+      console.log('🔓 [CASHIER] Caja desbloqueada');
+    },
+
+    /**
      * Cerrar sesión de cajero
      */
     logout() {
@@ -109,6 +129,8 @@ export const useCashierStore = defineStore('cashier', {
       this.sucursal = null;
       this.cajaNumero = null;
       this.authenticated = false;
+      this.locked = false;
+      this.lockReason = null;
       this.error = null;
       localStorage.removeItem('cashier_session');
       console.log('🚪 [CASHIER] Sesión de cajero cerrada');
