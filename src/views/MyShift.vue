@@ -231,11 +231,19 @@
     <!-- Modals -->
     <OpenShiftModal
       v-model="showOpenShiftModal"
-      @shift-opened="onShiftOpened"
+      @opened="onShiftOpened"
     />
     <CloseShiftModal
       v-model="showCloseShiftModal"
       @shift-closed="onShiftClosed"
+    />
+    <CashierAuthModal
+      v-model="showCashierAuthModal"
+      :required="true"
+      :sucursalId="pendingShiftData?.sucursalId"
+      :sucursalInfo="pendingShiftData?.sucursalInfo"
+      :cajaNumero="pendingShiftData?.cajaNumero"
+      @authenticated="onCashierAuthenticated"
     />
   </div>
 </template>
@@ -247,6 +255,7 @@ import { useShiftStore } from '@/stores/shift';
 import cashRegisterShiftsApi from '@/services/cashRegisterShiftsApi';
 import OpenShiftModal from '@/components/OpenShiftModal.vue';
 import CloseShiftModal from '@/components/CloseShiftModal.vue';
+import CashierAuthModal from '@/components/CashierAuthModal.vue';
 
 const cashierStore = useCashierStore();
 const shiftStore = useShiftStore();
@@ -257,6 +266,8 @@ const movements = ref([]);
 const loadingMovements = ref(false);
 const showOpenShiftModal = ref(false);
 const showCloseShiftModal = ref(false);
+const showCashierAuthModal = ref(false);
+const pendingShiftData = ref(null);
 
 // Real-time summary
 const summary = ref({
@@ -281,7 +292,7 @@ const loadShiftData = async () => {
     error.value = null;
 
     // Load active shift (already in store, but refresh)
-    await shiftStore.checkActiveShift();
+    await shiftStore.fetchActiveShift();
 
     // Calculate summary
     if (shiftStore.hasActiveShift) {
@@ -397,10 +408,51 @@ const handleCloseShift = () => {
 };
 
 /**
- * On shift opened
+ * On shift opened - handle backend call and cashier auth
  */
-const onShiftOpened = () => {
-  showOpenShiftModal.value = false;
+const onShiftOpened = async (data) => {
+  try {
+    const result = await shiftStore.openShift(data.montoInicial, data.notas, `Caja ${data.cajaNumero}`);
+
+    if (result.success) {
+      showOpenShiftModal.value = false;
+
+      // Guardar datos para autenticación de cajero
+      pendingShiftData.value = {
+        sucursalId: parseInt(data.sucursalId),
+        sucursalInfo: {
+          nombre: data.sucursalNombre
+        },
+        cajaNumero: parseInt(data.cajaNumero),
+        shiftId: result.data.turno_id
+      };
+
+      // Abrir modal de autenticación de cajero
+      showCashierAuthModal.value = true;
+    } else {
+      error.value = result.error || 'Error al abrir el turno';
+    }
+  } catch (err) {
+    console.error('Error opening shift:', err);
+    error.value = err.message || 'Error al abrir el turno';
+  }
+};
+
+/**
+ * On cashier authenticated after shift opened
+ */
+const onCashierAuthenticated = (cashier) => {
+  showCashierAuthModal.value = false;
+
+  const mensaje = `✅ Turno abierto exitosamente\n\n` +
+    `🧑‍💼 Cajero: ${cashier.empleado_nombres} ${cashier.empleado_apellidos}\n` +
+    `📍 ${pendingShiftData.value.sucursalInfo.nombre}\n` +
+    `🖥️ Caja ${pendingShiftData.value.cajaNumero}`;
+
+  alert(mensaje);
+  pendingShiftData.value = null;
+
+  // Reload shift data
   loadShiftData();
 };
 
