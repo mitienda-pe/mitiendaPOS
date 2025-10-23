@@ -326,7 +326,17 @@ const validatePin = async () => {
     }
 
     // Verificar que el PIN sea del cajero actualmente autenticado
-    if (response.data.empleado_id != cashierStore.cashier?.empleado_id) {
+    // Convertir ambos a string para comparar (evitar problemas de tipo)
+    const responseEmpleadoId = String(response.data.empleado_id);
+    const currentEmpleadoId = String(cashierStore.cashier?.empleado_id);
+
+    console.log('🔍 [CloseShift] Validando empleado:', {
+      responseEmpleadoId,
+      currentEmpleadoId,
+      match: responseEmpleadoId === currentEmpleadoId
+    });
+
+    if (responseEmpleadoId !== currentEmpleadoId) {
       throw new Error('Debe usar el PIN del cajero que abrió el turno');
     }
 

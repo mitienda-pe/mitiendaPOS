@@ -148,7 +148,11 @@ const handleUnlock = async () => {
     }
 
     // Verificar que el PIN sea del cajero autenticado
-    if (response.data.empleado_id != cashierStore.cashier?.empleado_id) {
+    // Convertir ambos a string para comparar (evitar problemas de tipo)
+    const responseEmpleadoId = String(response.data.empleado_id);
+    const currentEmpleadoId = String(cashierStore.cashier?.empleado_id);
+
+    if (responseEmpleadoId !== currentEmpleadoId) {
       throw new Error('El PIN no corresponde al cajero autenticado');
     }
 
