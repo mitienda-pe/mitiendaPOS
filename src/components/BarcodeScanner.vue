@@ -23,14 +23,14 @@
           </div>
 
           <!-- Vista de cámara -->
-          <div class="relative">
-            <div id="barcode-scanner" class="w-full bg-black rounded-lg overflow-hidden" style="min-height: 400px;">
+          <div class="relative bg-black rounded-lg overflow-hidden">
+            <div id="barcode-scanner">
               <!-- QuaggaJS se montará aquí -->
             </div>
 
             <!-- Overlay con guía visual -->
-            <div class="absolute inset-0 pointer-events-none flex items-center justify-center">
-              <div class="border-2 border-green-500 rounded-lg" style="width: 80%; height: 40%; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);"></div>
+            <div class="absolute inset-0 pointer-events-none flex items-center justify-center" style="z-index: 10;">
+              <div class="border-4 border-green-400 rounded-lg shadow-lg" style="width: 80%; height: 50%;"></div>
             </div>
           </div>
 
@@ -109,54 +109,51 @@ const startScanner = async () => {
   isScanning.value = false;
 
   try {
-    await Quagga.init({
+    const config = {
       inputStream: {
-        name: 'Live',
         type: 'LiveStream',
         target: document.querySelector('#barcode-scanner'),
         constraints: {
-          width: 640,
-          height: 480,
-          facingMode: 'environment' // Cámara trasera
-        },
-        area: { // Área de escaneo
-          top: '20%',
-          right: '10%',
-          left: '10%',
-          bottom: '20%'
+          width: { min: 640, ideal: 1280 },
+          height: { min: 480, ideal: 720 },
+          facingMode: 'environment',
+          aspectRatio: { ideal: 1.7777777778 }
         }
       },
       locator: {
         patchSize: 'medium',
         halfSample: true
       },
-      numOfWorkers: navigator.hardwareConcurrency || 4,
+      numOfWorkers: 2,
+      frequency: 10,
       decoder: {
         readers: [
-          'ean_reader',      // EAN-13, EAN-8
-          'code_128_reader', // Code 128
-          'code_39_reader',  // Code 39
-          'upc_reader',      // UPC-A, UPC-E
+          'ean_reader',
+          'code_128_reader',
+          'code_39_reader',
+          'upc_reader',
           'ean_8_reader'
-        ],
-        debug: {
-          drawBoundingBox: true,
-          showFrequency: false,
-          drawScanline: true,
-          showPattern: false
-        }
+        ]
       },
-      locate: true,
-      frequency: 10
-    }, (err) => {
+      locate: true
+    };
+
+    console.log('🚀 Initializing QuaggaJS with config:', config);
+
+    Quagga.init(config, (err) => {
       if (err) {
-        console.error('QuaggaJS Error:', err);
+        console.error('❌ QuaggaJS Error:', err);
         error.value = err.message || 'No se pudo acceder a la cámara. Verifica los permisos.';
         isScanning.value = false;
         return;
       }
 
       console.log('✅ QuaggaJS initialized successfully');
+
+      // Verificar que el video se haya creado
+      const video = document.querySelector('#barcode-scanner video');
+      console.log('📹 Video element:', video);
+
       Quagga.start();
       isScanning.value = true;
     });
@@ -181,7 +178,7 @@ const startScanner = async () => {
     });
 
   } catch (err) {
-    console.error('Error starting scanner:', err);
+    console.error('❌ Error starting scanner:', err);
     error.value = 'Error al iniciar el escáner. Por favor, intenta nuevamente.';
     isScanning.value = false;
   }
@@ -234,25 +231,23 @@ onUnmounted(() => {
 });
 </script>
 
-<style scoped>
+<style>
 #barcode-scanner {
   position: relative;
-}
-
-#barcode-scanner video {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
+  height: 400px;
 }
 
+#barcode-scanner video,
 #barcode-scanner canvas {
   position: absolute;
   top: 0;
   left: 0;
+  width: 100%;
+  height: 100%;
 }
 
-#barcode-scanner canvas.drawingBuffer {
-  display: block;
+#barcode-scanner video {
+  object-fit: cover;
 }
 </style>
