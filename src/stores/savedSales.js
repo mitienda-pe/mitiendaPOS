@@ -67,6 +67,12 @@ export const useSavedSalesStore = defineStore('savedSales', () => {
     );
   }
 
+  // Limpiar todas las ventas guardadas (usado en logout)
+  function clearAll() {
+    savedSales.value = [];
+    localStorage.removeItem('savedSales');
+  }
+
   return {
     savedSales,
     saveSale,
@@ -74,6 +80,7 @@ export const useSavedSalesStore = defineStore('savedSales', () => {
     getSaleById,
     deleteSavedSale,
     updateSale,
-    findSalesByCustomer
+    findSalesByCustomer,
+    clearAll
   };
 });

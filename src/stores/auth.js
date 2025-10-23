@@ -150,6 +150,7 @@ export const useAuthStore = defineStore('auth', {
       } catch (error) {
         console.error('Error during logout:', error);
       } finally {
+        // Limpiar sesión de usuario administrador
         this.user = null;
         this.accessToken = null;
         this.refreshToken = null;
@@ -159,6 +160,28 @@ export const useAuthStore = defineStore('auth', {
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('user');
         localStorage.removeItem('selected_store');
+
+        // Limpiar sesión de cajero
+        const { useCashierStore } = await import('./cashier');
+        const cashierStore = useCashierStore();
+        cashierStore.logout();
+
+        // Limpiar sesión de turno de caja
+        const { useShiftStore } = await import('./shift');
+        const shiftStore = useShiftStore();
+        shiftStore.clearActiveShift();
+
+        // Limpiar carrito de compras
+        const { useCartStore } = await import('./cart');
+        const cartStore = useCartStore();
+        cartStore.reset();
+
+        // Limpiar ventas guardadas
+        const { useSavedSalesStore } = await import('./savedSales');
+        const savedSalesStore = useSavedSalesStore();
+        savedSalesStore.clearAll();
+
+        console.log('✅ [AUTH] Logout completo - todas las sesiones limpiadas');
         router.push('/login');
       }
     },
