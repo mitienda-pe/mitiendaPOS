@@ -830,10 +830,28 @@ const getPaymentMethodName = (method) => {
           <!-- Barcode Scanner -->
           <div class="mb-6 search-container relative">
             <div class="flex gap-2">
-              <input ref="barcodeInput" v-model="barcode" type="text"
-                placeholder="Escanear código de barras o buscar producto..."
-                class="flex-grow p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                @keyup.enter="handleBarcodeInput" @input="searchProducts">
+              <div class="flex-grow relative">
+                <input ref="barcodeInput" v-model="barcode" type="text"
+                  placeholder="Escanear código de barras o buscar producto..."
+                  class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  @keyup.enter="handleBarcodeInput" @input="searchProducts">
+
+                <!-- Search Results Dropdown -->
+                <div v-if="searchResults.length > 0"
+                  class="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-lg max-h-60 overflow-auto border border-gray-200">
+                  <ul>
+                    <li v-for="product in searchResults" :key="product.id" class="p-2 hover:bg-gray-100 cursor-pointer"
+                      @click="selectProduct(product)">
+                      <div class="flex justify-between">
+                        <span>{{ product.nombre }}</span>
+                        <span class="text-gray-600">{{ formatCurrency(product.precio) }}</span>
+                      </div>
+                      <div class="text-sm text-gray-500">SKU: {{ product.sku }} | Stock: {{ product.stock }}</div>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
               <button @click="openBarcodeScanner" class="bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 flex items-center justify-center" title="Escanear con cámara">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
@@ -847,21 +865,6 @@ const getPaymentMethodName = (method) => {
                   <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                 </svg>
               </button>
-            </div>
-
-            <!-- Search Results Dropdown -->
-            <div v-if="searchResults.length > 0"
-              class="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-lg max-h-60 overflow-auto">
-              <ul>
-                <li v-for="product in searchResults" :key="product.id" class="p-2 hover:bg-gray-100 cursor-pointer"
-                  @click="selectProduct(product)">
-                  <div class="flex justify-between">
-                    <span>{{ product.nombre }}</span>
-                    <span class="text-gray-600">{{ formatCurrency(product.precio) }}</span>
-                  </div>
-                  <div class="text-sm text-gray-500">SKU: {{ product.sku }} | Stock: {{ product.stock }}</div>
-                </li>
-              </ul>
             </div>
           </div>
 
