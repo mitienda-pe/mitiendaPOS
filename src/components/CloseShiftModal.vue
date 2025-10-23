@@ -38,6 +38,8 @@
                     pattern="[0-9]{4}"
                     maxlength="4"
                     required
+                    name="close-shift-pin"
+                    autocomplete="off"
                     class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-2xl text-center tracking-widest"
                     placeholder="••••"
                   />

@@ -56,6 +56,8 @@
               maxlength="1"
               inputmode="numeric"
               pattern="[0-9]"
+              :name="`supervisor-pin-${i}`"
+              autocomplete="off"
               class="w-12 h-14 text-2xl font-bold text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
               @input="handleInput(i-1, $event)"
               @keydown="handleKeyDown(i-1, $event)"

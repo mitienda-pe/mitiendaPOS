@@ -43,6 +43,8 @@
             maxlength="4"
             required
             autofocus
+            name="unlock-pin"
+            autocomplete="off"
             class="w-full p-4 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-3xl text-center tracking-[1em] font-bold"
             :class="{ 'border-red-500 shake': error }"
             placeholder="••••"
