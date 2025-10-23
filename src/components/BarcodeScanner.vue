@@ -247,18 +247,30 @@ onUnmounted(() => {
   position: relative;
   width: 100%;
   height: 400px;
+  background: #000;
 }
 
-#barcode-scanner video,
+#barcode-scanner video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+}
+
 #barcode-scanner canvas {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
+  z-index: 2;
+  pointer-events: none;
 }
 
-#barcode-scanner video {
-  object-fit: cover;
+#barcode-scanner canvas.drawingBuffer {
+  z-index: 2;
 }
 </style>
