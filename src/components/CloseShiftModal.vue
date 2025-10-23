@@ -15,7 +15,45 @@
                 Cerrar Turno de Caja
               </h3>
 
-              <div v-if="shift" class="mt-2">
+              <!-- Step 1: PIN Validation -->
+              <div v-if="currentStep === 'pin'" class="mt-2">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <p class="text-sm text-blue-800">
+                    🔐 Para cerrar el turno, debe autenticarse con su PIN
+                  </p>
+                  <p v-if="cashierStore.cashier" class="text-xs text-blue-600 mt-1">
+                    Cajero: {{ cashierStore.cashier.empleado_nombres }} {{ cashierStore.cashier.empleado_apellidos }}
+                  </p>
+                </div>
+
+                <div class="mb-4">
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Ingrese su PIN de 4 dígitos *
+                  </label>
+                  <input
+                    ref="pinInput"
+                    v-model="pin"
+                    type="password"
+                    inputmode="numeric"
+                    pattern="[0-9]{4}"
+                    maxlength="4"
+                    required
+                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-2xl text-center tracking-widest"
+                    placeholder="••••"
+                  />
+                  <p class="text-xs text-gray-500 mt-1 text-center">
+                    El PIN se validará automáticamente
+                  </p>
+                </div>
+
+                <!-- PIN Error Message -->
+                <div v-if="pinError" class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                  <p class="text-sm text-red-700 text-center">{{ pinError }}</p>
+                </div>
+              </div>
+
+              <!-- Step 2: Closing Form -->
+              <div v-else-if="currentStep === 'closing' && shift" class="mt-2">
                 <!-- Shift Summary -->
                 <div class="bg-gray-50 rounded-lg p-4 mb-4">
                   <h4 class="text-sm font-medium text-gray-700 mb-3">Resumen del Turno</h4>
@@ -181,17 +219,22 @@
         </div>
 
         <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-2">
-          <button
-            @click="handleClose"
-            :disabled="processing || !isValid"
-            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <svg v-if="processing" class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            {{ processing ? 'Cerrando...' : 'Cerrar Turno' }}
-          </button>
+          <!-- Botones para paso de cierre -->
+          <template v-if="currentStep === 'closing'">
+            <button
+              @click="handleClose"
+              :disabled="processing || !isValid"
+              class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg v-if="processing" class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              {{ processing ? 'Cerrando...' : 'Cerrar Turno' }}
+            </button>
+          </template>
+
+          <!-- Botón cancelar (disponible en ambos pasos) -->
           <button
             @click="handleCancel"
             :disabled="processing"
@@ -208,6 +251,9 @@
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue';
 import CashBreakdownInput from './CashBreakdownInput.vue';
+import { useCashierStore } from '../stores/cashier';
+import { posEmpleadosApi } from '../services/posEmpleadosApi';
+import { useAuthStore } from '../stores/auth';
 
 const props = defineProps({
   modelValue: Boolean,
@@ -215,6 +261,15 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update:modelValue', 'closed']);
+
+const authStore = useAuthStore();
+const cashierStore = useCashierStore();
+
+// Step control: 'pin' or 'closing'
+const currentStep = ref('pin');
+const pin = ref('');
+const pinError = ref(null);
+const pinInput = ref(null);
 
 const montoReal = ref(null);
 const notas = ref('');
@@ -253,12 +308,67 @@ const differenceLabel = computed(() => {
   return 'Cuadrado Perfecto';
 });
 
-// Auto-focus on amount input when modal opens
-watch(() => props.modelValue, (value) => {
-  if (value) {
+// Validar PIN del cajero actual
+const validatePin = async () => {
+  if (pin.value.length !== 4 || processing.value) return;
+
+  pinError.value = null;
+  processing.value = true;
+
+  try {
+    const storeId = authStore.selectedStore?.id;
+    if (!storeId) throw new Error('No hay tienda seleccionada');
+
+    const response = await posEmpleadosApi.validatePin(storeId, pin.value);
+
+    if (!response.success) {
+      throw new Error(response.message || 'PIN inválido');
+    }
+
+    // Verificar que el PIN sea del cajero actualmente autenticado
+    if (response.data.empleado_id != cashierStore.cashier?.empleado_id) {
+      throw new Error('Debe usar el PIN del cajero que abrió el turno');
+    }
+
+    // PIN válido, pasar al siguiente paso
+    currentStep.value = 'closing';
     nextTick(() => {
       montoInput.value?.focus();
     });
+  } catch (err) {
+    pinError.value = err.response?.data?.message || err.message || 'Error al validar PIN';
+    pin.value = '';
+    nextTick(() => {
+      pinInput.value?.focus();
+    });
+  } finally {
+    processing.value = false;
+  }
+};
+
+// Auto-submit PIN cuando tenga 4 dígitos
+watch(pin, (value) => {
+  if (value.length === 4) {
+    setTimeout(() => {
+      if (pin.value.length === 4) {
+        validatePin();
+      }
+    }, 300);
+  }
+});
+
+// Auto-focus and reset when modal opens
+watch(() => props.modelValue, (value) => {
+  if (value) {
+    // Reset to PIN step
+    currentStep.value = 'pin';
+    pin.value = '';
+    pinError.value = null;
+
+    nextTick(() => {
+      pinInput.value?.focus();
+    });
+
     // Reset form
     montoReal.value = null;
     notas.value = '';
