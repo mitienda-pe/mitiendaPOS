@@ -270,7 +270,7 @@ const props = defineProps({
   shift: Object
 });
 
-const emit = defineEmits(['update:modelValue', 'closed']);
+const emit = defineEmits(['update:modelValue', 'shift-closed']);
 
 const authStore = useAuthStore();
 const cashierStore = useCashierStore();
@@ -444,7 +444,7 @@ const handleClose = async () => {
       data.breakdown = { ...denominationCounts.value };
     }
 
-    emit('closed', data);
+    emit('shift-closed', data);
   } catch (err) {
     error.value = err.message || 'Error al cerrar el turno';
   } finally {
