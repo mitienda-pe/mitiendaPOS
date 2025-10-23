@@ -15,55 +15,8 @@
                 Cerrar Turno de Caja
               </h3>
 
-              <!-- Step 1: PIN Validation -->
-              <div v-if="currentStep === 'pin'" class="mt-2">
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                  <p class="text-sm text-blue-800">
-                    🔐 Para cerrar el turno, debe autenticarse con su PIN
-                  </p>
-                  <p v-if="cashierStore.cashier" class="text-xs text-blue-600 mt-1">
-                    Cajero: {{ cashierStore.cashier.empleado_nombres }} {{ cashierStore.cashier.empleado_apellidos }}
-                  </p>
-                </div>
-
-                <div class="mb-4">
-                  <label class="block text-sm font-medium text-gray-700 mb-2">
-                    Ingrese su PIN de 4 dígitos *
-                  </label>
-                  <input
-                    ref="pinInput"
-                    v-model="pin"
-                    type="password"
-                    inputmode="numeric"
-                    pattern="[0-9]{4}"
-                    maxlength="4"
-                    required
-                    name="close-shift-pin"
-                    autocomplete="off"
-                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-2xl text-center tracking-widest"
-                    placeholder="••••"
-                  />
-                  <p class="text-xs text-gray-500 mt-1 text-center">
-                    El PIN se validará automáticamente
-                  </p>
-                </div>
-
-                <!-- PIN Error Message -->
-                <div v-if="pinError" class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                  <p class="text-sm text-red-700 text-center">{{ pinError }}</p>
-                  <!-- Emergency bypass button (for debugging) -->
-                  <button
-                    type="button"
-                    @click="bypassPinValidation"
-                    class="mt-2 w-full px-3 py-2 text-xs bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded border border-yellow-300 transition-colors"
-                  >
-                    ⚠️ Omitir validación (emergencia)
-                  </button>
-                </div>
-              </div>
-
-              <!-- Step 2: Closing Form -->
-              <div v-else-if="currentStep === 'closing' && shift" class="mt-2">
+              <!-- Step 1: Closing Form (data first, matching opening flow) -->
+              <div v-if="currentStep === 'closing' && shift" class="mt-2">
                 <!-- Shift Summary -->
                 <div class="bg-gray-50 rounded-lg p-4 mb-4">
                   <h4 class="text-sm font-medium text-gray-700 mb-3">Resumen del Turno</h4>
@@ -224,25 +177,75 @@
                   <p class="text-sm text-red-700">{{ error }}</p>
                 </div>
               </div>
+
+              <!-- Step 2: PIN Validation (after entering data) -->
+              <div v-else-if="currentStep === 'pin'" class="mt-2">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <p class="text-sm text-blue-800">
+                    🔐 Confirme el cierre ingresando su PIN
+                  </p>
+                  <p v-if="cashierStore.cashier" class="text-xs text-blue-600 mt-1">
+                    Cajero: {{ cashierStore.cashier.empleado_nombres}} {{ cashierStore.cashier.empleado_apellidos }}
+                  </p>
+                </div>
+
+                <div class="mb-4">
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Ingrese su PIN de 4 dígitos *
+                  </label>
+                  <input
+                    ref="pinInput"
+                    v-model="pin"
+                    type="password"
+                    inputmode="numeric"
+                    pattern="[0-9]{4}"
+                    maxlength="4"
+                    required
+                    name="close-shift-pin"
+                    autocomplete="off"
+                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-2xl text-center tracking-widest"
+                    placeholder="••••"
+                  />
+                  <p class="text-xs text-gray-500 mt-1 text-center">
+                    El PIN se validará automáticamente
+                  </p>
+                </div>
+
+                <!-- PIN Error Message -->
+                <div v-if="pinError" class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                  <p class="text-sm text-red-700 text-center">{{ pinError }}</p>
+                  <!-- Emergency bypass button (for debugging) -->
+                  <button
+                    type="button"
+                    @click="bypassPinValidation"
+                    class="mt-2 w-full px-3 py-2 text-xs bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded border border-yellow-300 transition-colors"
+                  >
+                    ⚠️ Omitir validación (emergencia)
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-2">
-          <!-- Botones para paso de cierre -->
-          <template v-if="currentStep === 'closing'">
-            <button
-              @click="handleClose"
-              :disabled="processing || !isValid"
-              class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <svg v-if="processing" class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              {{ processing ? 'Cerrando...' : 'Cerrar Turno' }}
-            </button>
-          </template>
+          <!-- Botones para ambos pasos -->
+          <button
+            @click="handleClose"
+            :disabled="processing || (currentStep === 'closing' && !isValid)"
+            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium text-white focus:outline-none sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            :class="currentStep === 'closing' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'"
+          >
+            <svg v-if="processing" class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            {{
+              processing ? 'Cerrando...' :
+              currentStep === 'closing' ? '➡️ Continuar' :
+              'Cerrar Turno'
+            }}
+          </button>
 
           <!-- Botón cancelar (disponible en ambos pasos) -->
           <button
@@ -275,8 +278,9 @@ const emit = defineEmits(['update:modelValue', 'shift-closed']);
 const authStore = useAuthStore();
 const cashierStore = useCashierStore();
 
-// Step control: 'pin' or 'closing'
-const currentStep = ref('pin');
+// Step control: 'closing' or 'pin'
+// Start with 'closing' to match the opening flow (data first, then PIN)
+const currentStep = ref('closing');
 const pin = ref('');
 const pinError = ref(null);
 const pinInput = ref(null);
@@ -320,6 +324,12 @@ const differenceLabel = computed(() => {
 
 // Validar PIN del cajero actual
 const validatePin = async () => {
+  console.log('🔐 [CloseShiftModal] validatePin() llamado', {
+    pinLength: pin.value.length,
+    processing: processing.value,
+    currentStep: currentStep.value
+  });
+
   if (pin.value.length !== 4 || processing.value) return;
 
   pinError.value = null;
@@ -328,6 +338,11 @@ const validatePin = async () => {
   try {
     const storeId = authStore.selectedStore?.id;
     if (!storeId) throw new Error('No hay tienda seleccionada');
+
+    console.log('📡 [CloseShiftModal] Validando PIN en servidor...', {
+      storeId,
+      pin: '****'
+    });
 
     const response = await posEmpleadosApi.validatePin(storeId, pin.value);
 
@@ -340,7 +355,7 @@ const validatePin = async () => {
     const responseEmpleadoId = String(response.data.empleado_id);
     const currentEmpleadoId = String(cashierStore.cashier?.empleado_id);
 
-    console.log('🔍 [CloseShift] Validando empleado:', {
+    console.log('🔍 [CloseShiftModal] Validando empleado:', {
       responseEmpleadoId,
       currentEmpleadoId,
       cashierStore: cashierStore.cashier,
@@ -352,12 +367,24 @@ const validatePin = async () => {
       throw new Error('Debe usar el PIN del cajero que abrió el turno');
     }
 
-    // PIN válido, pasar al siguiente paso
-    currentStep.value = 'closing';
-    nextTick(() => {
-      montoInput.value?.focus();
-    });
+    // PIN válido - AHORA CERRAR EL TURNO
+    console.log('✅ [CloseShiftModal] PIN válido, cerrando turno...');
+
+    const data = {
+      montoReal: parseFloat(montoReal.value),
+      notas: notas.value.trim()
+    };
+
+    // Si usó desglose, agregarlo
+    if (showBreakdown.value) {
+      data.breakdown = { ...denominationCounts.value };
+    }
+
+    console.log('📤 [CloseShiftModal] Emitiendo evento "shift-closed"', data);
+    emit('shift-closed', data);
+
   } catch (err) {
+    console.error('❌ [CloseShiftModal] Error al validar PIN:', err);
     pinError.value = err.response?.data?.message || err.message || 'Error al validar PIN';
     pin.value = '';
     nextTick(() => {
@@ -380,9 +407,12 @@ const bypassPinValidation = () => {
 
 // Auto-submit PIN cuando tenga 4 dígitos
 watch(pin, (value) => {
+  console.log('🔢 [CloseShiftModal] PIN ingresado:', value.length, 'dígitos');
   if (value.length === 4) {
+    console.log('⏰ [CloseShiftModal] PIN completo, esperando 300ms para validar...');
     setTimeout(() => {
       if (pin.value.length === 4) {
+        console.log('✅ [CloseShiftModal] Llamando validatePin()');
         validatePin();
       }
     }, 300);
@@ -392,13 +422,37 @@ watch(pin, (value) => {
 // Auto-focus and reset when modal opens
 watch(() => props.modelValue, (value) => {
   if (value) {
-    // Reset to PIN step
-    currentStep.value = 'pin';
+    console.log('🔔 [CloseShiftModal] Modal ABIERTO', {
+      shift: props.shift ? {
+        id: props.shift.id,
+        tienda_id: props.shift.tienda_id,
+        caja_numero: props.shift.caja_numero,
+        monto_inicial: props.shift.monto_inicial,
+        estado: props.shift.estado
+      } : null,
+      cashier: cashierStore.cashier ? {
+        empleado_id: cashierStore.cashier.empleado_id,
+        nombre: cashierStore.cashier.empleado_nombres
+      } : null,
+      user: authStore.user ? {
+        name: authStore.user.name,
+        role: authStore.user.role
+      } : null,
+      store: authStore.store ? {
+        id: authStore.store.id,
+        name: authStore.store.name
+      } : null
+    });
+
+    // Reset to closing step (data first, matching opening flow)
+    currentStep.value = 'closing';
     pin.value = '';
     pinError.value = null;
 
+    console.log('📋 [CloseShiftModal] Estado inicial: paso =', currentStep.value);
+
     nextTick(() => {
-      pinInput.value?.focus();
+      montoInput.value?.focus();
     });
 
     // Reset form
@@ -411,6 +465,8 @@ watch(() => props.modelValue, (value) => {
     Object.keys(denominationCounts.value).forEach(key => {
       denominationCounts.value[key] = 0;
     });
+  } else {
+    console.log('❌ [CloseShiftModal] Modal CERRADO');
   }
 });
 
@@ -428,8 +484,27 @@ const handleBreakdownTotal = (total) => {
 };
 
 const handleClose = async () => {
+  console.log('🔘 [CloseShiftModal] Botón presionado', {
+    paso_actual: currentStep.value,
+    isValid: isValid.value,
+    processing: processing.value,
+    montoReal: montoReal.value
+  });
+
   if (!isValid.value || processing.value) return;
 
+  // If still on closing step, advance to PIN validation
+  if (currentStep.value === 'closing') {
+    console.log('➡️ [CloseShiftModal] Avanzando de paso "closing" a "pin"');
+    currentStep.value = 'pin';
+    await nextTick();
+    pinInput.value?.focus();
+    console.log('🔑 [CloseShiftModal] Esperando ingreso de PIN...');
+    return;
+  }
+
+  // If on PIN step (should not reach here, PIN auto-submits)
+  console.log('💾 [CloseShiftModal] Procesando cierre final (este código no debería ejecutarse normalmente)');
   error.value = null;
   processing.value = true;
 
@@ -444,8 +519,10 @@ const handleClose = async () => {
       data.breakdown = { ...denominationCounts.value };
     }
 
+    console.log('📤 [CloseShiftModal] Emitiendo evento "shift-closed"', data);
     emit('shift-closed', data);
   } catch (err) {
+    console.error('❌ [CloseShiftModal] Error al cerrar:', err);
     error.value = err.message || 'Error al cerrar el turno';
   } finally {
     processing.value = false;
@@ -453,6 +530,7 @@ const handleClose = async () => {
 };
 
 const handleCancel = () => {
+  console.log('🚫 [CloseShiftModal] Botón CANCELAR presionado');
   if (processing.value) return;
   emit('update:modelValue', false);
 };

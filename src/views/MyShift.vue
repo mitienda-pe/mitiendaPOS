@@ -73,7 +73,7 @@
           <!-- Shift Status Badge -->
           <div class="bg-green-50 border-2 border-green-200 rounded-lg p-4">
             <div class="flex items-center justify-between">
-              <div>
+              <div class="flex-1">
                 <p class="text-sm font-medium text-green-800 mb-1">✅ Turno Abierto</p>
                 <p class="text-xs text-green-600">
                   Inicio: {{ formatDateTime(shiftStore.activeShift.fecha_apertura) }}
@@ -87,6 +87,14 @@
                 <p class="text-2xl font-bold text-green-900">
                   S/ {{ shiftStore.activeShift.monto_inicial.toFixed(2) }}
                 </p>
+              </div>
+              <div class="ml-4">
+                <button
+                  @click="handleForceRefresh"
+                  class="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded border border-gray-300"
+                  title="Si ves datos incorrectos, usa esto para forzar recarga">
+                  🔄 Verificar
+                </button>
               </div>
             </div>
           </div>
@@ -278,11 +286,13 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useCashierStore } from '@/stores/cashier';
 import { useShiftStore } from '@/stores/shift';
+import { useAuthStore } from '@/stores/auth';
 import cashRegisterShiftsApi from '@/services/cashRegisterShiftsApi';
 import OpenShiftModal from '@/components/OpenShiftModal.vue';
 import CloseShiftModal from '@/components/CloseShiftModal.vue';
 import CashierAuthModal from '@/components/CashierAuthModal.vue';
 
+const authStore = useAuthStore();
 const cashierStore = useCashierStore();
 const shiftStore = useShiftStore();
 
@@ -313,24 +323,43 @@ let elapsedInterval = null;
  * Load shift and movements
  */
 const loadShiftData = async () => {
+  console.log('📡 [MyShift] loadShiftData() - Iniciando carga...');
   try {
     loading.value = true;
     error.value = null;
 
     // Load active shift (already in store, but refresh)
+    console.log('🔍 [MyShift] Consultando turno activo en el servidor...');
     await shiftStore.fetchActiveShift();
+
+    console.log('📊 [MyShift] Resultado de fetchActiveShift:', {
+      hasActiveShift: shiftStore.hasActiveShift,
+      shift: shiftStore.activeShift ? {
+        id: shiftStore.activeShift.id,
+        tienda_id: shiftStore.activeShift.tienda_id,
+        usuario_id: shiftStore.activeShift.usuario_id,
+        caja_numero: shiftStore.activeShift.caja_numero,
+        estado: shiftStore.activeShift.estado,
+        monto_inicial: shiftStore.activeShift.monto_inicial,
+        fecha_apertura: shiftStore.activeShift.fecha_apertura
+      } : null
+    });
 
     // Calculate summary
     if (shiftStore.hasActiveShift) {
+      console.log('✅ [MyShift] Turno activo encontrado, calculando resumen...');
       calculateSummary();
       await loadMovements();
       startElapsedTimer();
+    } else {
+      console.log('❌ [MyShift] No hay turno activo');
     }
   } catch (err) {
-    console.error('Error loading shift data:', err);
+    console.error('❌ [MyShift] Error loading shift data:', err);
     error.value = err.response?.data?.message || 'Error al cargar información del turno';
   } finally {
     loading.value = false;
+    console.log('✅ [MyShift] loadShiftData() - Finalizado');
   }
 };
 
@@ -420,6 +449,34 @@ const stopElapsedTimer = () => {
 };
 
 /**
+ * Force refresh - verify shift actually exists in database
+ */
+const handleForceRefresh = async () => {
+  try {
+    loading.value = true;
+
+    // Clear the store first
+    shiftStore.clearActiveShift();
+    cashierStore.logout();
+
+    // Fetch fresh data from server
+    await shiftStore.fetchActiveShift();
+
+    if (!shiftStore.hasActiveShift) {
+      alert('✅ Estado limpiado\n\nNo hay turno activo en el servidor.\nPuedes abrir un nuevo turno.');
+    } else {
+      alert('✅ Estado sincronizado\n\nEl turno está activo en el servidor.');
+      loadShiftData();
+    }
+  } catch (err) {
+    console.error('Error force refreshing:', err);
+    alert('❌ Error al verificar estado del turno');
+  } finally {
+    loading.value = false;
+  }
+};
+
+/**
  * Handle open shift
  */
 const handleOpenShift = () => {
@@ -448,10 +505,19 @@ const handleAuthenticateCashier = () => {
  * Handle close shift
  */
 const handleCloseShift = () => {
+  console.log('🔒 [MyShift] handleCloseShift() - Botón "Cerrar Turno" presionado', {
+    isCashierAuthenticated: cashierStore.isCashierAuthenticated,
+    cashier: cashierStore.cashier,
+    activeShift: shiftStore.activeShift
+  });
+
   if (!cashierStore.isCashierAuthenticated) {
+    console.warn('⚠️ [MyShift] Cajero no autenticado, mostrando alerta');
     alert('⚠️ Debes autenticarte como cajero primero');
     return;
   }
+
+  console.log('✅ [MyShift] Abriendo CloseShiftModal...');
   showCloseShiftModal.value = true;
 };
 
@@ -509,22 +575,59 @@ const onCashierAuthenticated = async (cashier) => {
       loadShiftData();
     } else {
       error.value = result.error || 'Error al abrir el turno';
-      // Re-abrir modal de autenticación si falla
-      showCashierAuthModal.value = true;
+      // Show error message instead of reopening modal to prevent infinite loop
+      const errorMsg = `❌ Error al abrir turno:\n\n${result.error}\n\nSi ya tiene un turno abierto, debe cerrarlo primero.`;
+      alert(errorMsg);
+      pendingShiftData.value = null;
+      // Reload to show current state
+      loadShiftData();
     }
   } catch (err) {
     console.error('Error creating shift after cashier auth:', err);
     error.value = err.message || 'Error al crear el turno';
+    alert(`❌ Error inesperado:\n\n${err.message}`);
   }
 };
 
 /**
  * On shift closed
  */
-const onShiftClosed = () => {
+const onShiftClosed = async (data) => {
+  console.log('📥 [MyShift] Evento "shift-closed" recibido', data);
+
   showCloseShiftModal.value = false;
   stopElapsedTimer();
-  loadShiftData();
+
+  console.log('🔒 [MyShift] Llamando al API para cerrar turno...', {
+    shiftId: shiftStore.activeShift?.id,
+    data
+  });
+
+  // Cerrar el turno en el backend
+  const result = await shiftStore.closeShift(data.montoReal, data.notas);
+
+  console.log('📡 [MyShift] Respuesta del API:', result);
+
+  if (result.success) {
+    console.log('✅ [MyShift] Turno cerrado exitosamente en BD');
+
+    // Clear cashier session since shift is closed
+    cashierStore.logout();
+
+    // Reload shift data
+    await loadShiftData();
+
+    console.log('🔄 [MyShift] Estado actualizado:', {
+      hasActiveShift: shiftStore.hasActiveShift,
+      activeShift: shiftStore.activeShift
+    });
+
+    // Show success message
+    alert('✅ Turno cerrado exitosamente\n\nPuedes abrir un nuevo turno cuando lo necesites.');
+  } else {
+    console.error('❌ [MyShift] Error al cerrar turno:', result.error);
+    alert(`❌ Error al cerrar turno:\n\n${result.error}`);
+  }
 };
 
 /**
@@ -608,10 +711,31 @@ const getMovementSign = (tipo) => {
 
 // Lifecycle
 onMounted(() => {
+  console.log('🚀 [MyShift] ========== COMPONENTE MONTADO ==========');
+  console.log('👤 [MyShift] Usuario:', {
+    name: authStore.user?.name,
+    email: authStore.user?.email,
+    role: authStore.user?.role
+  });
+  console.log('🏪 [MyShift] Tienda:', {
+    id: authStore.store?.id,
+    name: authStore.store?.name
+  });
+  console.log('🧑‍💼 [MyShift] Cajero:', {
+    authenticated: cashierStore.isCashierAuthenticated,
+    empleado_id: cashierStore.cashier?.empleado_id,
+    nombre: cashierStore.cashier?.empleado_nombres
+  });
+  console.log('📋 [MyShift] Turno actual:', {
+    hasActiveShift: shiftStore.hasActiveShift,
+    shift: shiftStore.activeShift
+  });
+  console.log('🔄 [MyShift] Cargando datos del turno...');
   loadShiftData();
 });
 
 onUnmounted(() => {
+  console.log('👋 [MyShift] ========== COMPONENTE DESMONTADO ==========');
   stopElapsedTimer();
 });
 </script>

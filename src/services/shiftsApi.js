@@ -46,13 +46,24 @@ export const shiftsApi = {
 
       const response = await apiClient.post('/cash-register-shifts/open', payload);
 
+      console.log('✅ [SHIFTS API] Turno creado - Response:', {
+        status: response.status,
+        success: response.data.success,
+        hasData: !!response.data.data
+      });
+
       return {
         success: response.data.success,
         data: response.data.data,
         message: response.data.message
       };
     } catch (error) {
-      console.error('Error opening shift:', error);
+      console.error('❌ [SHIFTS API] Error opening shift:', {
+        message: error.message,
+        status: error.response?.status,
+        serverMessage: error.response?.data?.message,
+        fullError: error
+      });
       return {
         success: false,
         error: error.response?.data?.message || error.message || 'Error opening shift'
