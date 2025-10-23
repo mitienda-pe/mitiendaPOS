@@ -456,30 +456,25 @@ const handleCloseShift = () => {
 };
 
 /**
- * On shift opened - handle backend call and cashier auth
+ * On shift opened - handle backend call AFTER cashier auth
  */
 const onShiftOpened = async (data) => {
   try {
-    const result = await shiftStore.openShift(data.montoInicial, data.notas, `Caja ${data.cajaNumero}`);
+    showOpenShiftModal.value = false;
 
-    if (result.success) {
-      showOpenShiftModal.value = false;
+    // Guardar datos del turno para crear DESPUÉS de autenticar cajero
+    pendingShiftData.value = {
+      sucursalId: parseInt(data.sucursalId),
+      sucursalInfo: {
+        nombre: data.sucursalNombre
+      },
+      cajaNumero: parseInt(data.cajaNumero),
+      montoInicial: data.montoInicial,
+      notas: data.notas
+    };
 
-      // Guardar datos para autenticación de cajero
-      pendingShiftData.value = {
-        sucursalId: parseInt(data.sucursalId),
-        sucursalInfo: {
-          nombre: data.sucursalNombre
-        },
-        cajaNumero: parseInt(data.cajaNumero),
-        shiftId: result.data.turno_id
-      };
-
-      // Abrir modal de autenticación de cajero
-      showCashierAuthModal.value = true;
-    } else {
-      error.value = result.error || 'Error al abrir el turno';
-    }
+    // Abrir modal de autenticación de cajero PRIMERO
+    showCashierAuthModal.value = true;
   } catch (err) {
     console.error('Error opening shift:', err);
     error.value = err.message || 'Error al abrir el turno';
@@ -487,21 +482,40 @@ const onShiftOpened = async (data) => {
 };
 
 /**
- * On cashier authenticated after shift opened
+ * On cashier authenticated - NOW create the shift with empleado_id
  */
-const onCashierAuthenticated = (cashier) => {
+const onCashierAuthenticated = async (cashier) => {
   showCashierAuthModal.value = false;
 
-  const mensaje = `✅ Turno abierto exitosamente\n\n` +
-    `🧑‍💼 Cajero: ${cashier.empleado_nombres} ${cashier.empleado_apellidos}\n` +
-    `📍 ${pendingShiftData.value.sucursalInfo.nombre}\n` +
-    `🖥️ Caja ${pendingShiftData.value.cajaNumero}`;
+  try {
+    // Crear el turno con el empleado_id del cajero autenticado
+    const result = await shiftStore.openShift(
+      pendingShiftData.value.montoInicial,
+      pendingShiftData.value.notas,
+      `Caja ${pendingShiftData.value.cajaNumero}`,
+      cashier.empleado_id // ← AQUÍ enviamos el empleado_id
+    );
 
-  alert(mensaje);
-  pendingShiftData.value = null;
+    if (result.success) {
+      const mensaje = `✅ Turno abierto exitosamente\n\n` +
+        `🧑‍💼 Cajero: ${cashier.empleado_nombres} ${cashier.empleado_apellidos}\n` +
+        `📍 ${pendingShiftData.value.sucursalInfo.nombre}\n` +
+        `🖥️ Caja ${pendingShiftData.value.cajaNumero}`;
 
-  // Reload shift data
-  loadShiftData();
+      alert(mensaje);
+      pendingShiftData.value = null;
+
+      // Reload shift data
+      loadShiftData();
+    } else {
+      error.value = result.error || 'Error al abrir el turno';
+      // Re-abrir modal de autenticación si falla
+      showCashierAuthModal.value = true;
+    }
+  } catch (err) {
+    console.error('Error creating shift after cashier auth:', err);
+    error.value = err.message || 'Error al crear el turno';
+  }
 };
 
 /**

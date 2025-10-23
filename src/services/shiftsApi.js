@@ -27,8 +27,9 @@ export const shiftsApi = {
    * @param {number} montoInicial - Initial cash amount
    * @param {string} notasApertura - Opening notes
    * @param {string|null} cajaNumero - Cash register identifier (optional)
+   * @param {number|null} empleadoId - POS employee ID (optional)
    */
-  async openShift(montoInicial, notasApertura = '', cajaNumero = null) {
+  async openShift(montoInicial, notasApertura = '', cajaNumero = null, empleadoId = null) {
     try {
       const payload = {
         monto_inicial: montoInicial,
@@ -37,6 +38,10 @@ export const shiftsApi = {
 
       if (cajaNumero) {
         payload.caja_numero = cajaNumero;
+      }
+
+      if (empleadoId) {
+        payload.empleado_id = empleadoId;
       }
 
       const response = await apiClient.post('/cash-register-shifts/open', payload);
