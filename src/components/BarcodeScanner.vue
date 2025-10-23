@@ -102,11 +102,13 @@ const emit = defineEmits(['update:modelValue', 'detected']);
 const isScanning = ref(false);
 const lastDetected = ref('');
 const error = ref('');
+const isProcessing = ref(false); // Evitar detecciones múltiples
 
 // Iniciar el escáner
 const startScanner = async () => {
   error.value = '';
   isScanning.value = false;
+  isProcessing.value = false; // Resetear flag al iniciar
 
   try {
     const config = {
@@ -172,16 +174,29 @@ const startScanner = async () => {
     // Evento de detección
     Quagga.onDetected((result) => {
       if (result && result.codeResult && result.codeResult.code) {
+        // Evitar múltiples detecciones del mismo código
+        if (isProcessing.value) {
+          console.log('⏭️ Skipping duplicate detection while processing');
+          return;
+        }
+
         const code = result.codeResult.code;
         console.log('📦 Barcode detected:', code);
+
+        // Marcar como procesando para evitar duplicados
+        isProcessing.value = true;
 
         // Actualizar último código detectado
         lastDetected.value = code;
 
+        // Detener el escáner inmediatamente
+        Quagga.stop();
+        isScanning.value = false;
+
         // Emitir el código detectado
         emit('detected', code);
 
-        // Opcional: Cerrar automáticamente después de detectar
+        // Cerrar automáticamente después de detectar
         setTimeout(() => {
           closeScanner();
         }, 1500);
@@ -213,6 +228,7 @@ const closeScanner = () => {
   stopScanner();
   lastDetected.value = '';
   error.value = '';
+  isProcessing.value = false; // Resetear flag de procesamiento
   emit('update:modelValue', false);
 };
 
