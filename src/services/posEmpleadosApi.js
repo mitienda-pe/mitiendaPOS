@@ -6,7 +6,7 @@ export const posEmpleadosApi = {
    * @param {number} tiendaId
    */
   async getAll(tiendaId) {
-    const response = await apiClient.get('/api/v1/pos-empleados', {
+    const response = await apiClient.get('/pos-empleados', {
       params: { tienda_id: tiendaId }
     });
     return response.data;
@@ -17,7 +17,7 @@ export const posEmpleadosApi = {
    * @param {number} id
    */
   async getById(id) {
-    const response = await apiClient.get(`/api/v1/pos-empleados/${id}`);
+    const response = await apiClient.get(`/pos-empleados/${id}`);
     return response.data;
   },
 
@@ -26,7 +26,7 @@ export const posEmpleadosApi = {
    * @param {object} data
    */
   async create(data) {
-    const response = await apiClient.post('/api/v1/pos-empleados', data);
+    const response = await apiClient.post('/pos-empleados', data);
     return response.data;
   },
 
@@ -36,7 +36,7 @@ export const posEmpleadosApi = {
    * @param {object} data
    */
   async update(id, data) {
-    const response = await apiClient.put(`/api/v1/pos-empleados/${id}`, data);
+    const response = await apiClient.put(`/pos-empleados/${id}`, data);
     return response.data;
   },
 
@@ -45,7 +45,7 @@ export const posEmpleadosApi = {
    * @param {number} id
    */
   async delete(id) {
-    const response = await apiClient.delete(`/api/v1/pos-empleados/${id}`);
+    const response = await apiClient.delete(`/pos-empleados/${id}`);
     return response.data;
   },
 
@@ -55,7 +55,7 @@ export const posEmpleadosApi = {
    * @param {string} pin - PIN de 4 dígitos
    */
   async validatePin(tiendaId, pin) {
-    const response = await apiClient.post('/api/v1/pos-empleados/validate-pin', {
+    const response = await apiClient.post('/pos-empleados/validate-pin', {
       tienda_id: tiendaId,
       pin
     });
@@ -69,7 +69,7 @@ export const posEmpleadosApi = {
    */
   async asignarSucursal(empleadoId, sucursalId) {
     const response = await apiClient.post(
-      `/api/v1/pos-empleados/${empleadoId}/sucursales`,
+      `/pos-empleados/${empleadoId}/sucursales`,
       { sucursal_id: sucursalId }
     );
     return response.data;
@@ -82,7 +82,7 @@ export const posEmpleadosApi = {
    */
   async desasignarSucursal(empleadoId, sucursalId) {
     const response = await apiClient.delete(
-      `/api/v1/pos-empleados/${empleadoId}/sucursales/${sucursalId}`
+      `/pos-empleados/${empleadoId}/sucursales/${sucursalId}`
     );
     return response.data;
   }

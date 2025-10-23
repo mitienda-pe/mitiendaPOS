@@ -10,7 +10,7 @@ export const branchesApi = {
     const params = { tienda_id: tiendaId };
     if (conPOS) params.con_pos = 1;
 
-    const response = await apiClient.get('/api/v1/branches', { params });
+    const response = await apiClient.get('/branches', { params });
     return response.data;
   },
 
@@ -19,7 +19,7 @@ export const branchesApi = {
    * @param {number} id
    */
   async getById(id) {
-    const response = await apiClient.get(`/api/v1/branches/${id}`);
+    const response = await apiClient.get(`/branches/${id}`);
     return response.data;
   },
 
@@ -28,7 +28,7 @@ export const branchesApi = {
    * @param {object} data
    */
   async create(data) {
-    const response = await apiClient.post('/api/v1/branches', data);
+    const response = await apiClient.post('/branches', data);
     return response.data;
   },
 
@@ -38,7 +38,7 @@ export const branchesApi = {
    * @param {object} data
    */
   async update(id, data) {
-    const response = await apiClient.put(`/api/v1/branches/${id}`, data);
+    const response = await apiClient.put(`/branches/${id}`, data);
     return response.data;
   },
 
@@ -47,7 +47,7 @@ export const branchesApi = {
    * @param {number} id
    */
   async delete(id) {
-    const response = await apiClient.delete(`/api/v1/branches/${id}`);
+    const response = await apiClient.delete(`/branches/${id}`);
     return response.data;
   },
 
@@ -56,7 +56,7 @@ export const branchesApi = {
    * @param {number} id
    */
   async getEmpleados(id) {
-    const response = await apiClient.get(`/api/v1/branches/${id}/empleados`);
+    const response = await apiClient.get(`/branches/${id}/empleados`);
     return response.data;
   }
 };
