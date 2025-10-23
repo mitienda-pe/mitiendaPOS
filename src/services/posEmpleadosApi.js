@@ -1,21 +1,4 @@
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_BASE_URL
-  ? `${import.meta.env.VITE_API_BASE_URL}/api/v1`
-  : 'https://api2.mitienda.pe/api/v1';
-
-// Obtener token del localStorage
-const getAuthToken = () => {
-  return localStorage.getItem('token');
-};
-
-// Configurar headers con autenticación
-const getHeaders = () => {
-  return {
-    'Authorization': `Bearer ${getAuthToken()}`,
-    'Content-Type': 'application/json'
-  };
-};
+import apiClient from './axios';
 
 export const posEmpleadosApi = {
   /**
@@ -23,8 +6,7 @@ export const posEmpleadosApi = {
    * @param {number} tiendaId
    */
   async getAll(tiendaId) {
-    const response = await axios.get(`${API_URL}/pos-empleados`, {
-      headers: getHeaders(),
+    const response = await apiClient.get('/api/v1/pos-empleados', {
       params: { tienda_id: tiendaId }
     });
     return response.data;
@@ -35,9 +17,7 @@ export const posEmpleadosApi = {
    * @param {number} id
    */
   async getById(id) {
-    const response = await axios.get(`${API_URL}/pos-empleados/${id}`, {
-      headers: getHeaders()
-    });
+    const response = await apiClient.get(`/api/v1/pos-empleados/${id}`);
     return response.data;
   },
 
@@ -46,9 +26,7 @@ export const posEmpleadosApi = {
    * @param {object} data
    */
   async create(data) {
-    const response = await axios.post(`${API_URL}/pos-empleados`, data, {
-      headers: getHeaders()
-    });
+    const response = await apiClient.post('/api/v1/pos-empleados', data);
     return response.data;
   },
 
@@ -58,9 +36,7 @@ export const posEmpleadosApi = {
    * @param {object} data
    */
   async update(id, data) {
-    const response = await axios.put(`${API_URL}/pos-empleados/${id}`, data, {
-      headers: getHeaders()
-    });
+    const response = await apiClient.put(`/api/v1/pos-empleados/${id}`, data);
     return response.data;
   },
 
@@ -69,9 +45,7 @@ export const posEmpleadosApi = {
    * @param {number} id
    */
   async delete(id) {
-    const response = await axios.delete(`${API_URL}/pos-empleados/${id}`, {
-      headers: getHeaders()
-    });
+    const response = await apiClient.delete(`/api/v1/pos-empleados/${id}`);
     return response.data;
   },
 
@@ -81,11 +55,9 @@ export const posEmpleadosApi = {
    * @param {string} pin - PIN de 4 dígitos
    */
   async validatePin(tiendaId, pin) {
-    const response = await axios.post(`${API_URL}/pos-empleados/validate-pin`, {
+    const response = await apiClient.post('/api/v1/pos-empleados/validate-pin', {
       tienda_id: tiendaId,
       pin
-    }, {
-      headers: getHeaders()
     });
     return response.data;
   },
@@ -96,10 +68,9 @@ export const posEmpleadosApi = {
    * @param {number} sucursalId
    */
   async asignarSucursal(empleadoId, sucursalId) {
-    const response = await axios.post(
-      `${API_URL}/pos-empleados/${empleadoId}/sucursales`,
-      { sucursal_id: sucursalId },
-      { headers: getHeaders() }
+    const response = await apiClient.post(
+      `/api/v1/pos-empleados/${empleadoId}/sucursales`,
+      { sucursal_id: sucursalId }
     );
     return response.data;
   },
@@ -110,9 +81,8 @@ export const posEmpleadosApi = {
    * @param {number} sucursalId
    */
   async desasignarSucursal(empleadoId, sucursalId) {
-    const response = await axios.delete(
-      `${API_URL}/pos-empleados/${empleadoId}/sucursales/${sucursalId}`,
-      { headers: getHeaders() }
+    const response = await apiClient.delete(
+      `/api/v1/pos-empleados/${empleadoId}/sucursales/${sucursalId}`
     );
     return response.data;
   }

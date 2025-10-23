@@ -1,21 +1,4 @@
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_BASE_URL
-  ? `${import.meta.env.VITE_API_BASE_URL}/api/v1`
-  : 'https://api2.mitienda.pe/api/v1';
-
-// Obtener token del localStorage
-const getAuthToken = () => {
-  return localStorage.getItem('token');
-};
-
-// Configurar headers con autenticación
-const getHeaders = () => {
-  return {
-    'Authorization': `Bearer ${getAuthToken()}`,
-    'Content-Type': 'application/json'
-  };
-};
+import apiClient from './axios';
 
 export const branchesApi = {
   /**
@@ -27,10 +10,7 @@ export const branchesApi = {
     const params = { tienda_id: tiendaId };
     if (conPOS) params.con_pos = 1;
 
-    const response = await axios.get(`${API_URL}/branches`, {
-      headers: getHeaders(),
-      params
-    });
+    const response = await apiClient.get('/api/v1/branches', { params });
     return response.data;
   },
 
@@ -39,9 +19,7 @@ export const branchesApi = {
    * @param {number} id
    */
   async getById(id) {
-    const response = await axios.get(`${API_URL}/branches/${id}`, {
-      headers: getHeaders()
-    });
+    const response = await apiClient.get(`/api/v1/branches/${id}`);
     return response.data;
   },
 
@@ -50,9 +28,7 @@ export const branchesApi = {
    * @param {object} data
    */
   async create(data) {
-    const response = await axios.post(`${API_URL}/branches`, data, {
-      headers: getHeaders()
-    });
+    const response = await apiClient.post('/api/v1/branches', data);
     return response.data;
   },
 
@@ -62,9 +38,7 @@ export const branchesApi = {
    * @param {object} data
    */
   async update(id, data) {
-    const response = await axios.put(`${API_URL}/branches/${id}`, data, {
-      headers: getHeaders()
-    });
+    const response = await apiClient.put(`/api/v1/branches/${id}`, data);
     return response.data;
   },
 
@@ -73,9 +47,7 @@ export const branchesApi = {
    * @param {number} id
    */
   async delete(id) {
-    const response = await axios.delete(`${API_URL}/branches/${id}`, {
-      headers: getHeaders()
-    });
+    const response = await apiClient.delete(`/api/v1/branches/${id}`);
     return response.data;
   },
 
@@ -84,9 +56,7 @@ export const branchesApi = {
    * @param {number} id
    */
   async getEmpleados(id) {
-    const response = await axios.get(`${API_URL}/branches/${id}/empleados`, {
-      headers: getHeaders()
-    });
+    const response = await apiClient.get(`/api/v1/branches/${id}/empleados`);
     return response.data;
   }
 };
