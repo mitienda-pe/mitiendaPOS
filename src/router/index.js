@@ -17,6 +17,7 @@ const Promotions = () => import('../views/Promotions.vue');
 const Cashier = () => import('../views/Cashier.vue');
 const Branches = () => import('../views/Branches.vue');
 const Preferences = () => import('../views/Preferences.vue');
+const Settings = () => import('../views/Settings.vue');
 
 const routes = [
   {
@@ -98,16 +99,36 @@ const routes = [
     meta: { requiresAuth: true, roles: ['cajero', 'supervisor', 'administrador'] }
   },
   {
-    path: '/branches',
-    name: 'Branches',
-    component: Branches,
-    meta: { requiresAuth: true, roles: ['supervisor', 'administrador'] }
+    path: '/shifts',
+    name: 'Shifts',
+    component: () => import('../views/Shifts.vue'),
+    meta: { requiresAuth: true, roles: ['cajero', 'supervisor', 'administrador'] }
   },
   {
-    path: '/preferences',
-    name: 'Preferences',
-    component: Preferences,
-    meta: { requiresAuth: true, roles: ['supervisor', 'administrador'] }
+    path: '/settings',
+    component: Settings,
+    meta: { requiresAuth: true, roles: ['supervisor', 'administrador'] },
+    children: [
+      {
+        path: '',
+        redirect: '/settings/preferences'
+      },
+      {
+        path: 'preferences',
+        name: 'Preferences',
+        component: Preferences
+      },
+      {
+        path: 'branches',
+        name: 'Branches',
+        component: Branches
+      },
+      {
+        path: 'users',
+        name: 'Users',
+        component: () => import('../views/Users.vue')
+      }
+    ]
   },
   {
     path: '/',

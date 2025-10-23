@@ -156,12 +156,12 @@
         </div>
       </router-link>
 
-      <!-- 7. Descuentos y Promociones (Próximamente) -->
-      <!-- <router-link to="/promotions" class="block">
+      <!-- 7. Descuentos y Promociones -->
+      <router-link to="/promotions" class="block">
         <div
-          class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-pink-500">
+          class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-rose-500">
           <div class="flex flex-col items-center justify-center h-full text-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-pink-500 mb-4" viewBox="0 0 24 24" fill="none"
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-rose-500 mb-4" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="19" y1="5" x2="5" y2="19"></line>
               <circle cx="6.5" cy="6.5" r="2.5"></circle>
@@ -171,14 +171,14 @@
             <p class="text-gray-600 text-center">Gestiona ofertas y promociones</p>
           </div>
         </div>
-      </router-link> -->
+      </router-link>
 
-      <!-- 8. Vales y Tarjetas de Regalo (Próximamente) -->
-      <!-- <router-link to="/vouchers" class="block">
+      <!-- 8. Vales y Tarjetas de Regalo -->
+      <router-link to="/vouchers" class="block">
         <div
-          class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-yellow-500">
+          class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-amber-500">
           <div class="flex flex-col items-center justify-center h-full text-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-yellow-500 mb-4" viewBox="0 0 24 24"
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-amber-500 mb-4" viewBox="0 0 24 24"
               fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="3" y="8" width="18" height="4" rx="1" />
               <path d="M12 8v13" />
@@ -189,7 +189,7 @@
             <p class="text-gray-600 text-center">Gestiona vales de consumo y tarjetas de regalo</p>
           </div>
         </div>
-      </router-link> -->
+      </router-link>
 
       <!-- 9. Clientes -->
       <router-link to="/customers" class="block">
@@ -225,59 +225,8 @@
         </div>
       </router-link>
 
-      <!-- 11. Sucursales -->
-      <router-link to="/branches" class="block">
-        <div
-          class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-violet-500">
-          <div class="flex flex-col items-center justify-center h-full text-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-violet-500 mb-4" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-              <polyline points="9 22 9 12 15 12 15 22"></polyline>
-            </svg>
-            <h2 class="text-xl font-medium text-gray-900 mb-2">Sucursales</h2>
-            <p class="text-gray-600 text-center">Gestión de múltiples locales</p>
-          </div>
-        </div>
-      </router-link>
-
-      <!-- 12. Cajas (Próximamente) -->
-      <router-link to="/cash-registers" class="block">
-        <div
-          class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-teal-500">
-          <div class="flex flex-col items-center justify-center h-full text-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-teal-500 mb-4" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect width="20" height="14" x="2" y="3" rx="2"/>
-              <line x1="8" x2="16" y1="21" y2="21"/>
-              <line x1="12" x2="12" y1="17" y2="21"/>
-            </svg>
-            <h2 class="text-xl font-medium text-gray-900 mb-2">Cajas</h2>
-            <p class="text-gray-600 text-center">Administra las cajas registradoras</p>
-          </div>
-        </div>
-      </router-link>
-
-      <!-- 13. Usuarios (Próximamente) -->
-      <router-link to="/users" class="block">
-        <div
-          class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-indigo-500">
-          <div class="flex flex-col items-center justify-center h-full text-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-indigo-500 mb-4" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-            </svg>
-            <h2 class="text-xl font-medium text-gray-900 mb-2">Usuarios</h2>
-            <p class="text-gray-600 text-center">Gestiona usuarios y permisos</p>
-          </div>
-        </div>
-      </router-link>
-
-      <!-- 14. Preferencias -->
-      <router-link to="/preferences" class="block">
+      <!-- 11. Configuración -->
+      <router-link to="/settings" class="block">
         <div
           class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-gray-500">
           <div class="flex flex-col items-center justify-center h-full text-center">
@@ -288,11 +237,28 @@
                 d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
               </path>
             </svg>
-            <h2 class="text-xl font-medium text-gray-900 mb-2">Preferencias</h2>
-            <p class="text-gray-600 text-center">Personaliza tu sistema</p>
+            <h2 class="text-xl font-medium text-gray-900 mb-2">Configuración</h2>
+            <p class="text-gray-600 text-center">Preferencias, sucursales y usuarios</p>
           </div>
         </div>
       </router-link>
+
+      <!-- 12. Ayuda -->
+      <a href="https://docs.mitienda.pe" target="_blank" class="block">
+        <div
+          class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-sky-500">
+          <div class="flex flex-col items-center justify-center h-full text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-sky-500 mb-4" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            <h2 class="text-xl font-medium text-gray-900 mb-2">Ayuda</h2>
+            <p class="text-gray-600 text-center">Documentación y soporte</p>
+          </div>
+        </div>
+      </a>
 
       <!-- Nota: Botón "Cambiar Tienda" eliminado - Para cambiar de tienda, hacer logout -->
     </div>
