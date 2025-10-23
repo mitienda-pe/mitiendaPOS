@@ -20,22 +20,46 @@
                   Ingrese el monto inicial en efectivo que tiene en caja para iniciar el turno.
                 </p>
 
-                <!-- Cash Register Number -->
+                <!-- Sucursal -->
+                <div class="mb-4">
+                  <label for="sucursal" class="block text-sm font-medium text-gray-700 mb-2">
+                    Sucursal *
+                  </label>
+                  <select
+                    id="sucursal"
+                    ref="sucursalSelect"
+                    v-model="selectedSucursal"
+                    @change="loadCajasForSucursal"
+                    required
+                    class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Seleccione una sucursal</option>
+                    <option v-for="sucursal in sucursales" :key="sucursal.tiendadireccion_id" :value="sucursal.tiendadireccion_id">
+                      {{ sucursal.tiendadireccion_nombresucursal }} ({{ sucursal.tiendadireccion_numero_cajas }} {{ sucursal.tiendadireccion_numero_cajas === 1 ? 'caja' : 'cajas' }})
+                    </option>
+                  </select>
+                </div>
+
+                <!-- Número de Caja -->
                 <div class="mb-4">
                   <label for="caja-numero" class="block text-sm font-medium text-gray-700 mb-2">
-                    Número de Caja (Opcional)
+                    Número de Caja *
                   </label>
-                  <input
+                  <select
                     id="caja-numero"
-                    ref="cajaInput"
+                    ref="cajaSelect"
                     v-model="cajaNumero"
-                    type="text"
-                    placeholder="Ej: CAJA-01, POS-LIMA-01"
-                    maxlength="50"
-                    class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
+                    :disabled="!selectedSucursal || availableCajas.length === 0"
+                    required
+                    class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="">{{ selectedSucursal ? 'Seleccione una caja' : 'Primero seleccione una sucursal' }}</option>
+                    <option v-for="caja in availableCajas" :key="caja" :value="caja">
+                      Caja {{ caja }}
+                    </option>
+                  </select>
                   <p class="text-xs text-gray-500 mt-1">
-                    Deje en blanco si solo tiene una caja. Use identificadores como CAJA-01, POS-LIMA-01 para múltiples cajas.
+                    Seleccione el número de caja física que va a utilizar
                   </p>
                 </div>
 
@@ -148,9 +172,11 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue';
+import { ref, computed, watch, nextTick, onMounted } from 'vue';
 import { DENOMINATIONS } from '../utils/cashDenominations.js';
 import CashBreakdownInput from './CashBreakdownInput.vue';
+import { branchesApi } from '../services/branchesApi';
+import { useAuthStore } from '../stores/auth';
 
 const props = defineProps({
   modelValue: Boolean
@@ -158,12 +184,18 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'opened']);
 
+const authStore = useAuthStore();
+
+const selectedSucursal = ref('');
+const sucursales = ref([]);
+const availableCajas = ref([]);
 const cajaNumero = ref('');
 const montoInicial = ref(0);
 const notas = ref('');
 const processing = ref(false);
 const error = ref(null);
-const cajaInput = ref(null);
+const sucursalSelect = ref(null);
+const cajaSelect = ref(null);
 const montoInput = ref(null);
 
 // Toggle para mostrar/ocultar desglose
@@ -208,19 +240,51 @@ const breakdownMatches = computed(() => {
 });
 
 const isValid = computed(() => {
+  if (!selectedSucursal.value) return false;
+  if (!cajaNumero.value) return false;
   if (montoInicial.value < 0) return false;
   if (showBreakdown.value && !breakdownMatches.value) return false;
   return true;
 });
 
-// Auto-focus on caja input when modal opens
+// Cargar sucursales con POS
+const loadSucursales = async () => {
+  try {
+    const storeId = authStore.selectedStore?.id;
+    if (!storeId) return;
+
+    const response = await branchesApi.getAll(storeId, true); // con_pos=true
+    sucursales.value = response.data || [];
+  } catch (err) {
+    console.error('Error cargando sucursales:', err);
+    error.value = 'Error al cargar sucursales';
+  }
+};
+
+// Generar opciones de cajas según la sucursal seleccionada
+const loadCajasForSucursal = () => {
+  cajaNumero.value = ''; // Reset caja selection
+  availableCajas.value = [];
+
+  if (!selectedSucursal.value) return;
+
+  const sucursal = sucursales.value.find(s => s.tiendadireccion_id === selectedSucursal.value);
+  if (sucursal && sucursal.tiendadireccion_numero_cajas > 0) {
+    availableCajas.value = Array.from({ length: sucursal.tiendadireccion_numero_cajas }, (_, i) => i + 1);
+  }
+};
+
+// Auto-focus on sucursal select when modal opens
 watch(() => props.modelValue, (value) => {
   if (value) {
+    loadSucursales(); // Cargar sucursales al abrir modal
     nextTick(() => {
-      cajaInput.value?.focus();
+      sucursalSelect.value?.focus();
     });
     // Reset form
+    selectedSucursal.value = '';
     cajaNumero.value = '';
+    availableCajas.value = [];
     montoInicial.value = 0;
     notas.value = '';
     error.value = null;
@@ -250,8 +314,12 @@ const handleOpen = async () => {
   processing.value = true;
 
   try {
+    const sucursal = sucursales.value.find(s => s.tiendadireccion_id === selectedSucursal.value);
+
     const data = {
-      cajaNumero: cajaNumero.value.trim() || null,
+      sucursalId: selectedSucursal.value,
+      sucursalNombre: sucursal?.tiendadireccion_nombresucursal || '',
+      cajaNumero: parseInt(cajaNumero.value),
       montoInicial: parseFloat(montoInicial.value),
       notas: notas.value.trim()
     };

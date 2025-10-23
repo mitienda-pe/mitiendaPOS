@@ -53,11 +53,28 @@ export const posEmpleadosApi = {
    * Validar PIN de empleado
    * @param {number} tiendaId
    * @param {string} pin - PIN de 4 dígitos
+   * @param {boolean} ignoreSchedule - Ignorar validación de horario
    */
-  async validatePin(tiendaId, pin) {
+  async validatePin(tiendaId, pin, ignoreSchedule = false) {
     const response = await apiClient.post('/pos-empleados/validate-pin', {
       tienda_id: tiendaId,
-      pin
+      pin,
+      ignore_schedule: ignoreSchedule
+    });
+    return response.data;
+  },
+
+  /**
+   * Verificar disponibilidad de PIN
+   * @param {number} tiendaId
+   * @param {string} pin - PIN de 4 dígitos
+   * @param {number} excludeEmpleadoId - ID del empleado a excluir (para edición)
+   */
+  async checkPin(tiendaId, pin, excludeEmpleadoId = null) {
+    const response = await apiClient.post('/pos-empleados/check-pin', {
+      tienda_id: tiendaId,
+      pin,
+      exclude_empleado_id: excludeEmpleadoId
     });
     return response.data;
   },

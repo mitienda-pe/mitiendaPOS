@@ -99,6 +99,12 @@ const routes = [
     meta: { requiresAuth: true, roles: ['cajero', 'supervisor', 'administrador'] }
   },
   {
+    path: '/my-shift',
+    name: 'MyShift',
+    component: () => import('../views/MyShift.vue'),
+    meta: { requiresAuth: true, roles: ['cajero', 'supervisor', 'administrador'] }
+  },
+  {
     path: '/shifts',
     name: 'Shifts',
     component: () => import('../views/Shifts.vue'),

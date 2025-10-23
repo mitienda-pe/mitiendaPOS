@@ -20,8 +20,8 @@
         </div>
       </router-link>
 
-      <!-- 2. Turnos de Caja (Caja) - DINÁMICO -->
-      <div class="block">
+      <!-- 2. Mi Turno (Caja) -->
+      <router-link to="/my-shift" class="block">
         <div class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full"
           :class="shiftStore.hasActiveShift ? 'border-l-4 border-green-500' : 'border-l-4 border-red-500'">
           <div class="flex flex-col items-center justify-center h-full text-center">
@@ -35,13 +35,13 @@
               <path d="m16.71 13.88.7.71-2.82 2.82"/>
             </svg>
 
-            <h2 class="text-xl font-medium text-gray-900 mb-2">Caja</h2>
+            <h2 class="text-xl font-medium text-gray-900 mb-2">Mi Turno</h2>
 
             <!-- Estado del turno -->
-            <div v-if="shiftStore.hasActiveShift" class="w-full mb-3">
-              <div class="bg-green-50 border border-green-200 rounded-lg p-3 mb-2">
-                <p class="text-xs font-medium text-green-800 mb-1">Turno Abierto</p>
-                <p class="text-sm text-green-700">Inicio: {{ formatTime(shiftStore.activeShift.fecha_apertura) }}</p>
+            <div v-if="shiftStore.hasActiveShift" class="w-full">
+              <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                <p class="text-xs font-medium text-green-800 mb-1">✅ Turno Abierto</p>
+                <p class="text-sm text-green-700">{{ formatTime(shiftStore.activeShift.fecha_apertura) }}</p>
                 <p class="text-lg font-bold text-green-900 mt-1">
                   S/ {{ shiftStore.activeShift.monto_inicial.toFixed(2) }}
                 </p>
@@ -49,27 +49,19 @@
                   {{ shiftStore.activeShift.caja_numero }}
                 </p>
               </div>
-              <button @click="handleCloseShift"
-                class="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium">
-                Cerrar Turno
-              </button>
             </div>
 
             <div v-else class="w-full">
-              <p class="text-gray-600 text-sm mb-3">No hay turno activo</p>
-              <button @click="handleOpenShift"
-                class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
-                Abrir Turno
-              </button>
+              <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p class="text-xs font-medium text-red-800 mb-1">❌ Sin Turno</p>
+                <p class="text-sm text-red-700">Debes abrir un turno</p>
+              </div>
             </div>
 
-            <!-- Link al historial -->
-            <router-link to="/shifts" class="text-xs text-blue-600 hover:text-blue-800 mt-3 underline">
-              Ver historial de turnos
-            </router-link>
+            <p class="text-gray-600 text-sm mt-3">Gestiona tu caja y turnos</p>
           </div>
         </div>
-      </div>
+      </router-link>
 
       <!-- 3. POS -->
       <router-link to="/pos" class="block">
@@ -262,77 +254,19 @@
 
       <!-- Nota: Botón "Cambiar Tienda" eliminado - Para cambiar de tienda, hacer logout -->
     </div>
-
-    <!-- Modals -->
-    <OpenShiftModal v-model="showOpenShiftModal" @opened="onShiftOpened" />
-
-    <CloseShiftModal v-model="showCloseShiftModal" :shift="shiftStore.activeShift" @closed="onShiftClosed" />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { onMounted } from 'vue';
 import { useShiftStore } from '../stores/shift';
-import { useAuthStore } from '../stores/auth';
-import OpenShiftModal from '../components/OpenShiftModal.vue';
-import CloseShiftModal from '../components/CloseShiftModal.vue';
 
 const shiftStore = useShiftStore();
-const authStore = useAuthStore();
-const showOpenShiftModal = ref(false);
-const showCloseShiftModal = ref(false);
 
 onMounted(async () => {
   // Load active shift on mount
   await shiftStore.fetchActiveShift();
 });
-
-const handleOpenShift = () => {
-  showOpenShiftModal.value = true;
-};
-
-const handleCloseShift = () => {
-  showCloseShiftModal.value = true;
-};
-
-const onShiftOpened = async (data) => {
-  const result = await shiftStore.openShift(data.montoInicial, data.notas, data.cajaNumero);
-
-  if (result.success) {
-    showOpenShiftModal.value = false;
-    const mensajeBase = 'Turno abierto exitosamente';
-    const mensajeCaja = data.cajaNumero ? `\nCaja: ${data.cajaNumero}` : '';
-    alert(mensajeBase + mensajeCaja);
-  } else {
-    alert(result.error || 'Error al abrir el turno');
-  }
-};
-
-const onShiftClosed = async (data) => {
-  const result = await shiftStore.closeShift(data.montoReal, data.notas);
-
-  if (result.success) {
-    showCloseShiftModal.value = false;
-    const shift = result.data;
-    const diferencia = shift.diferencia;
-
-    let mensaje = 'Turno cerrado exitosamente\n\n';
-    mensaje += `Esperado: S/ ${shift.monto_esperado.toFixed(2)}\n`;
-    mensaje += `Real: S/ ${shift.monto_real.toFixed(2)}\n`;
-
-    if (diferencia > 0) {
-      mensaje += `\nSobrante: S/ ${diferencia.toFixed(2)}`;
-    } else if (diferencia < 0) {
-      mensaje += `\nFaltante: S/ ${Math.abs(diferencia).toFixed(2)}`;
-    } else {
-      mensaje += `\n¡Cuadrado perfecto! ✓`;
-    }
-
-    alert(mensaje);
-  } else {
-    alert(result.error || 'Error al cerrar el turno');
-  }
-};
 
 const formatTime = (dateString) => {
   if (!dateString) return '';

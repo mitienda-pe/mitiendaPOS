@@ -204,14 +204,32 @@
             </label>
             <input
               v-model="formData.empleado_pin"
+              @input="validatePinAvailability"
               type="text"
               pattern="[0-9]{4}"
               maxlength="4"
               required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              :class="[
+                'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:border-transparent',
+                pinValidation.checking ? 'border-gray-300' :
+                pinValidation.isValid ? 'border-green-500 focus:ring-green-500' :
+                pinValidation.error ? 'border-red-500 focus:ring-red-500' :
+                'border-gray-300 focus:ring-indigo-500'
+              ]"
               placeholder="0000"
             />
-            <p class="text-xs text-gray-500 mt-1">PIN numérico de 4 dígitos para acceso rápido</p>
+            <p v-if="pinValidation.checking" class="text-xs text-gray-500 mt-1">
+              ⏳ Verificando disponibilidad...
+            </p>
+            <p v-else-if="pinValidation.isValid" class="text-xs text-green-600 mt-1">
+              ✓ PIN disponible
+            </p>
+            <p v-else-if="pinValidation.error" class="text-xs text-red-600 mt-1">
+              ✗ {{ pinValidation.error }}
+            </p>
+            <p v-else class="text-xs text-gray-500 mt-1">
+              PIN numérico de 4 dígitos para acceso rápido
+            </p>
           </div>
 
           <!-- Rol -->
@@ -347,9 +365,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { posEmpleadosApi } from '../services/posEmpleadosApi';
 import { branchesApi } from '../services/branchesApi';
+import { useAuthStore } from '../stores/auth';
+
+const authStore = useAuthStore();
 
 const empleados = ref([]);
 const availableBranches = ref([]);
@@ -362,8 +383,20 @@ const showCreateModal = ref(false);
 const showEditModal = ref(false);
 const showDeleteModal = ref(false);
 
+// Validación de PIN en tiempo real
+const pinValidation = ref({
+  checking: false,
+  isValid: false,
+  error: null
+});
+
+let pinValidationTimeout = null;
+
+// Obtener store_id de la tienda seleccionada
+const currentStoreId = computed(() => authStore.selectedStore?.id || null);
+
 const formData = ref({
-  tienda_id: 404, // TODO: Obtener del store
+  tienda_id: currentStoreId.value,
   empleado_nombres: '',
   empleado_apellidos: '',
   empleado_documento: '',
@@ -381,10 +414,16 @@ const editingEmpleado = ref(null);
 const empleadoToDelete = ref(null);
 
 const loadEmpleados = async () => {
+  if (!currentStoreId.value) {
+    error.value = 'No hay tienda seleccionada';
+    loading.value = false;
+    return;
+  }
+
   try {
     loading.value = true;
     error.value = null;
-    const response = await posEmpleadosApi.getAll(404); // TODO: Obtener tienda_id
+    const response = await posEmpleadosApi.getAll(currentStoreId.value);
     empleados.value = response.data || [];
   } catch (err) {
     console.error('Error cargando empleados:', err);
@@ -395,9 +434,13 @@ const loadEmpleados = async () => {
 };
 
 const loadBranches = async () => {
+  if (!currentStoreId.value) {
+    return;
+  }
+
   try {
     loadingBranches.value = true;
-    const response = await branchesApi.getAll(404); // TODO: Obtener tienda_id
+    const response = await branchesApi.getAll(currentStoreId.value);
     availableBranches.value = response.data || [];
   } catch (err) {
     console.error('Error cargando sucursales:', err);
@@ -407,12 +450,75 @@ const loadBranches = async () => {
 };
 
 const openCreateModal = () => {
+  // Resetear validación de PIN
+  pinValidation.value = {
+    checking: false,
+    isValid: false,
+    error: null
+  };
   loadBranches();
   showCreateModal.value = true;
 };
 
+// Validación de PIN en tiempo real con debounce
+const validatePinAvailability = async () => {
+  const pin = formData.value.empleado_pin;
+
+  // Resetear validación
+  pinValidation.value = {
+    checking: false,
+    isValid: false,
+    error: null
+  };
+
+  // Cancelar timeout anterior
+  if (pinValidationTimeout) {
+    clearTimeout(pinValidationTimeout);
+  }
+
+  // Validar formato
+  if (!pin || pin.length < 4) {
+    return;
+  }
+
+  if (!/^\d{4}$/.test(pin)) {
+    pinValidation.value.error = 'El PIN debe tener exactamente 4 dígitos';
+    return;
+  }
+
+  // Verificar disponibilidad con debounce
+  pinValidation.value.checking = true;
+
+  pinValidationTimeout = setTimeout(async () => {
+    try {
+      const excludeId = editingEmpleado.value?.empleado_id || null;
+      const response = await posEmpleadosApi.checkPin(currentStoreId.value, pin, excludeId);
+
+      if (response.success && response.available) {
+        pinValidation.value.isValid = true;
+        pinValidation.value.error = null;
+      } else {
+        pinValidation.value.isValid = false;
+        pinValidation.value.error = response.message || 'El PIN ya está en uso';
+      }
+    } catch (err) {
+      console.error('Error validando PIN:', err);
+      pinValidation.value.error = 'Error al validar PIN';
+    } finally {
+      pinValidation.value.checking = false;
+    }
+  }, 500); // Esperar 500ms después de que el usuario deje de escribir
+};
+
 const editEmpleado = (empleado) => {
   editingEmpleado.value = empleado;
+
+  // Resetear validación de PIN
+  pinValidation.value = {
+    checking: false,
+    isValid: false,
+    error: null
+  };
 
   // Parsear sucursales_ids (viene como string "1,2,3")
   const sucursalesIds = empleado.sucursales_ids
@@ -443,18 +549,41 @@ const saveEmpleado = async () => {
     saving.value = true;
     error.value = null;
 
+    // Validar que haya tienda seleccionada
+    if (!currentStoreId.value) {
+      error.value = 'No hay tienda seleccionada';
+      saving.value = false;
+      return;
+    }
+
+    // Asegurar que siempre se envíe el tienda_id correcto
+    const dataToSave = {
+      ...formData.value,
+      tienda_id: currentStoreId.value
+    };
+
+    console.log('💾 Guardando empleado:', dataToSave);
+
     if (showEditModal.value && editingEmpleado.value) {
-      await posEmpleadosApi.update(editingEmpleado.value.empleado_id, formData.value);
+      await posEmpleadosApi.update(editingEmpleado.value.empleado_id, dataToSave);
     } else {
-      await posEmpleadosApi.create(formData.value);
+      await posEmpleadosApi.create(dataToSave);
     }
 
     await loadEmpleados();
     closeModal();
   } catch (err) {
-    console.error('Error guardando empleado:', err);
+    console.error('❌ Error guardando empleado:', err);
+    console.error('Response data:', err.response?.data);
+    console.error('Validation messages:', err.response?.data?.messages);
+
     if (err.response?.data?.message) {
       error.value = err.response.data.message;
+    } else if (err.response?.data?.messages) {
+      // Manejar errores de validación múltiples
+      const messages = err.response.data.messages;
+      console.log('📋 Errores de validación:', messages);
+      error.value = Object.values(messages).flat().join(', ');
     } else {
       error.value = 'Error al guardar el empleado. Por favor, intenta de nuevo.';
     }
@@ -487,8 +616,22 @@ const closeModal = () => {
   showCreateModal.value = false;
   showEditModal.value = false;
   editingEmpleado.value = null;
+
+  // Resetear validación de PIN
+  pinValidation.value = {
+    checking: false,
+    isValid: false,
+    error: null
+  };
+
+  // Cancelar timeout pendiente
+  if (pinValidationTimeout) {
+    clearTimeout(pinValidationTimeout);
+    pinValidationTimeout = null;
+  }
+
   formData.value = {
-    tienda_id: 404,
+    tienda_id: currentStoreId.value,
     empleado_nombres: '',
     empleado_apellidos: '',
     empleado_documento: '',

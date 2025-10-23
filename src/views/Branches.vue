@@ -62,6 +62,9 @@
                 </div>
                 <p class="text-sm text-gray-600">{{ branch.tiendadireccion_direccion }}</p>
                 <p v-if="branch.tiendadireccion_interior" class="text-sm text-gray-500">{{ branch.tiendadireccion_interior }}</p>
+                <p v-if="branch.tiendadireccion_dist || branch.tiendadireccion_prov || branch.tiendadireccion_dpto" class="text-sm text-gray-500 mt-1">
+                  📍 {{ [branch.tiendadireccion_dist, branch.tiendadireccion_prov, branch.tiendadireccion_dpto].filter(Boolean).join(', ') }}
+                </p>
               </div>
 
               <div class="flex gap-2">
@@ -142,6 +145,42 @@
             />
           </div>
 
+          <div class="grid grid-cols-3 gap-3">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">
+                Distrito
+              </label>
+              <input
+                v-model="formData.tiendadireccion_dist"
+                type="text"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                placeholder="Distrito"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">
+                Provincia
+              </label>
+              <input
+                v-model="formData.tiendadireccion_prov"
+                type="text"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                placeholder="Provincia"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">
+                Departamento
+              </label>
+              <input
+                v-model="formData.tiendadireccion_dpto"
+                type="text"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                placeholder="Departamento"
+              />
+            </div>
+          </div>
+
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">
               Número de cajas *
@@ -220,8 +259,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { branchesApi } from '../services/branchesApi';
+import { useAuthStore } from '../stores/auth';
+
+const authStore = useAuthStore();
 
 const branches = ref([]);
 const loading = ref(true);
@@ -232,11 +274,17 @@ const showCreateModal = ref(false);
 const showEditModal = ref(false);
 const showDeleteModal = ref(false);
 
+// Obtener store_id de la tienda seleccionada
+const currentStoreId = computed(() => authStore.selectedStore?.id || null);
+
 const formData = ref({
-  tienda_id: 404, // TODO: Obtener del store o contexto
+  tienda_id: currentStoreId.value,
   tiendadireccion_nombresucursal: '',
   tiendadireccion_direccion: '',
   tiendadireccion_interior: '',
+  tiendadireccion_dist: '',
+  tiendadireccion_prov: '',
+  tiendadireccion_dpto: '',
   tiendadireccion_numero_cajas: 1,
   tiendadireccion_referencia: '',
   tiendadireccion_latitud: '0',
@@ -248,10 +296,16 @@ const editingBranch = ref(null);
 const branchToDelete = ref(null);
 
 const loadBranches = async () => {
+  if (!currentStoreId.value) {
+    error.value = 'No hay tienda seleccionada';
+    loading.value = false;
+    return;
+  }
+
   try {
     loading.value = true;
     error.value = null;
-    const response = await branchesApi.getAll(404); // TODO: Obtener tienda_id del store
+    const response = await branchesApi.getAll(currentStoreId.value);
     branches.value = response.data || [];
   } catch (err) {
     console.error('Error cargando sucursales:', err);
@@ -268,6 +322,9 @@ const editBranch = (branch) => {
     tiendadireccion_nombresucursal: branch.tiendadireccion_nombresucursal,
     tiendadireccion_direccion: branch.tiendadireccion_direccion,
     tiendadireccion_interior: branch.tiendadireccion_interior || '',
+    tiendadireccion_dist: branch.tiendadireccion_dist || '',
+    tiendadireccion_prov: branch.tiendadireccion_prov || '',
+    tiendadireccion_dpto: branch.tiendadireccion_dpto || '',
     tiendadireccion_numero_cajas: branch.tiendadireccion_numero_cajas || 1,
     tiendadireccion_referencia: branch.tiendadireccion_referencia || '',
     tiendadireccion_latitud: branch.tiendadireccion_latitud || '0',
@@ -282,10 +339,16 @@ const saveBranch = async () => {
     saving.value = true;
     error.value = null;
 
+    // Asegurar que siempre se envíe el tienda_id correcto
+    const dataToSave = {
+      ...formData.value,
+      tienda_id: currentStoreId.value
+    };
+
     if (showEditModal.value && editingBranch.value) {
-      await branchesApi.update(editingBranch.value.tiendadireccion_id, formData.value);
+      await branchesApi.update(editingBranch.value.tiendadireccion_id, dataToSave);
     } else {
-      await branchesApi.create(formData.value);
+      await branchesApi.create(dataToSave);
     }
 
     await loadBranches();
@@ -323,10 +386,13 @@ const closeModal = () => {
   showEditModal.value = false;
   editingBranch.value = null;
   formData.value = {
-    tienda_id: 404,
+    tienda_id: currentStoreId.value,
     tiendadireccion_nombresucursal: '',
     tiendadireccion_direccion: '',
     tiendadireccion_interior: '',
+    tiendadireccion_dist: '',
+    tiendadireccion_prov: '',
+    tiendadireccion_dpto: '',
     tiendadireccion_numero_cajas: 1,
     tiendadireccion_referencia: '',
     tiendadireccion_latitud: '0',

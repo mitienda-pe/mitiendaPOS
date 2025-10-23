@@ -1,0 +1,503 @@
+<template>
+  <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900">Mi Turno</h1>
+        <p v-if="cashierStore.cashier" class="text-sm text-gray-600 mt-1">
+          🧑‍💼 {{ cashierStore.cashier.empleado_nombres }} {{ cashierStore.cashier.empleado_apellidos }}
+          • {{ cashierStore.workLocation }}
+        </p>
+      </div>
+      <router-link
+        to="/menu"
+        class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        Volver al Menú
+      </router-link>
+    </div>
+
+    <!-- Loading State -->
+    <div v-if="loading" class="bg-white rounded-lg shadow-md p-8 text-center">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+      <p class="text-gray-600 mt-4">Cargando información del turno...</p>
+    </div>
+
+    <!-- Error State -->
+    <div v-else-if="error" class="bg-red-50 border border-red-200 rounded-lg p-6 mb-6">
+      <div class="flex items-center">
+        <svg class="h-6 w-6 text-red-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <p class="text-red-800 font-medium">{{ error }}</p>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div v-else class="space-y-6">
+      <!-- Control Section: Open/Close Shift -->
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="8" cy="8" r="6"/>
+            <path d="M18.09 10.37A6 6 0 1 1 10.34 18"/>
+            <path d="M7 6h1v4"/>
+            <path d="m16.71 13.88.7.71-2.82 2.82"/>
+          </svg>
+          Control de Turno
+        </h2>
+
+        <!-- No Active Shift -->
+        <div v-if="!shiftStore.hasActiveShift" class="text-center py-8">
+          <div class="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6 mb-4 inline-block">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-yellow-500 mx-auto mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <p class="text-lg font-medium text-yellow-800">No hay turno activo</p>
+            <p class="text-sm text-yellow-600 mt-1">Debes abrir un turno para comenzar a trabajar</p>
+          </div>
+          <button
+            @click="handleOpenShift"
+            class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-base font-medium shadow-md">
+            ✅ Abrir Turno
+          </button>
+        </div>
+
+        <!-- Active Shift -->
+        <div v-else class="space-y-4">
+          <!-- Shift Status Badge -->
+          <div class="bg-green-50 border-2 border-green-200 rounded-lg p-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-green-800 mb-1">✅ Turno Abierto</p>
+                <p class="text-xs text-green-600">
+                  Inicio: {{ formatDateTime(shiftStore.activeShift.fecha_apertura) }}
+                </p>
+                <p class="text-xs text-green-600 mt-1">
+                  ⏱️ {{ elapsedTime }}
+                </p>
+              </div>
+              <div class="text-right">
+                <p class="text-xs text-green-700 font-medium mb-1">Monto Inicial</p>
+                <p class="text-2xl font-bold text-green-900">
+                  S/ {{ shiftStore.activeShift.monto_inicial.toFixed(2) }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Close Shift Button -->
+          <button
+            @click="handleCloseShift"
+            class="w-full px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-base font-medium shadow-md">
+            🔒 Cerrar Turno
+          </button>
+        </div>
+      </div>
+
+      <!-- Real-time Summary Section (only if shift is active) -->
+      <div v-if="shiftStore.hasActiveShift" class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-purple-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="1" x2="12" y2="23"></line>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+          </svg>
+          Resumen en Tiempo Real
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Initial Amount -->
+          <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <p class="text-xs font-medium text-gray-600 mb-1">💰 Inicial</p>
+            <p class="text-2xl font-bold text-gray-900">S/ {{ summary.montoInicial.toFixed(2) }}</p>
+          </div>
+
+          <!-- Total Sales -->
+          <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+            <p class="text-xs font-medium text-blue-700 mb-1">💳 Ventas</p>
+            <p class="text-2xl font-bold text-blue-900">S/ {{ summary.totalVentas.toFixed(2) }}</p>
+            <p class="text-xs text-blue-600 mt-1">{{ summary.numeroVentas }} operaciones</p>
+          </div>
+
+          <!-- Cash Movements -->
+          <div class="bg-amber-50 rounded-lg p-4 border border-amber-200">
+            <p class="text-xs font-medium text-amber-700 mb-1">📊 Movimientos</p>
+            <p class="text-2xl font-bold" :class="summary.totalMovimientos >= 0 ? 'text-green-900' : 'text-red-900'">
+              {{ summary.totalMovimientos >= 0 ? '+' : '' }}S/ {{ summary.totalMovimientos.toFixed(2) }}
+            </p>
+            <p class="text-xs text-amber-600 mt-1">
+              {{ summary.numeroMovimientos }} operaciones
+            </p>
+          </div>
+
+          <!-- Expected Cash -->
+          <div class="bg-green-50 rounded-lg p-4 border border-green-200">
+            <p class="text-xs font-medium text-green-700 mb-1">💵 Esperado</p>
+            <p class="text-2xl font-bold text-green-900">S/ {{ summary.efectivoEsperado.toFixed(2) }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cash Movements Section (only if shift is active) -->
+      <div v-if="shiftStore.hasActiveShift" class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 3v18h18"/>
+              <path d="m19 9-5 5-4-4-3 3"/>
+            </svg>
+            Movimientos de Hoy
+          </h2>
+          <button
+            @click="loadMovements"
+            class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+            🔄 Actualizar
+          </button>
+        </div>
+
+        <!-- Movements Loading -->
+        <div v-if="loadingMovements" class="text-center py-8">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+          <p class="text-gray-600 text-sm mt-2">Cargando movimientos...</p>
+        </div>
+
+        <!-- No Movements -->
+        <div v-else-if="movements.length === 0" class="text-center py-8">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400 mx-auto mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <p class="text-gray-600">No hay movimientos registrados en este turno</p>
+        </div>
+
+        <!-- Movements List -->
+        <div v-else class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hora</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Concepto</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Método</th>
+                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Monto</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr v-for="movement in movements" :key="movement.id" class="hover:bg-gray-50">
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                  {{ formatTime(movement.fecha_registro) }}
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                  <span class="px-2 py-1 text-xs font-medium rounded-full" :class="getMovementTypeClass(movement.tipo)">
+                    {{ getMovementTypeLabel(movement.tipo) }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-sm text-gray-700">
+                  {{ movement.concepto }}
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                  {{ movement.metodo_pago || '-' }}
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium"
+                    :class="getMovementAmountClass(movement.tipo)">
+                  {{ getMovementSign(movement.tipo) }}S/ {{ parseFloat(movement.monto).toFixed(2) }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Link to History -->
+      <div class="text-center">
+        <router-link
+          to="/shifts"
+          class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium">
+          📚 Ver historial de turnos anteriores
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </router-link>
+      </div>
+    </div>
+
+    <!-- Modals -->
+    <OpenShiftModal
+      v-model="showOpenShiftModal"
+      @shift-opened="onShiftOpened"
+    />
+    <CloseShiftModal
+      v-model="showCloseShiftModal"
+      @shift-closed="onShiftClosed"
+    />
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useCashierStore } from '@/stores/cashier';
+import { useShiftStore } from '@/stores/shift';
+import cashRegisterShiftsApi from '@/services/cashRegisterShiftsApi';
+import OpenShiftModal from '@/components/OpenShiftModal.vue';
+import CloseShiftModal from '@/components/CloseShiftModal.vue';
+
+const cashierStore = useCashierStore();
+const shiftStore = useShiftStore();
+
+const loading = ref(true);
+const error = ref(null);
+const movements = ref([]);
+const loadingMovements = ref(false);
+const showOpenShiftModal = ref(false);
+const showCloseShiftModal = ref(false);
+
+// Real-time summary
+const summary = ref({
+  montoInicial: 0,
+  totalVentas: 0,
+  numeroVentas: 0,
+  totalMovimientos: 0,
+  numeroMovimientos: 0,
+  efectivoEsperado: 0
+});
+
+// Elapsed time
+const elapsedTime = ref('');
+let elapsedInterval = null;
+
+/**
+ * Load shift and movements
+ */
+const loadShiftData = async () => {
+  try {
+    loading.value = true;
+    error.value = null;
+
+    // Load active shift (already in store, but refresh)
+    await shiftStore.checkActiveShift();
+
+    // Calculate summary
+    if (shiftStore.hasActiveShift) {
+      calculateSummary();
+      await loadMovements();
+      startElapsedTimer();
+    }
+  } catch (err) {
+    console.error('Error loading shift data:', err);
+    error.value = err.response?.data?.message || 'Error al cargar información del turno';
+  } finally {
+    loading.value = false;
+  }
+};
+
+/**
+ * Calculate summary from shift and movements
+ */
+const calculateSummary = () => {
+  const shift = shiftStore.activeShift;
+  if (!shift) return;
+
+  summary.value.montoInicial = shift.monto_inicial || 0;
+  summary.value.totalVentas = shift.total_ventas || 0;
+  summary.value.numeroVentas = shift.numero_ventas || 0;
+
+  // Calculate movements (entries - withdrawals)
+  const entradas = movements.value
+    .filter(m => m.tipo === 'entrada')
+    .reduce((sum, m) => sum + parseFloat(m.monto), 0);
+
+  const salidas = movements.value
+    .filter(m => m.tipo === 'salida')
+    .reduce((sum, m) => sum + parseFloat(m.monto), 0);
+
+  summary.value.totalMovimientos = entradas - salidas;
+  summary.value.numeroMovimientos = movements.value.filter(m => m.tipo !== 'venta').length;
+
+  // Expected cash = initial + sales (cash only) + entries - withdrawals
+  // For now, assume all sales are cash (we'll improve this later with payment method breakdown)
+  summary.value.efectivoEsperado =
+    summary.value.montoInicial +
+    summary.value.totalVentas +
+    summary.value.totalMovimientos;
+};
+
+/**
+ * Load movements for active shift
+ */
+const loadMovements = async () => {
+  if (!shiftStore.hasActiveShift) return;
+
+  try {
+    loadingMovements.value = true;
+    const response = await cashRegisterShiftsApi.getShiftMovements(shiftStore.activeShift.id);
+
+    if (response.data.success) {
+      movements.value = response.data.data || [];
+      calculateSummary(); // Recalculate after loading movements
+    }
+  } catch (err) {
+    console.error('Error loading movements:', err);
+  } finally {
+    loadingMovements.value = false;
+  }
+};
+
+/**
+ * Start elapsed time timer
+ */
+const startElapsedTimer = () => {
+  stopElapsedTimer(); // Clear any existing timer
+
+  const updateElapsed = () => {
+    if (!shiftStore.activeShift?.fecha_apertura) return;
+
+    const start = new Date(shiftStore.activeShift.fecha_apertura);
+    const now = new Date();
+    const diff = now - start;
+
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+    elapsedTime.value = `${hours}h ${minutes}m`;
+  };
+
+  updateElapsed(); // Initial update
+  elapsedInterval = setInterval(updateElapsed, 60000); // Update every minute
+};
+
+/**
+ * Stop elapsed time timer
+ */
+const stopElapsedTimer = () => {
+  if (elapsedInterval) {
+    clearInterval(elapsedInterval);
+    elapsedInterval = null;
+  }
+};
+
+/**
+ * Handle open shift
+ */
+const handleOpenShift = () => {
+  showOpenShiftModal.value = true;
+};
+
+/**
+ * Handle close shift
+ */
+const handleCloseShift = () => {
+  showCloseShiftModal.value = true;
+};
+
+/**
+ * On shift opened
+ */
+const onShiftOpened = () => {
+  showOpenShiftModal.value = false;
+  loadShiftData();
+};
+
+/**
+ * On shift closed
+ */
+const onShiftClosed = () => {
+  showCloseShiftModal.value = false;
+  stopElapsedTimer();
+  loadShiftData();
+};
+
+/**
+ * Format date time
+ */
+const formatDateTime = (dateString) => {
+  if (!dateString) return '-';
+  const date = new Date(dateString);
+  return date.toLocaleString('es-PE', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
+/**
+ * Format time only
+ */
+const formatTime = (dateString) => {
+  if (!dateString) return '-';
+  const date = new Date(dateString);
+  return date.toLocaleTimeString('es-PE', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
+/**
+ * Get movement type label
+ */
+const getMovementTypeLabel = (tipo) => {
+  const labels = {
+    'venta': '💳 Venta',
+    'entrada': '📥 Ingreso',
+    'salida': '📤 Retiro',
+    'ajuste': '⚙️ Ajuste'
+  };
+  return labels[tipo] || tipo;
+};
+
+/**
+ * Get movement type class
+ */
+const getMovementTypeClass = (tipo) => {
+  const classes = {
+    'venta': 'bg-blue-100 text-blue-800',
+    'entrada': 'bg-green-100 text-green-800',
+    'salida': 'bg-red-100 text-red-800',
+    'ajuste': 'bg-yellow-100 text-yellow-800'
+  };
+  return classes[tipo] || 'bg-gray-100 text-gray-800';
+};
+
+/**
+ * Get movement amount class
+ */
+const getMovementAmountClass = (tipo) => {
+  if (tipo === 'entrada' || tipo === 'venta') {
+    return 'text-green-700';
+  }
+  if (tipo === 'salida') {
+    return 'text-red-700';
+  }
+  return 'text-gray-900';
+};
+
+/**
+ * Get movement sign
+ */
+const getMovementSign = (tipo) => {
+  if (tipo === 'entrada' || tipo === 'venta') {
+    return '+';
+  }
+  if (tipo === 'salida') {
+    return '-';
+  }
+  return '';
+};
+
+// Lifecycle
+onMounted(() => {
+  loadShiftData();
+});
+
+onUnmounted(() => {
+  stopElapsedTimer();
+});
+</script>
