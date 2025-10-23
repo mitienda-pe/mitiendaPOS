@@ -91,12 +91,37 @@
             </div>
           </div>
 
+          <!-- Cashier Authentication Alert (if shift open but no cashier) -->
+          <div v-if="!cashierStore.isCashierAuthenticated" class="bg-amber-50 border-2 border-amber-300 rounded-lg p-4 mb-4">
+            <div class="flex items-start">
+              <svg class="h-6 w-6 text-amber-600 mr-3 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <div class="flex-1">
+                <h4 class="font-medium text-amber-900">Sin cajero autenticado</h4>
+                <p class="text-sm text-amber-700 mt-1">Debes autenticarte con tu PIN de cajero para gestionar este turno</p>
+                <button
+                  @click="handleAuthenticateCashier"
+                  class="mt-3 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm font-medium">
+                  🔑 Autenticar con PIN
+                </button>
+              </div>
+            </div>
+          </div>
+
           <!-- Close Shift Button -->
           <button
             @click="handleCloseShift"
-            class="w-full px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-base font-medium shadow-md">
+            :disabled="!cashierStore.isCashierAuthenticated"
+            :class="cashierStore.isCashierAuthenticated
+              ? 'bg-red-600 hover:bg-red-700 cursor-pointer'
+              : 'bg-gray-400 cursor-not-allowed'"
+            class="w-full px-6 py-3 text-white rounded-lg transition-colors text-base font-medium shadow-md">
             🔒 Cerrar Turno
           </button>
+          <p v-if="!cashierStore.isCashierAuthenticated" class="text-xs text-gray-500 text-center">
+            Debes autenticarte como cajero para cerrar el turno
+          </p>
         </div>
       </div>
 
@@ -401,9 +426,31 @@ const handleOpenShift = () => {
 };
 
 /**
+ * Handle authenticate cashier (for existing shift without cashier)
+ */
+const handleAuthenticateCashier = () => {
+  // We need to get sucursal info from the shift
+  // For now, we'll use a simplified approach
+  pendingShiftData.value = {
+    sucursalId: null, // Will be filled when we have this data
+    sucursalInfo: {
+      nombre: 'Sucursal' // Placeholder
+    },
+    cajaNumero: shiftStore.activeShift?.caja_numero ? parseInt(shiftStore.activeShift.caja_numero.replace('Caja ', '')) : 1,
+    shiftId: shiftStore.activeShift?.id
+  };
+
+  showCashierAuthModal.value = true;
+};
+
+/**
  * Handle close shift
  */
 const handleCloseShift = () => {
+  if (!cashierStore.isCashierAuthenticated) {
+    alert('⚠️ Debes autenticarte como cajero primero');
+    return;
+  }
   showCloseShiftModal.value = true;
 };
 
