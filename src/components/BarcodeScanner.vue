@@ -152,7 +152,23 @@ const startScanner = async () => {
 
       // Verificar que el video se haya creado
       const video = document.querySelector('#barcode-scanner video');
+      const canvas = document.querySelector('#barcode-scanner canvas');
+      const container = document.querySelector('#barcode-scanner');
+
       console.log('📹 Video element:', video);
+      console.log('🎨 Canvas element:', canvas);
+      console.log('📦 Container element:', container);
+      console.log('📐 Container dimensions:', container?.offsetWidth, 'x', container?.offsetHeight);
+      console.log('📐 Video dimensions:', video?.offsetWidth, 'x', video?.offsetHeight);
+
+      // Forzar dimensiones del video
+      if (video) {
+        video.style.width = '100%';
+        video.style.height = '100%';
+        video.style.display = 'block';
+        video.style.objectFit = 'cover';
+        console.log('✨ Video styles applied');
+      }
 
       Quagga.start();
       isScanning.value = true;
