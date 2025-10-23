@@ -260,6 +260,7 @@
     />
     <CloseShiftModal
       v-model="showCloseShiftModal"
+      :shift="shiftStore.activeShift"
       @shift-closed="onShiftClosed"
     />
     <CashierAuthModal
