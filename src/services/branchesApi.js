@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://api2.mitienda.pe/api/v1';
+const API_URL = import.meta.env.VITE_API_BASE_URL
+  ? `${import.meta.env.VITE_API_BASE_URL}/api/v1`
+  : 'https://api2.mitienda.pe/api/v1';
 
 // Obtener token del localStorage
 const getAuthToken = () => {
