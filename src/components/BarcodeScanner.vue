@@ -150,28 +150,23 @@ const startScanner = async () => {
 
       console.log('✅ QuaggaJS initialized successfully');
 
-      // Verificar que el video se haya creado
-      const video = document.querySelector('#barcode-scanner video');
-      const canvas = document.querySelector('#barcode-scanner canvas');
-      const container = document.querySelector('#barcode-scanner');
-
-      console.log('📹 Video element:', video);
-      console.log('🎨 Canvas element:', canvas);
-      console.log('📦 Container element:', container);
-      console.log('📐 Container dimensions:', container?.offsetWidth, 'x', container?.offsetHeight);
-      console.log('📐 Video dimensions:', video?.offsetWidth, 'x', video?.offsetHeight);
-
-      // Forzar dimensiones del video
-      if (video) {
-        video.style.width = '100%';
-        video.style.height = '100%';
-        video.style.display = 'block';
-        video.style.objectFit = 'cover';
-        console.log('✨ Video styles applied');
-      }
-
       Quagga.start();
       isScanning.value = true;
+
+      // Verificar que el video se haya creado después de start()
+      setTimeout(() => {
+        const video = document.querySelector('#barcode-scanner video');
+        const canvas = document.querySelector('#barcode-scanner canvas');
+
+        console.log('📹 Video element after start:', video);
+        console.log('🎨 Canvas element after start:', canvas);
+        console.log('📹 Video srcObject:', video?.srcObject);
+        console.log('📹 Video readyState:', video?.readyState);
+
+        if (video && !video.srcObject) {
+          console.warn('⚠️ Video no tiene srcObject asignado');
+        }
+      }, 500);
     });
 
     // Evento de detección
