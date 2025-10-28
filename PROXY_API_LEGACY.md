@@ -47,9 +47,11 @@ Authorization: Bearer {JWT_TOKEN}
 
 ---
 
-### 2. POST `/api/v1/orders/legacy` (RECOMENDADO)
+### 2. POST `/api/v1/orders/legacy` ✅ (RECOMENDADO)
 
 Crea una orden a través del proxy al API legacy.
+
+**Endpoint Legacy**: `POST https://api.mitienda.pe/v1/order/order_pos`
 
 **Headers:**
 ```
