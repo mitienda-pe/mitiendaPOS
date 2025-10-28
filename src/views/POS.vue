@@ -18,13 +18,13 @@ import ConfirmProductsModal from '../components/ConfirmProductsModal.vue';
 import MergeSalesModal from '../components/MergeSalesModal.vue';
 import BarcodeScanner from '../components/BarcodeScanner.vue';
 import BillingDocumentModal from '../components/BillingDocumentModal.vue';
+import { useBillingStore } from '../stores/billing.js';
 
 // Stores
 const authStore = useAuthStore();
 const savedSalesStore = useSavedSalesStore();
 const cartStore = useCartStore();
 const shiftStore = useShiftStore();
-const { useBillingStore } = await import('../stores/billing.js');
 const billingStore = useBillingStore();
 
 // Cart store refs (reactivos)
