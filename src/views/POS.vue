@@ -458,11 +458,14 @@ const handlePaymentCompleted = async () => {
   try {
     // Preparar datos de la orden
     const orderData = {
-      customer_id: selectedCustomer.value ? selectedCustomer.value.id : null,
-      customer_name: selectedCustomer.value ? selectedCustomer.value.name : 'Cliente General',
-      customer_email: selectedCustomer.value?.email || '',
-      customer_phone: selectedCustomer.value?.phone || '',
-      customer_document: selectedCustomer.value?.document_number || '',
+      customer: {
+        id: selectedCustomer.value ? selectedCustomer.value.id : null,
+        name: selectedCustomer.value ? selectedCustomer.value.name : 'Cliente General',
+        email: selectedCustomer.value?.email || '',
+        phone: selectedCustomer.value?.phone || '',
+        document_number: selectedCustomer.value?.document_number || '',
+        document_type: selectedCustomer.value?.document_type || 'dni'
+      },
       document_type: documentType.value, // 'boleta' o 'factura'
       items: cartItems.value.map(item => ({
         product_id: item.id,
@@ -484,7 +487,8 @@ const handlePaymentCompleted = async () => {
       tax: tax.value,
       tax_rate: 0.18,
       total: total.value,
-      currency: 'PEN'
+      currency: 'PEN',
+      notes: '' // Campo para notas adicionales
     };
 
     // Crear la orden en el backend
@@ -562,8 +566,12 @@ const handlePaymentCompleted = async () => {
     }
   } catch (error) {
     console.error('Error al procesar el pago:', error);
+    console.error('Error response:', error.response);
+    console.error('Error response data:', error.response?.data);
     const errorMessage = error.response?.data?.message || error.message || 'Error al procesar la venta';
-    alert(`Error: ${errorMessage}\n\nPor favor, intente nuevamente.`);
+    const errorDetails = error.response?.data?.errors || error.response?.data?.data || '';
+    const fullMessage = errorDetails ? `${errorMessage}\n\nDetalles: ${JSON.stringify(errorDetails)}` : errorMessage;
+    alert(`Error: ${fullMessage}\n\nPor favor, intente nuevamente.`);
   } finally {
     processingOrder.value = false;
   }
