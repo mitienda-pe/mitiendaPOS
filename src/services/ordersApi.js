@@ -2,7 +2,15 @@ import apiClient from './axios';
 
 export const ordersApi = {
   // Crear una nueva orden/venta desde el POS
+  // NOTA: Actualmente usa el API legacy a través de un proxy
+  // El endpoint /orders/pos está en desarrollo
   async createOrder(orderData) {
+    const response = await apiClient.post('/orders/legacy', orderData);
+    return response.data;
+  },
+
+  // Crear orden usando el endpoint nativo (EN DESARROLLO - NO USAR AÚN)
+  async createOrderNative(orderData) {
     const response = await apiClient.post('/orders/pos', orderData);
     return response.data;
   },
