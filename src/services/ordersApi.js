@@ -5,8 +5,20 @@ export const ordersApi = {
   // NOTA: Actualmente usa el API legacy a través de un proxy
   // El endpoint /orders/pos está en desarrollo
   async createOrder(orderData) {
-    const response = await apiClient.post('/orders/legacy', orderData);
-    return response.data;
+    try {
+      const response = await apiClient.post('/orders/legacy', orderData);
+      return response.data;
+    } catch (error) {
+      console.error('❌ [ordersApi] Error creating order:', error);
+      console.error('❌ [ordersApi] Error response:', error.response);
+      console.error('❌ [ordersApi] Error response data:', error.response?.data);
+
+      // Re-throw with better error info
+      if (error.response?.data) {
+        throw new Error(error.response.data.message || JSON.stringify(error.response.data));
+      }
+      throw error;
+    }
   },
 
   // Crear orden usando el endpoint nativo (EN DESARROLLO - NO USAR AÚN)

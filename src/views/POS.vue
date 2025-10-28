@@ -491,6 +491,9 @@ const handlePaymentCompleted = async () => {
       notes: '' // Campo para notas adicionales
     };
 
+    // Log del payload que se enviará
+    console.log('📤 [POS] Enviando orden al API:', JSON.stringify(orderData, null, 2));
+
     // Crear la orden en el backend
     const response = await ordersApi.createOrder(orderData);
 
