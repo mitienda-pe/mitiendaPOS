@@ -17,12 +17,15 @@ import SupervisorAuthModal from '../components/SupervisorAuthModal.vue';
 import ConfirmProductsModal from '../components/ConfirmProductsModal.vue';
 import MergeSalesModal from '../components/MergeSalesModal.vue';
 import BarcodeScanner from '../components/BarcodeScanner.vue';
+import BillingDocumentModal from '../components/BillingDocumentModal.vue';
 
 // Stores
 const authStore = useAuthStore();
 const savedSalesStore = useSavedSalesStore();
 const cartStore = useCartStore();
 const shiftStore = useShiftStore();
+const { useBillingStore } = await import('../stores/billing.js');
+const billingStore = useBillingStore();
 
 // Cart store refs (reactivos)
 const { items: cartItems, payments, customer: selectedCustomer, status: cartStatus, currentSaleId, documentType } = storeToRefs(cartStore);
@@ -53,12 +56,16 @@ const showTicket = ref(false);
 const showConfirmProducts = ref(false);
 const showMergeSales = ref(false);
 const showBarcodeScanner = ref(false);
+const showBillingModal = ref(false);
 
 // Datos para el modal de fusión
 const existingSaleForMerge = ref(null);
 
 // Autorización pendiente
 const pendingAction = ref({ type: null, data: null });
+
+// Completed order data (for billing)
+const completedOrder = ref(null);
 
 // Computed properties
 const filteredProducts = computed(() => {
@@ -532,8 +539,24 @@ const handlePaymentCompleted = async () => {
         savedSalesStore.deleteSavedSale(currentSaleId.value);
       }
 
+      // Guardar datos de la orden para facturación
+      const orderInfo = {
+        order_id: response.data.order_id || response.data.id,
+        order_code: response.data.order_code || `VENTA-${response.data.order_id || response.data.id}`,
+        total: total.value
+      };
+
       // Mostrar el ticket
       showTicket.value = true;
+
+      // Pasar datos de orden al resetSale para mostrar modal de facturación
+      // Lo hacemos después de un delay para que el usuario vea el ticket primero
+      setTimeout(() => {
+        if (confirm('¿Desea emitir un comprobante de pago (Boleta o Factura)?')) {
+          completedOrder.value = orderInfo;
+          showBillingModal.value = true;
+        }
+      }, 1000);
     } else {
       throw new Error(response.message || 'Error al crear la orden');
     }
@@ -552,11 +575,32 @@ const cancelSale = () => {
   }
 };
 
-const resetSale = () => {
+const resetSale = (orderData = null) => {
+  // If we have order data, store it for billing and show billing modal
+  if (orderData && orderData.order_id) {
+    completedOrder.value = orderData;
+    // Show billing modal after a short delay
+    setTimeout(() => {
+      showBillingModal.value = true;
+    }, 300);
+  }
+
   cartStore.reset();
   searchQuery.value = '';
   searchResults.value = [];
   saleHasUnsavedChanges.value = false;
+};
+
+const handleBillingSuccess = (billingData) => {
+  console.log('Comprobante emitido:', billingData);
+  // You could show a notification here
+  alert('Comprobante emitido exitosamente');
+};
+
+const handleBillingError = (error) => {
+  console.error('Error al emitir comprobante:', error);
+  // You could show an error notification here
+  alert('Error al emitir comprobante: ' + error);
 };
 
 const fetchCustomers = async () => {
@@ -1209,5 +1253,17 @@ const getPaymentMethodName = (method) => {
   <BarcodeScanner
     v-model="showBarcodeScanner"
     @detected="handleBarcodeDetected"
+  />
+
+  <!-- Billing Document Modal -->
+  <BillingDocumentModal
+    v-if="completedOrder"
+    v-model="showBillingModal"
+    :order-id="completedOrder.order_id || completedOrder.id"
+    :order-label="`Venta #${completedOrder.order_code || completedOrder.order_id || completedOrder.id}`"
+    :order-total="total"
+    :customer="selectedCustomer"
+    @success="handleBillingSuccess"
+    @error="handleBillingError"
   />
 </template>
