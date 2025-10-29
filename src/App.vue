@@ -217,6 +217,15 @@ onMounted(async () => {
       router.push('/login');
     }
 
+    // Restaurar sesión de cajero desde localStorage
+    console.log('🔄 [APP] Intentando restaurar sesión de cajero...');
+    const cashierRestored = cashierStore.restoreSession();
+    if (cashierRestored) {
+      console.log('✅ [APP] Sesión de cajero restaurada:', cashierStore.cashierName);
+    } else {
+      console.log('ℹ️ [APP] No hay sesión de cajero para restaurar');
+    }
+
     // Configurar listeners de actividad
     const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
     events.forEach(event => {
