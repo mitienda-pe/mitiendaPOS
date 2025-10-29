@@ -28,13 +28,15 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => {
     // Normalizar respuesta de la API
-    // La API usa { error: 0, message: "...", data: {...} }
-    // Nosotros necesitamos { success: true, message: "...", data: {...} }
+    // La API usa { error: 0, message: "...", data: {...}, pagination: {...} }
+    // Nosotros necesitamos { success: true, message: "...", data: {...}, pagination: {...} }
     if (response.data && typeof response.data.error !== 'undefined') {
       response.data = {
         success: response.data.error === 0,
         message: response.data.message,
-        data: response.data.data
+        data: response.data.data,
+        // Preservar pagination si existe
+        ...(response.data.pagination && { pagination: response.data.pagination })
       };
     }
     return response;
