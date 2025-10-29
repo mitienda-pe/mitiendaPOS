@@ -26,7 +26,15 @@ export const inventoryApi = {
     }
 
     const response = await apiClient.get(`/products?${params.toString()}`);
-    const rawData = response.data;
+    console.log('🔍 [inventoryApi] Raw response:', response.data);
+
+    const apiResponse = response.data;
+    // Manejar ambos formatos: nuevo (con pagination) y legacy (array directo)
+    const rawData = apiResponse.data || apiResponse;
+    const paginationData = apiResponse.pagination;
+
+    console.log('🔍 [inventoryApi] Raw data:', rawData);
+    console.log('🔍 [inventoryApi] Pagination data:', paginationData);
 
     if (Array.isArray(rawData)) {
       return {
@@ -48,7 +56,13 @@ export const inventoryApi = {
           created_at: product.created_at || new Date().toISOString(),
           updated_at: product.updated_at || new Date().toISOString()
         })),
-        meta: {
+        meta: paginationData ? {
+          page: paginationData.page,
+          limit: paginationData.perPage || paginationData.limit || 20,
+          total: paginationData.total,
+          totalPages: paginationData.totalPages,
+          hasMore: paginationData.hasMore
+        } : {
           page: filters.page || 1,
           limit: filters.limit || 20,
           total: rawData.length,
