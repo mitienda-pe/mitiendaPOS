@@ -67,19 +67,25 @@ export const useCartStore = defineStore('cart', {
     },
 
     // ========== Cálculos financieros ==========
+    // IMPORTANTE: Los precios en BD YA incluyen IGV
+    // Por lo tanto, debemos extraer el IGV del precio, no agregarlo
     subtotal: (state) => {
       return state.items.reduce((sum, item) => {
-        const precio = parseFloat(item.precio) || 0;
+        const precioConIGV = parseFloat(item.precio) || 0;
         const cantidad = parseInt(item.quantity) || 0;
-        return sum + (precio * cantidad);
+        // Extraer el precio sin IGV: precio_con_igv / 1.18
+        const precioSinIGV = precioConIGV / 1.18;
+        return sum + (precioSinIGV * cantidad);
       }, 0);
     },
 
     tax(state) {
+      // El IGV es el 18% del subtotal (precio sin IGV)
       return this.subtotal * 0.18;
     },
 
     total(state) {
+      // Total = Subtotal (sin IGV) + IGV
       return this.subtotal + this.tax;
     },
 

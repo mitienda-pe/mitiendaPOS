@@ -393,11 +393,11 @@
                 <div class="border-t border-gray-300 pt-1">
                   <div class="flex justify-between">
                     <span>Subtotal:</span>
-                    <span>{{ formatCurrency(props.total * 0.82) }}</span>
+                    <span>{{ formatCurrency(props.subtotal) }}</span>
                   </div>
                   <div class="flex justify-between">
                     <span>IGV (18%):</span>
-                    <span>{{ formatCurrency(props.total * 0.18) }}</span>
+                    <span>{{ formatCurrency(props.tax) }}</span>
                   </div>
                   <div class="flex justify-between font-bold">
                     <span>Total:</span>
@@ -573,6 +573,14 @@ const props = defineProps({
     required: true
   },
   total: {
+    type: Number,
+    required: true
+  },
+  subtotal: {
+    type: Number,
+    required: true
+  },
+  tax: {
     type: Number,
     required: true
   },

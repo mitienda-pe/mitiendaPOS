@@ -504,10 +504,11 @@ const handlePaymentCompleted = async () => {
         sku: item.sku,
         name: item.nombre,
         quantity: item.quantity,
-        unit_price: item.precio,
-        subtotal: item.precio * item.quantity,
-        tax: (item.precio * item.quantity) * 0.18,
-        total: (item.precio * item.quantity) * 1.18
+        // IMPORTANTE: item.precio YA incluye IGV, debemos extraer el precio base
+        unit_price: item.precio / 1.18, // Precio sin IGV
+        subtotal: (item.precio / 1.18) * item.quantity, // Subtotal sin IGV
+        tax: ((item.precio / 1.18) * item.quantity) * 0.18, // IGV del subtotal
+        total: item.precio * item.quantity // Total con IGV (precio original * cantidad)
       })),
       payments: payments.value.map(payment => ({
         method: payment.method,
@@ -1266,7 +1267,7 @@ const getPaymentMethodName = (method) => {
   <CustomerSearchModal v-model="showCustomerSearch" @select="handleCustomerSelect" />
 
   <!-- Payment Modal -->
-  <PaymentModal v-model="showPaymentModal" :total="total" :customer="selectedCustomer" :items="cartItems"
+  <PaymentModal v-model="showPaymentModal" :total="total" :subtotal="subtotal" :tax="tax" :customer="selectedCustomer" :items="cartItems"
     :payments="payments" :document-type="documentType" :remaining-amount="remainingAmount" :show-ticket="showTicket"
     @payment-added="handlePaymentAdded" @sale-finalized="resetSale" @update:show-ticket="showTicket = $event" />
 
