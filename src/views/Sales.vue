@@ -213,10 +213,10 @@ const allOrders = ref([]);
 const loading = ref(false);
 const error = ref(null);
 const searchQuery = ref('');
-const selectedSource = ref('web'); // Default: Web
+const selectedSource = ref('pos'); // Default: POS (esta es la aplicación POS)
 const selectedStatus = ref('1'); // Default: Aprobado (1)
-const dateFrom = ref(getTodayDate()); // Default: Hoy
-const dateTo = ref(getTodayDate()); // Default: Hoy
+const dateFrom = ref(''); // Default: Sin filtro de fecha (mostrar todas las ventas)
+const dateTo = ref(''); // Default: Sin filtro de fecha (mostrar todas las ventas)
 
 let searchTimeout = null;
 
@@ -251,11 +251,15 @@ const fetchOrders = async () => {
     if (dateFrom.value) filters.date_from = dateFrom.value;
     if (dateTo.value) filters.date_to = dateTo.value;
 
+    console.log('📡 [Sales] Fetching orders with filters:', filters);
     const response = await ordersApi.getOrders(filters);
-    console.log('Orders API Response:', response);
+    console.log('📥 [Sales] Orders API Response:', response);
+    console.log('📊 [Sales] Number of orders received:', response.orders?.length || 0);
 
     // La respuesta puede venir en diferentes formatos
     if (response.orders) {
+      console.log('✅ [Sales] Using response.orders branch');
+      console.log('📋 [Sales] Raw orders before mapping:', response.orders);
       // Mapear campos de BD a formato esperado
       allOrders.value = response.orders.map((order) => ({
         id: parseInt(order.tiendaventa_id),
@@ -273,6 +277,9 @@ const fetchOrders = async () => {
         // Guardar datos raw para modal
         _raw: order
       }));
+
+      console.log('🗂️ [Sales] Mapped orders:', allOrders.value);
+      console.log('🔍 [Sales] First order sample:', allOrders.value[0]);
     } else if (Array.isArray(response)) {
       allOrders.value = response.map((order) => ({
         id: parseInt(order.tiendaventa_id || order.id),

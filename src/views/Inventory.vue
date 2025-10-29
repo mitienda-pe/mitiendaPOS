@@ -269,9 +269,14 @@
                 <!-- Stock con badge -->
                 <td class="px-6 py-4 whitespace-nowrap">
                   <span :class="getStockBadgeClass(product)">
-                    {{ product.stock }}
-                    <span v-if="product.stock === 0"> (Agotado)</span>
-                    <span v-else-if="product.stock <= product.min_stock"> (Bajo)</span>
+                    <template v-if="product.unlimited_stock">
+                      ∞ Ilimitado
+                    </template>
+                    <template v-else>
+                      {{ product.stock }}
+                      <span v-if="product.stock === 0"> (Agotado)</span>
+                      <span v-else-if="product.stock <= product.min_stock"> (Bajo)</span>
+                    </template>
                   </span>
                 </td>
 
@@ -477,6 +482,9 @@ const formatCurrency = (value) => {
 };
 
 const getStockBadgeClass = (product) => {
+  if (product.unlimited_stock) {
+    return 'px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800';
+  }
   if (product.stock === 0) {
     return 'px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800';
   } else if (product.stock <= product.min_stock) {
@@ -486,6 +494,9 @@ const getStockBadgeClass = (product) => {
 };
 
 const getRowClass = (product) => {
+  if (product.unlimited_stock) {
+    return '';
+  }
   if (product.stock === 0) {
     return 'bg-red-50';
   } else if (product.stock <= product.min_stock) {

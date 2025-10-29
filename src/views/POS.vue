@@ -61,11 +61,17 @@ const showBillingModal = ref(false);
 // Datos para el modal de fusión
 const existingSaleForMerge = ref(null);
 
+// Tipo de comprobante seleccionado al inicio de la venta
+const billingDocumentType = ref('boleta'); // 'boleta' o 'factura'
+
 // Autorización pendiente
 const pendingAction = ref({ type: null, data: null });
 
 // Completed order data (for billing)
 const completedOrder = ref(null);
+
+// Billing document info (from legacy API)
+const billingDocumentInfo = ref(null);
 
 // Computed properties
 const filteredProducts = computed(() => {
@@ -360,6 +366,12 @@ const handleCreateNewSale = () => {
 const handleStartSale = (data) => {
   const state = saleState.value;
 
+  // Guardar el tipo de comprobante seleccionado
+  if (data.billingDocumentType) {
+    billingDocumentType.value = data.billingDocumentType;
+    console.log('📄 [POS] Billing document type selected:', billingDocumentType.value);
+  }
+
   // Si estamos en Estado B (productos sin documento), NO limpiar el carrito
   // Solo agregar el cliente
   if (state === 'B') {
@@ -456,8 +468,28 @@ const handlePaymentCompleted = async () => {
   processingOrder.value = true;
 
   try {
+    // Validación: Boleta >= S/700 requiere DNI/RUC
+    if (billingDocumentType.value === 'boleta' && total.value >= 700) {
+      if (!selectedCustomer.value || !selectedCustomer.value.document_number) {
+        alert('⚠️ Las ventas con Boleta de S/700 o más requieren DNI o RUC del cliente.\n\nPor favor, agregue el documento del cliente antes de continuar.');
+        processingOrder.value = false;
+        return;
+      }
+    }
+
+    // Validación: Factura siempre requiere RUC
+    if (billingDocumentType.value === 'factura') {
+      if (!selectedCustomer.value || selectedCustomer.value.document_type !== 'ruc') {
+        alert('⚠️ Para emitir una Factura es obligatorio tener un cliente con RUC.\n\nPor favor, agregue el RUC del cliente antes de continuar.');
+        processingOrder.value = false;
+        return;
+      }
+    }
+
     // Preparar datos de la orden
     const orderData = {
+      source: 'pos', // Identificar que la venta viene del POS
+      pasarela_id: 98, // ID especial para ventas del POS
       customer: {
         id: selectedCustomer.value ? selectedCustomer.value.id : null,
         name: selectedCustomer.value ? selectedCustomer.value.name : 'Cliente General',
@@ -466,7 +498,7 @@ const handlePaymentCompleted = async () => {
         document_number: selectedCustomer.value?.document_number || '',
         document_type: selectedCustomer.value?.document_type || 'dni'
       },
-      document_type: documentType.value, // 'boleta' o 'factura'
+      document_type: billingDocumentType.value, // 'boleta' o 'factura'
       items: cartItems.value.map(item => ({
         product_id: item.id,
         sku: item.sku,
@@ -496,6 +528,10 @@ const handlePaymentCompleted = async () => {
 
     // Crear la orden en el backend
     const response = await ordersApi.createOrder(orderData);
+
+    console.log('📥 [POS] Response from API:', response);
+    console.log('📥 [POS] Response.success:', response.success);
+    console.log('📥 [POS] Response.data:', response.data);
 
     if (response.success) {
       console.log('Orden creada exitosamente:', response.data);
@@ -547,23 +583,27 @@ const handlePaymentCompleted = async () => {
       }
 
       // Guardar datos de la orden para facturación
+      const orderId = response.data.order_id || response.data.id;
+      const orderNumber = response.data.order_number || response.data.order_code;
+
       const orderInfo = {
-        order_id: response.data.order_id || response.data.id,
-        order_code: response.data.order_code || `VENTA-${response.data.order_id || response.data.id}`,
-        total: total.value
+        order_id: orderId ? parseInt(orderId, 10) : null, // Convertir a número
+        order_code: orderNumber || `VENTA-${orderId}`,
+        total: total.value,
+        customer: selectedCustomer.value
       };
+
+      console.log('📦 [POS] Order info prepared:', orderInfo);
 
       // Mostrar el ticket
       showTicket.value = true;
 
-      // Pasar datos de orden al resetSale para mostrar modal de facturación
-      // Lo hacemos después de un delay para que el usuario vea el ticket primero
+      // El API legacy emite el comprobante automáticamente
+      // Solo necesitamos esperar un momento para que el usuario vea el ticket
       setTimeout(() => {
-        if (confirm('¿Desea emitir un comprobante de pago (Boleta o Factura)?')) {
-          completedOrder.value = orderInfo;
-          showBillingModal.value = true;
-        }
-      }, 1000);
+        console.log('✅ [POS] Sale completed successfully. Billing document was emitted by legacy API.');
+        resetSale();
+      }, 2000); // 2 segundos para que el usuario vea el ticket
     } else {
       throw new Error(response.message || 'Error al crear la orden');
     }
@@ -600,6 +640,7 @@ const resetSale = (orderData = null) => {
   searchQuery.value = '';
   searchResults.value = [];
   saleHasUnsavedChanges.value = false;
+  billingDocumentType.value = 'boleta'; // Reset to default
 };
 
 const handleBillingSuccess = (billingData) => {
@@ -1270,10 +1311,10 @@ const getPaymentMethodName = (method) => {
   <BillingDocumentModal
     v-if="completedOrder"
     v-model="showBillingModal"
-    :order-id="completedOrder.order_id || completedOrder.id"
-    :order-label="`Venta #${completedOrder.order_code || completedOrder.order_id || completedOrder.id}`"
-    :order-total="total"
-    :customer="selectedCustomer"
+    :order-id="completedOrder.order_id"
+    :order-label="`Venta #${completedOrder.order_code || completedOrder.order_id || 'N/A'}`"
+    :order-total="completedOrder.total"
+    :customer="completedOrder.customer"
     @success="handleBillingSuccess"
     @error="handleBillingError"
   />

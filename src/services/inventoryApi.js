@@ -39,6 +39,7 @@ export const inventoryApi = {
           price: parseFloat(product.price || '0'),
           stock: parseInt(product.stock || '0'),
           min_stock: parseInt(product.min_stock || '5'), // Stock mínimo por defecto
+          unlimited_stock: Boolean(product.unlimited_stock || product.unlimited_stock === 1),
           published: product.published || false,
           featured: product.featured || false,
           images: product.images || [],
@@ -90,6 +91,7 @@ export const inventoryApi = {
           price: parseFloat(rawData.price || '0'),
           stock: parseInt(rawData.stock || '0'),
           min_stock: parseInt(rawData.min_stock || '5'),
+          unlimited_stock: Boolean(rawData.unlimited_stock || rawData.unlimited_stock === 1),
           published: rawData.published || false,
           featured: rawData.featured || false,
           images: rawData.images || [],
@@ -182,8 +184,9 @@ export const inventoryApi = {
     const products = response.data;
     const totalProducts = products.length;
     const totalValue = products.reduce((sum, p) => sum + (p.price * p.stock), 0);
-    const lowStock = products.filter(p => p.stock > 0 && p.stock <= p.min_stock).length;
-    const outOfStock = products.filter(p => p.stock === 0).length;
+    const lowStock = products.filter(p => !p.unlimited_stock && p.stock > 0 && p.stock <= p.min_stock).length;
+    const outOfStock = products.filter(p => !p.unlimited_stock && p.stock === 0).length;
+    const inStock = products.filter(p => p.unlimited_stock || p.stock > 0).length;
 
     return {
       success: true,
@@ -192,7 +195,7 @@ export const inventoryApi = {
         total_inventory_value: totalValue,
         low_stock_count: lowStock,
         out_of_stock_count: outOfStock,
-        in_stock_count: totalProducts - outOfStock
+        in_stock_count: inStock
       }
     };
   }

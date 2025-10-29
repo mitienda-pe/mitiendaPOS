@@ -181,8 +181,9 @@ const props = defineProps({
     required: true
   },
   orderId: {
-    type: Number,
-    required: true
+    type: [Number, null],
+    required: false,
+    default: null
   },
   orderLabel: {
     type: String,
@@ -231,6 +232,12 @@ const handleCancel = () => {
 
 const handleEmit = async () => {
   if (!selectedDocumentType.value || isEmitting.value) return
+
+  // Validar que tengamos un order_id válido
+  if (!props.orderId) {
+    errorMessage.value = 'No se pudo obtener el ID de la orden. Por favor, intente nuevamente.'
+    return
+  }
 
   try {
     isEmitting.value = true

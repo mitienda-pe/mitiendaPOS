@@ -18,10 +18,45 @@
                 </button>
               </div>
 
+              <!-- Billing Document Type Selection -->
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Tipo de Comprobante
+                </label>
+                <div class="flex gap-2">
+                  <button
+                    @click="selectedDocumentType = 'boleta'"
+                    :class="[
+                      'flex-1 px-4 py-3 rounded-lg border-2 transition-all',
+                      selectedDocumentType === 'boleta'
+                        ? 'border-blue-500 bg-blue-50 text-blue-700'
+                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                    ]"
+                  >
+                    <div class="font-medium">Boleta</div>
+                    <div class="text-xs mt-1">Para consumidor final</div>
+                  </button>
+                  <button
+                    @click="selectedDocumentType = 'factura'"
+                    :class="[
+                      'flex-1 px-4 py-3 rounded-lg border-2 transition-all',
+                      selectedDocumentType === 'factura'
+                        ? 'border-blue-500 bg-blue-50 text-blue-700'
+                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                    ]"
+                  >
+                    <div class="font-medium">Factura</div>
+                    <div class="text-xs mt-1">RUC obligatorio</div>
+                  </button>
+                </div>
+              </div>
+
               <!-- Document Input -->
               <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Información del Cliente (Opcional)
+                  Información del Cliente
+                  <span v-if="selectedDocumentType === 'factura'" class="text-red-600">*</span>
+                  <span v-else class="text-gray-500">(Opcional)</span>
                 </label>
                 <div class="flex gap-2 items-center">
                   <select
@@ -207,6 +242,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'start']);
 
+const selectedDocumentType = ref('boleta'); // 'boleta' o 'factura'
 const tipoDoc = ref('DNI');
 const numDoc = ref('');
 const customerFound = ref(null);
@@ -214,6 +250,15 @@ const searching = ref(false);
 const showCreateForm = ref(false);
 const docInput = ref(null);
 const lookupData = ref(null); // Store Decolecta lookup data
+
+// Watch for document type changes and adjust tipoDoc accordingly
+watch(selectedDocumentType, (newType) => {
+  if (newType === 'factura') {
+    tipoDoc.value = 'RUC'; // Factura requiere RUC
+  } else if (tipoDoc.value === 'RUC') {
+    tipoDoc.value = 'DNI'; // Reset to DNI if was RUC
+  }
+});
 
 const newCustomer = ref({
   nombres: '',
@@ -375,12 +420,30 @@ const clearCustomer = () => {
 };
 
 const startWithCustomer = () => {
-  emit('start', { customer: customerFound.value });
+  // Validar si es factura y no tiene RUC
+  if (selectedDocumentType.value === 'factura' && !customerFound.value) {
+    alert('Para emitir una factura es obligatorio seleccionar un cliente con RUC');
+    return;
+  }
+
+  emit('start', {
+    customer: customerFound.value,
+    billingDocumentType: selectedDocumentType.value // 'boleta' o 'factura'
+  });
   closeModal();
 };
 
 const skipCustomer = () => {
-  emit('start', { customer: null });
+  // Si es factura, no permitir omitir cliente
+  if (selectedDocumentType.value === 'factura') {
+    alert('Para emitir una factura es obligatorio ingresar un RUC');
+    return;
+  }
+
+  emit('start', {
+    customer: null,
+    billingDocumentType: selectedDocumentType.value // siempre 'boleta'
+  });
   closeModal();
 };
 
@@ -390,10 +453,13 @@ const closeModal = () => {
 };
 
 const resetForm = () => {
+  selectedDocumentType.value = 'boleta'; // Reset to default
+  tipoDoc.value = 'DNI';
   numDoc.value = '';
   customerFound.value = null;
   showCreateForm.value = false;
   searching.value = false;
+  lookupData.value = null;
   newCustomer.value = {
     nombres: '',
     apellidos: '',

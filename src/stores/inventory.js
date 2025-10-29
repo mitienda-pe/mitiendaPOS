@@ -35,21 +35,21 @@ export const useInventoryStore = defineStore('inventory', {
      * Productos con stock bajo
      */
     lowStockProducts: (state) => {
-      return state.products.filter(p => p.stock > 0 && p.stock <= p.min_stock);
+      return state.products.filter(p => !p.unlimited_stock && p.stock > 0 && p.stock <= p.min_stock);
     },
 
     /**
      * Productos sin stock
      */
     outOfStockProducts: (state) => {
-      return state.products.filter(p => p.stock === 0);
+      return state.products.filter(p => !p.unlimited_stock && p.stock === 0);
     },
 
     /**
      * Productos con stock normal
      */
     inStockProducts: (state) => {
-      return state.products.filter(p => p.stock > p.min_stock);
+      return state.products.filter(p => p.unlimited_stock || p.stock > p.min_stock);
     },
 
     /**

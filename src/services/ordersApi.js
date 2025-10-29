@@ -6,11 +6,16 @@ export const ordersApi = {
   // El endpoint /orders/pos está en desarrollo
   async createOrder(orderData) {
     try {
+      console.log('🚀 [ordersApi] Calling apiClient.post(/orders/legacy)');
+      console.log('🚀 [ordersApi] Data:', orderData);
       const response = await apiClient.post('/orders/legacy', orderData);
+      console.log('✅ [ordersApi] Response received:', response);
       return response.data;
     } catch (error) {
       console.error('❌ [ordersApi] Error creating order:', error);
+      console.error('❌ [ordersApi] Error message:', error.message);
       console.error('❌ [ordersApi] Error response:', error.response);
+      console.error('❌ [ordersApi] Error response status:', error.response?.status);
       console.error('❌ [ordersApi] Error response data:', error.response?.data);
 
       // Re-throw with better error info
