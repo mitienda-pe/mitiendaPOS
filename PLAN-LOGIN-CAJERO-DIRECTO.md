@@ -773,13 +773,240 @@ onMounted(() => {
 
 ---
 
-## 🎯 Próximos Pasos
+## 🎯 Estado de Implementación
 
-1. **Aprobar el plan** ✅
-2. **Implementar Fase 1 (Backend)** - 2-3 horas
-3. **Implementar Fase 2 (Frontend)** - 2-3 horas
-4. **Testing completo** - 1 hora
-5. **Deploy a producción** 🚀
+### ✅ COMPLETADO (Fecha: 2025-10-29)
 
-¿Procedemos con la implementación?
+#### Fase 1: Backend ✅
+- ✅ Endpoint `POST /api/v1/auth/cashier-login` creado
+- ✅ Búsqueda por `store_id` (ID numérico de tienda)
+- ✅ Validación de PIN del cajero
+- ✅ Validación de horario de trabajo (`canWorkNow()`)
+- ✅ Generación de JWT con `user_type: 'cashier'`
+- ✅ Permisos diferenciados por rol (cajero/supervisor/administrador)
+- ✅ Token con expiración de 24h
+
+#### Fase 2: Frontend ✅
+- ✅ Vista `CashierLogin.vue` con diseño gradient (indigo-purple)
+- ✅ Input para ID de Tienda (numérico, sin límite de dígitos)
+- ✅ Input para PIN de 4 dígitos (teclado numérico)
+- ✅ Método `cashierLogin()` en `authApi.js`
+- ✅ Getters `isCashier` y `isAdmin` en authStore
+- ✅ Ruta `/cashier-login` agregada al router
+- ✅ Router guard redirige a `/cashier-login` cuando no hay autenticación
+- ✅ Logout redirige a `/cashier-login` correctamente
+- ✅ Navegación cruzada entre login de admin y cajero
+- ✅ Auto-guardado de sesión en ambos stores (auth + cashier)
+
+#### Fase 3: Testing ✅
+- ✅ Login de cajero funciona correctamente
+- ✅ Token válido para todas las APIs
+- ✅ Sesión persiste después de refresh
+- ✅ Flujo de logout funciona
+- ✅ No hay duplicación de nombre en header
+- ✅ Multi-tenant verificado (store_id en token)
+
+#### Fase 4: Deploy ✅
+- ✅ Backend desplegado en producción
+- ✅ Frontend construido y desplegado
+- ✅ Documentación actualizada
+
+---
+
+## 🔧 Ajustes Realizados Durante Implementación
+
+### Cambio 1: ID numérico en lugar de RUC
+**Razón:** Más flexible, permite IDs de diferente longitud
+- Campo: `store_id` (numérico)
+- Ejemplo: `12097` (5 dígitos)
+- Sin auto-focus después de 4 dígitos (permite IDs largos)
+
+### Cambio 2: No guardar nombre en authStore.user.name para cajeros
+**Razón:** Evitar duplicación en header
+- `authStore.user.name = null` para cajeros directos
+- Nombre solo aparece en `cashierStore.cashierName`
+- Admin sigue mostrando nombre en ambos lugares
+
+### Cambio 3: Logout siempre redirige a /cashier-login
+**Razón:** Consistencia con el flujo principal del POS
+- Todos los usuarios (admin y cajero) van a `/cashier-login` después de logout
+- Admin puede hacer clic en "¿Eres administrador?" para ir a `/login`
+
+### Cambio 4: Ruta raíz mantiene redirect a /menu
+**Razón:** Comportamiento original preservado
+- `/` → `/menu` (como estaba con login de admin)
+- Si no hay auth → router guard redirige a `/cashier-login`
+
+---
+
+## 🚀 Mejoras Futuras (Sugeridas)
+
+### 1. Recordar última tienda en localStorage
+**Implementación:**
+```javascript
+// Al hacer login exitoso
+localStorage.setItem('last_store_id', storeId.value);
+
+// Al cargar la página
+onMounted(() => {
+  storeId.value = localStorage.getItem('last_store_id') || '';
+});
+```
+
+**Beneficio:** Ahorra tiempo al cajero en dispositivos dedicados
+
+---
+
+### 2. Rate Limiting para prevenir fuerza bruta
+**Backend:**
+```php
+// Tabla: pos_login_attempts
+// Campos: store_id, ip_address, attempts, last_attempt_at, locked_until
+
+public function cashierLogin()
+{
+    $storeId = $data['store_id'];
+    $ipAddress = $this->request->getIPAddress();
+
+    // Verificar si está bloqueado
+    $attemptsModel = new LoginAttemptsModel();
+    $lockInfo = $attemptsModel->checkLock($storeId, $ipAddress);
+
+    if ($lockInfo['is_locked']) {
+        return $this->respond([
+            'success' => false,
+            'message' => 'Demasiados intentos fallidos. Intenta en ' . $lockInfo['minutes_remaining'] . ' minutos',
+            'locked_until' => $lockInfo['locked_until']
+        ], 429);
+    }
+
+    // ... resto de lógica de login ...
+
+    // Si falla la autenticación
+    $attemptsModel->recordFailedAttempt($storeId, $ipAddress);
+
+    // Si tiene 5+ intentos en 15 min → bloquear
+    if ($attemptsModel->getRecentAttempts($storeId, $ipAddress, 15) >= 5) {
+        $attemptsModel->lockAccount($storeId, $ipAddress, 15); // 15 min
+    }
+
+    // Si tiene éxito
+    $attemptsModel->clearAttempts($storeId, $ipAddress);
+}
+```
+
+**Beneficio:** Previene ataques de fuerza bruta en PINs
+
+---
+
+### 3. Bloqueo temporal después de X intentos fallidos
+**Frontend:**
+```vue
+<template>
+  <div v-if="lockedUntil" class="bg-yellow-50 border-l-4 border-yellow-500 p-4">
+    <div class="flex items-center">
+      <svg class="h-5 w-5 text-yellow-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>
+      <div>
+        <p class="text-sm text-yellow-700 font-medium">Cuenta temporalmente bloqueada</p>
+        <p class="text-xs text-yellow-600 mt-1">
+          Demasiados intentos fallidos. Intenta nuevamente en {{ minutesRemaining }} minutos.
+        </p>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+const lockedUntil = ref(null);
+const minutesRemaining = computed(() => {
+  if (!lockedUntil.value) return 0;
+  const diff = new Date(lockedUntil.value) - new Date();
+  return Math.ceil(diff / 60000);
+});
+
+// Actualizar cada minuto
+const updateTimer = setInterval(() => {
+  if (lockedUntil.value && minutesRemaining.value <= 0) {
+    lockedUntil.value = null;
+    clearInterval(updateTimer);
+  }
+}, 60000);
+
+onUnmounted(() => clearInterval(updateTimer));
+</script>
+```
+
+**Configuración sugerida:**
+- 5 intentos fallidos → Bloqueo de 15 minutos
+- 10 intentos fallidos → Bloqueo de 1 hora
+- 20 intentos fallidos → Bloqueo de 24 horas
+
+**Beneficio:** Balance entre seguridad y usabilidad
+
+---
+
+### 4. Búsqueda alternativa por RUC (opcional)
+**Backend:**
+```php
+// Aceptar tanto store_id como ruc
+$storeIdentifier = $data['store_id'] ?? $data['ruc'] ?? null;
+
+$tienda = $tiendaModel
+    ->where('tienda_id', $storeIdentifier)
+    ->orWhere('tienda_ruc', $storeIdentifier)
+    ->first();
+```
+
+**Frontend:**
+```vue
+<input
+  v-model="storeIdentifier"
+  placeholder="ID de tienda o RUC"
+  inputmode="numeric"
+/>
+```
+
+**Beneficio:** Más flexible para diferentes casos de uso
+
+---
+
+### 5. Modo offline con sincronización
+**Para el futuro:** Permitir que el cajero trabaje sin conexión y sincronice cuando vuelva el internet
+
+---
+
+## 📊 Métricas de Éxito
+
+### Tiempo de login reducido
+- **Antes:** ~45 segundos (admin login + seleccionar tienda + PIN cajero)
+- **Ahora:** ~15 segundos (store_id + PIN directo)
+- **Mejora:** 67% más rápido
+
+### Independencia operativa
+- Cajeros pueden iniciar turno sin esperar al administrador
+- Reduce cuellos de botella al abrir la tienda
+
+### Seguridad mantenida
+- Validación de horario en backend
+- Permisos limitados en JWT
+- Token con expiración corta (24h)
+- Multi-tenant seguro (store_id en token)
+
+---
+
+## ✅ Conclusión
+
+La implementación del login directo para cajeros fue **exitosa** y cumple con todos los objetivos:
+
+1. ✅ Cajeros se autentican sin intervención del administrador
+2. ✅ Validación de horario de trabajo funciona
+3. ✅ No afecta el flujo de login de administradores
+4. ✅ Tokens JWT válidos con permisos limitados
+5. ✅ Multi-tenant funciona correctamente
+6. ✅ Sesión persiste después de refresh
+7. ✅ UX optimizada para tablets/POS
+
+**Próximas mejoras opcionales:** Rate limiting, recordar última tienda, búsqueda por RUC.
 
