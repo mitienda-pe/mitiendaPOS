@@ -145,10 +145,7 @@ const routes = [
   },
   {
     path: '/',
-    redirect: (to) => {
-      const authStore = useAuthStore();
-      return authStore.isAuthenticated ? '/menu' : '/cashier-login';
-    }
+    redirect: '/cashier-login'
   }
 ];
 
