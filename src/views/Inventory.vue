@@ -439,8 +439,21 @@ let searchTimeout = null;
 
 // Cargar datos
 const loadData = async () => {
+  console.log('🔍 [INVENTORY] Loading data...');
+  console.log('🔍 [INVENTORY] canEdit:', canEdit.value);
+  console.log('🔍 [INVENTORY] authStore.userRole:', authStore.userRole);
+  console.log('🔍 [INVENTORY] cashierStore.cashierRole:', cashierStore.cashierRole);
+  console.log('🔍 [INVENTORY] access_token:', localStorage.getItem('access_token')?.substring(0, 50) + '...');
+
   await inventoryStore.loadProducts();
   await inventoryStore.loadStats();
+
+  console.log('✅ [INVENTORY] Products loaded:', inventoryStore.products.length);
+  console.log('✅ [INVENTORY] Stats:', inventoryStore.stats);
+
+  if (inventoryStore.error) {
+    console.error('❌ [INVENTORY] Error:', inventoryStore.error);
+  }
 };
 
 // Búsqueda con debounce
