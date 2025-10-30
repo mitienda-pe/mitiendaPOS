@@ -19,7 +19,7 @@
             <div class="border-b border-gray-200 bg-gray-50 px-6 py-4">
               <div class="flex items-center justify-between">
                 <h3 class="text-lg font-semibold text-gray-900">
-                  Edición Rápida
+                  {{ readOnly ? 'Detalle del Producto' : 'Edición Rápida' }}
                 </h3>
                 <button
                   @click="closeModal"
@@ -60,8 +60,9 @@
                   type="number"
                   step="0.01"
                   min="0"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  :required="!readOnly"
+                  :disabled="readOnly"
+                  :class="readOnly ? 'w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 cursor-not-allowed' : 'w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500'"
                   placeholder="0.00"
                 />
               </div>
@@ -76,8 +77,9 @@
                   v-model.number="form.stock"
                   type="number"
                   min="0"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  :required="!readOnly"
+                  :disabled="readOnly"
+                  :class="readOnly ? 'w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 cursor-not-allowed' : 'w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500'"
                   placeholder="0"
                 />
               </div>
@@ -107,12 +109,13 @@
                 <button
                   type="button"
                   @click="closeModal"
-                  class="flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                  :class="readOnly ? 'w-full px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors' : 'flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors'"
                   :disabled="loading"
                 >
-                  Cancelar
+                  {{ readOnly ? 'Cerrar' : 'Cancelar' }}
                 </button>
                 <button
+                  v-if="!readOnly"
                   type="submit"
                   class="flex-1 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   :disabled="loading"
@@ -146,6 +149,10 @@ const props = defineProps({
   product: {
     type: Object,
     default: null
+  },
+  readOnly: {
+    type: Boolean,
+    default: false
   }
 });
 

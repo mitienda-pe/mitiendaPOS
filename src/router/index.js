@@ -55,7 +55,7 @@ const routes = [
     path: '/inventory',
     name: 'Inventory',
     component: Inventory,
-    meta: { requiresAuth: true, roles: ['supervisor', 'administrador'] }
+    meta: { requiresAuth: true, roles: ['cajero', 'supervisor', 'administrador'] }
   },
   {
     path: '/customers',
