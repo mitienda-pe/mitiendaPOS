@@ -151,7 +151,7 @@ const handleLogin = async () => {
     authStore.accessToken = access_token;
     authStore.user = {
       id: null,  // cajeros no tienen user_id
-      name: `${empleado.nombres} ${empleado.apellidos}`,
+      name: null,  // NO guardar nombre aquí, se muestra desde cashierStore
       email: null,
       role: empleado.rol,
       user_type: 'cashier'
