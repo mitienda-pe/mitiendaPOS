@@ -212,13 +212,7 @@ window.onerror = (message) => {
 // Check session on app initialization
 onMounted(async () => {
   try {
-    const hasValidSession = await authStore.checkSession();
-    const currentRoute = router.currentRoute.value.path;
-    const isLoginPage = currentRoute === '/login' || currentRoute === '/cashier-login';
-
-    if (!hasValidSession && !isLoginPage) {
-      router.push('/cashier-login');
-    }
+    await authStore.checkSession();
 
     // Restaurar sesión de cajero desde localStorage
     console.log('🔄 [APP] Intentando restaurar sesión de cajero...');
