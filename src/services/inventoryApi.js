@@ -25,26 +25,16 @@ export const inventoryApi = {
       params.append('stock_status', filters.stock_status);
     }
 
-    console.log('🔍 [INVENTORY API] Request URL:', `/products?${params.toString()}`);
-    console.log('🔍 [INVENTORY API] Filters:', filters);
-
     const response = await apiClient.get(`/products?${params.toString()}`);
-    console.log('📡 [INVENTORY API] Full response object:', response);
 
     // Después del axios interceptor, response.data tiene estructura: { success, data, pagination }
     const normalizedResponse = response.data;
-    console.log('📡 [INVENTORY API] Normalized response.data:', normalizedResponse);
 
     // El array de productos está en normalizedResponse.data
     const productsArray = normalizedResponse.data;
     const paginationData = normalizedResponse.pagination;
 
-    console.log('🔍 [INVENTORY API] Products array:', productsArray);
-    console.log('🔍 [INVENTORY API] Pagination data:', paginationData);
-    console.log('🔍 [INVENTORY API] Is productsArray an array?', Array.isArray(productsArray));
-
     if (Array.isArray(productsArray)) {
-      console.log('✅ [INVENTORY API] Processing array with', productsArray.length, 'products');
       return {
         success: true,
         data: productsArray.map((product) => ({
@@ -80,8 +70,6 @@ export const inventoryApi = {
       };
     }
 
-    console.error('❌ [INVENTORY API] productsArray is not an array, returning empty result');
-    console.error('❌ [INVENTORY API] productsArray value:', productsArray);
     return {
       success: false,
       data: [],
