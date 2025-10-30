@@ -27,6 +27,8 @@ export const useAuthStore = defineStore('auth', {
   getters: {
     isAuthenticated: (state) => !!state.accessToken && !!state.user,
     userRole: (state) => state.user?.role || null,
+    isCashier: (state) => state.user?.user_type === 'cashier',
+    isAdmin: (state) => state.user?.user_type !== 'cashier',
     hasSelectedStore: (state) => !!state.selectedStore,
     hasMultipleStores: (state) => state.stores.length > 1,
   },

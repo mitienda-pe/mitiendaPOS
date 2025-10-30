@@ -4,6 +4,7 @@ import { useShiftStore } from '../stores/shift';
 
 // Lazy-loaded components
 const Login = () => import('../views/Login.vue');
+const CashierLogin = () => import('../views/CashierLogin.vue');
 const POS = () => import('../views/POS.vue');
 const Dashboard = () => import('../views/Dashboard.vue');
 const Inventory = () => import('../views/Inventory.vue');
@@ -24,6 +25,12 @@ const routes = [
     path: '/login',
     name: 'Login',
     component: Login,
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/cashier-login',
+    name: 'CashierLogin',
+    component: CashierLogin,
     meta: { requiresAuth: false }
   },
   {

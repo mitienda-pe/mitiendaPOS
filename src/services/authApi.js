@@ -76,5 +76,14 @@ export const authApi = {
   async selectStore(storeId) {
     const response = await apiClient.post('/user/store/select', { store_id: storeId });
     return response.data;
+  },
+
+  // Login de cajero directo con store_id + PIN
+  async cashierLogin(storeId, pin) {
+    const response = await apiClient.post('/auth/cashier-login', {
+      store_id: storeId,
+      pin: pin
+    });
+    return response.data;
   }
 };
