@@ -145,7 +145,7 @@ const routes = [
   },
   {
     path: '/',
-    redirect: '/menu'
+    redirect: '/cashier-login'
   }
 ];
 
@@ -162,9 +162,14 @@ router.beforeEach(async (to, from, next) => {
   const requiresActiveShift = to.meta.requiresActiveShift;
   const requiredRoles = to.meta.roles;
 
+  // Allow access to login pages without authentication
+  const isLoginPage = to.path === '/login' || to.path === '/cashier-login';
+
   // Check authentication
   if (requiresAuth && !authStore.isAuthenticated) {
-    next('/login');
+    // Redirigir según el tipo de usuario que se espera
+    // Por defecto, ir a cashier-login (más común en POS)
+    next('/cashier-login');
     return;
   }
 
@@ -189,9 +194,9 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
-  // Redirect to menu if already authenticated and trying to access login
-  if (to.path === '/login' && authStore.isAuthenticated) {
-    next('/');
+  // Redirect to menu if already authenticated and trying to access login pages
+  if (isLoginPage && authStore.isAuthenticated) {
+    next('/menu');
     return;
   }
 
