@@ -1,13 +1,13 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-indigo-600 to-purple-700 flex items-center justify-center py-12 px-4">
+  <div class="min-h-screen bg-gray-800 flex items-center justify-center py-12 px-4">
     <div class="max-w-md w-full space-y-8">
       <!-- Logo -->
       <div class="text-center">
-        <img src="@/assets/logo-mitiendapos-wb.svg" alt="MiTiendaPOS" class="h-16 mx-auto mb-4" />
+        <img src="@/assets/logo-mitiendapos.svg" alt="MiTiendaPOS" class="h-16 mx-auto mb-4" />
         <h2 class="text-3xl font-extrabold text-white">
           Acceso Rápido Cajeros
         </h2>
-        <p class="mt-2 text-indigo-100">
+        <p class="mt-2 text-gray-300">
           Ingresa tu tienda y PIN para comenzar
         </p>
       </div>
@@ -92,7 +92,7 @@
       <div class="text-center">
         <router-link
           to="/login"
-          class="text-white hover:text-indigo-200 font-medium transition-colors inline-flex items-center"
+          class="text-gray-300 hover:text-white font-medium transition-colors inline-flex items-center"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
