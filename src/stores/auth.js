@@ -184,7 +184,7 @@ export const useAuthStore = defineStore('auth', {
         savedSalesStore.clearAll();
 
         console.log('✅ [AUTH] Logout completo - todas las sesiones limpiadas');
-        router.push('/login');
+        router.push('/cashier-login');
       }
     },
 
