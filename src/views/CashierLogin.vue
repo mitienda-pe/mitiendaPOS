@@ -134,7 +134,7 @@ const handleLogin = async () => {
   try {
     console.log('🔐 [CASHIER LOGIN] Intentando login con store_id + PIN');
 
-    const response = await authApi.cashierLogin(storeId.value, pin.value);
+    const response = await authApi.cashierLogin(parseInt(storeId.value), pin.value);
 
     if (!response.success) {
       throw new Error(response.message || 'Error de autenticación');

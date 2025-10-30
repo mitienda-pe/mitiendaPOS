@@ -50,6 +50,20 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
+      // No hacer logout automático para ciertos endpoints que pueden fallar por permisos
+      const nonCriticalEndpoints = [
+        '/cash-register-shifts/movements',
+        '/cash-register-shifts/active'
+      ];
+      const isNonCritical = nonCriticalEndpoints.some(endpoint =>
+        originalRequest.url?.includes(endpoint)
+      );
+
+      if (isNonCritical) {
+        console.warn('⚠️ [AXIOS] 401 on non-critical endpoint, not logging out:', originalRequest.url);
+        return Promise.reject(error);
+      }
+
       const refreshToken = localStorage.getItem('refresh_token');
 
       if (refreshToken && !originalRequest.url?.includes('/auth/refresh')) {
@@ -89,9 +103,16 @@ apiClient.interceptors.response.use(
         }
       } else {
         // No hay refresh token, limpiar y redirigir
+        // Verificar si es un cajero para redirigir a cashier-login
+        const userStr = localStorage.getItem('user');
+        const user = userStr ? JSON.parse(userStr) : null;
+        const isCashier = user?.user_type === 'cashier';
+
         localStorage.clear();
-        if (window.location.pathname !== '/login') {
-          window.location.href = '/login';
+
+        const loginPath = isCashier ? '/cashier-login' : '/login';
+        if (window.location.pathname !== loginPath) {
+          window.location.href = loginPath;
         }
       }
     }

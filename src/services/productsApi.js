@@ -170,9 +170,51 @@ export const productsApi = {
     const rawData = response.data;
 
     if (Array.isArray(rawData) && rawData.length > 0) {
+      const product = rawData[0];
+
+      // Normalizar el producto igual que en getProducts y getProduct
+      const images = (product.images || [])
+        .filter((img) => {
+          const url = typeof img === 'string' ? img : (img.url || img);
+          return url && !url.includes('placeholder.com');
+        })
+        .map((img, index) => {
+          if (typeof img === 'string') {
+            return {
+              id: index,
+              url: img,
+              thumbnail: img,
+              position: index,
+              is_main: index === 0
+            };
+          }
+          return {
+            id: img.id || index,
+            url: img.url || img,
+            thumbnail: img.thumbnail || img.url || img,
+            position: img.position || index,
+            is_main: img.is_main || index === 0
+          };
+        });
+
       return {
         success: true,
-        data: rawData[0]
+        data: {
+          id: product.id,
+          sku: product.sku,
+          name: product.name,
+          description: product.description || '',
+          price: parseFloat(product.price || '0'),
+          stock: product.stock || 0,
+          unlimited_stock: product.unlimited_stock === true || product.unlimited_stock === 1,
+          published: product.published || false,
+          featured: product.featured || false,
+          images,
+          category: product.category || null,
+          brand: product.brand || null,
+          created_at: product.created_at || new Date().toISOString(),
+          updated_at: product.updated_at || new Date().toISOString()
+        }
       };
     }
 

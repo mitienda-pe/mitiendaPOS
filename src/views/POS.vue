@@ -538,11 +538,8 @@ const handlePaymentCompleted = async () => {
     if (response.success) {
       console.log('Orden creada exitosamente:', response.data);
 
-      // Actualizar stock localmente (el backend ya lo actualiza, pero mantenemos sincronizado)
-      for (const item of cartItems.value) {
-        const updatedStock = item.stock - item.quantity;
-        await productsApi.updateStock(item.id, updatedStock);
-      }
+      // El backend legacy ya actualiza el stock automáticamente
+      // No necesitamos hacerlo manualmente desde el frontend
 
       // Registrar movimientos de caja por cada pago
       if (shiftStore.hasActiveShift) {
@@ -1002,7 +999,7 @@ const getPaymentMethodName = (method) => {
                       </button>
                       <span class="mx-2 text-sm">{{ item.quantity }}</span>
                       <button @click="incrementQuantity(item)" class="p-1 rounded-full hover:bg-gray-200"
-                        :disabled="item.quantity >= item.stock">
+                        :disabled="!item.unlimited_stock && item.quantity >= item.stock">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none"
                           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                           <line x1="12" y1="5" x2="12" y2="19"></line>

@@ -183,8 +183,8 @@ export const useCartStore = defineStore('cart', {
       const existingItem = this.items.find(i => i.id === product.id);
 
       if (existingItem) {
-        // Verificar stock
-        if (existingItem.quantity >= product.stock) {
+        // Verificar stock (solo si no es ilimitado)
+        if (!product.unlimited_stock && existingItem.quantity >= product.stock) {
           throw new Error('No hay suficiente stock disponible');
         }
         existingItem.quantity++;
@@ -218,9 +218,9 @@ export const useCartStore = defineStore('cart', {
         throw new Error('Producto no encontrado en el carrito');
       }
 
-      // Validar stock
+      // Validar stock (solo si no es ilimitado)
       const product = item; // Asumiendo que item tiene la info de stock
-      if (newQuantity > product.stock) {
+      if (!product.unlimited_stock && newQuantity > product.stock) {
         throw new Error('No hay suficiente stock disponible');
       }
 
