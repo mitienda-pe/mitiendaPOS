@@ -151,11 +151,12 @@ const handleBarcodeInput = async () => {
         nombre: response.data.name,
         precio: response.data.price,
         stock: response.data.stock,
+        unlimited_stock: response.data.unlimited_stock,
         categoria: response.data.category?.name || 'Sin categoría',
         images: response.data.images || []
       };
 
-      if (product.stock > 0) {
+      if (product.unlimited_stock || product.stock > 0) {
         addToCart(product);
       } else {
         alert('Este producto está agotado');
@@ -686,6 +687,7 @@ const searchProducts = async () => {
         nombre: item.name,
         precio: item.price,
         stock: item.stock,
+        unlimited_stock: item.unlimited_stock,
         categoria: item.category?.name || 'Sin categoría',
         images: item.images || []
       }));
@@ -703,7 +705,7 @@ const selectProduct = (product) => {
     sku: product.sku ? String(product.sku) : ''
   };
 
-  if (safeProduct.stock > 0) {
+  if (safeProduct.unlimited_stock || safeProduct.stock > 0) {
     addToCart(safeProduct);
     searchResults.value = [];
     barcode.value = '';
@@ -737,6 +739,7 @@ const showProductList = async () => {
         nombre: item.name,
         precio: item.price,
         stock: item.stock,
+        unlimited_stock: item.unlimited_stock,
         categoria: item.category?.name || 'Sin categoría',
         images: item.images || []
       }));
@@ -943,7 +946,9 @@ const getPaymentMethodName = (method) => {
                         <span>{{ product.nombre }}</span>
                         <span class="text-gray-600">{{ formatCurrency(product.precio) }}</span>
                       </div>
-                      <div class="text-sm text-gray-500">SKU: {{ product.sku }} | Stock: {{ product.stock }}</div>
+                      <div class="text-sm text-gray-500">
+                        SKU: {{ product.sku }} | Stock: {{ product.unlimited_stock ? '∞ Ilimitado' : product.stock }}
+                      </div>
                     </li>
                   </ul>
                 </div>
@@ -1238,7 +1243,7 @@ const getPaymentMethodName = (method) => {
                       <td class="px-6 py-4 text-sm truncate">{{ product.categoria }}</td>
                       <td class="px-6 py-4 whitespace-nowrap text-sm">{{ formatCurrency(product.precio) }}</td>
                       <td class="px-6 py-4 whitespace-nowrap text-sm">
-                        <button @click="selectProduct(product)" :disabled="product.stock === 0"
+                        <button @click="selectProduct(product)" :disabled="!product.unlimited_stock && product.stock === 0"
                           class="text-indigo-600 hover:text-indigo-900 disabled:opacity-50 disabled:cursor-not-allowed">
                           Agregar
                         </button>

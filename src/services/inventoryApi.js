@@ -26,15 +26,8 @@ export const inventoryApi = {
     }
 
     const response = await apiClient.get(`/products?${params.toString()}`);
-    console.log('🔍 [inventoryApi] Raw response:', response.data);
-
-    const apiResponse = response.data;
-    // Manejar ambos formatos: nuevo (con pagination) y legacy (array directo)
-    const rawData = apiResponse.data || apiResponse;
-    const paginationData = apiResponse.pagination;
-
-    console.log('🔍 [inventoryApi] Raw data:', rawData);
-    console.log('🔍 [inventoryApi] Pagination data:', paginationData);
+    const rawData = response.data;
+    const paginationData = response.data.pagination;
 
     if (Array.isArray(rawData)) {
       return {
@@ -47,7 +40,7 @@ export const inventoryApi = {
           price: parseFloat(product.price || '0'),
           stock: parseInt(product.stock || '0'),
           min_stock: parseInt(product.min_stock || '5'), // Stock mínimo por defecto
-          unlimited_stock: Boolean(product.unlimited_stock || product.unlimited_stock === 1),
+          unlimited_stock: product.unlimited_stock === true || product.unlimited_stock === 1,
           published: product.published || false,
           featured: product.featured || false,
           images: product.images || [],
@@ -105,7 +98,7 @@ export const inventoryApi = {
           price: parseFloat(rawData.price || '0'),
           stock: parseInt(rawData.stock || '0'),
           min_stock: parseInt(rawData.min_stock || '5'),
-          unlimited_stock: Boolean(rawData.unlimited_stock || rawData.unlimited_stock === 1),
+          unlimited_stock: rawData.unlimited_stock === true || rawData.unlimited_stock === 1,
           published: rawData.published || false,
           featured: rawData.featured || false,
           images: rawData.images || [],

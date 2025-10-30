@@ -31,12 +31,14 @@ apiClient.interceptors.response.use(
     // La API usa { error: 0, message: "...", data: {...}, pagination: {...} }
     // Nosotros necesitamos { success: true, message: "...", data: {...}, pagination: {...} }
     if (response.data && typeof response.data.error !== 'undefined') {
+      const originalData = response.data;
       response.data = {
-        success: response.data.error === 0,
-        message: response.data.message,
-        data: response.data.data,
+        success: originalData.error === 0,
+        message: originalData.message,
+        // Si data es undefined pero hay un array directo, usar el array
+        data: originalData.data !== undefined ? originalData.data : originalData,
         // Preservar pagination si existe
-        ...(response.data.pagination && { pagination: response.data.pagination })
+        ...(originalData.pagination && { pagination: originalData.pagination })
       };
     }
     return response;
