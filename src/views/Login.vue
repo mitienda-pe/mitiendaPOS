@@ -44,6 +44,16 @@
           </button>
         </div>
       </form>
+
+      <!-- Link a cashier login -->
+      <div class="text-center mt-4">
+        <router-link
+          to="/cashier-login"
+          class="text-sm text-indigo-600 hover:text-indigo-500 font-medium"
+        >
+          ¿Eres cajero? Ingresa con tu PIN
+        </router-link>
+      </div>
     </div>
 
     <!-- Store Selector Modal -->

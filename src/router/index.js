@@ -145,7 +145,7 @@ const routes = [
   },
   {
     path: '/',
-    redirect: '/cashier-login'
+    redirect: '/menu'
   }
 ];
 
@@ -167,8 +167,8 @@ router.beforeEach(async (to, from, next) => {
 
   // Check authentication
   if (requiresAuth && !authStore.isAuthenticated) {
-    // Redirigir según el tipo de usuario que se espera
-    // Por defecto, ir a cashier-login (más común en POS)
+    // Redirigir a login de cajeros por defecto (más común en POS)
+    // El usuario puede cambiar manualmente a /login si es admin
     next('/cashier-login');
     return;
   }
