@@ -145,7 +145,7 @@ const routes = [
   },
   {
     path: '/',
-    redirect: '/menu'
+    redirect: '/cashier-login'
   }
 ];
 
