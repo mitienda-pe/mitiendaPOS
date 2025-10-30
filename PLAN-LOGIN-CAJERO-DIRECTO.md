@@ -782,3 +782,8 @@ onMounted(() => {
 5. **Deploy a producción** 🚀
 
 ¿Procedemos con la implementación?
+
+
+Recordar última tienda en localStorage
+Rate limiting para prevenir fuerza bruta en PIN
+Bloqueo temporal después de X intentos fallidos

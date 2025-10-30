@@ -105,7 +105,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useCashierStore } from '../stores/cashier';
@@ -196,12 +196,7 @@ const handleLogin = async () => {
   }
 };
 
-// Auto-focus en PIN cuando store_id tiene valor
-watch(storeId, (value) => {
-  if (value.length >= 4 && pinInput.value) {
-    pinInput.value.focus();
-  }
-});
+// Removido auto-focus automático para permitir IDs de tienda con más de 4 dígitos
 </script>
 
 <style scoped>
