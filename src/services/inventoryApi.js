@@ -25,14 +25,29 @@ export const inventoryApi = {
       params.append('stock_status', filters.stock_status);
     }
 
-    const response = await apiClient.get(`/products?${params.toString()}`);
-    const rawData = response.data;
-    const paginationData = response.data.pagination;
+    console.log('🔍 [INVENTORY API] Request URL:', `/products?${params.toString()}`);
+    console.log('🔍 [INVENTORY API] Filters:', filters);
 
-    if (Array.isArray(rawData)) {
+    const response = await apiClient.get(`/products?${params.toString()}`);
+    console.log('📡 [INVENTORY API] Full response object:', response);
+
+    // Después del axios interceptor, response.data tiene estructura: { success, data, pagination }
+    const normalizedResponse = response.data;
+    console.log('📡 [INVENTORY API] Normalized response.data:', normalizedResponse);
+
+    // El array de productos está en normalizedResponse.data
+    const productsArray = normalizedResponse.data;
+    const paginationData = normalizedResponse.pagination;
+
+    console.log('🔍 [INVENTORY API] Products array:', productsArray);
+    console.log('🔍 [INVENTORY API] Pagination data:', paginationData);
+    console.log('🔍 [INVENTORY API] Is productsArray an array?', Array.isArray(productsArray));
+
+    if (Array.isArray(productsArray)) {
+      console.log('✅ [INVENTORY API] Processing array with', productsArray.length, 'products');
       return {
         success: true,
-        data: rawData.map((product) => ({
+        data: productsArray.map((product) => ({
           id: product.id,
           sku: product.sku || 'N/A',
           name: product.name,
@@ -58,13 +73,15 @@ export const inventoryApi = {
         } : {
           page: filters.page || 1,
           limit: filters.limit || 20,
-          total: rawData.length,
-          totalPages: Math.ceil(rawData.length / (filters.limit || 20)),
-          hasMore: rawData.length >= (filters.limit || 20)
+          total: productsArray.length,
+          totalPages: Math.ceil(productsArray.length / (filters.limit || 20)),
+          hasMore: productsArray.length >= (filters.limit || 20)
         }
       };
     }
 
+    console.error('❌ [INVENTORY API] productsArray is not an array, returning empty result');
+    console.error('❌ [INVENTORY API] productsArray value:', productsArray);
     return {
       success: false,
       data: [],
