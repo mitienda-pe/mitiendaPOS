@@ -611,15 +611,16 @@ const onShiftClosed = async (data) => {
   if (result.success) {
     console.log('✅ [MyShift] Turno cerrado exitosamente en BD');
 
-    // Clear cashier session since shift is closed
-    cashierStore.logout();
+    // NO hacer logout del cajero - permitir que abra un nuevo turno sin re-autenticarse
+    // Solo limpiar el estado del turno activo
 
     // Reload shift data
     await loadShiftData();
 
     console.log('🔄 [MyShift] Estado actualizado:', {
       hasActiveShift: shiftStore.hasActiveShift,
-      activeShift: shiftStore.activeShift
+      activeShift: shiftStore.activeShift,
+      cashierStillAuthenticated: cashierStore.isCashierAuthenticated
     });
 
     // Show success message
