@@ -123,7 +123,23 @@
         </div>
       </router-link>
 
-      <!-- 7. Descuentos y Promociones -->
+      <!-- 7. Clientes -->
+      <router-link to="/customers" class="block">
+        <div
+          class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-purple-500">
+          <div class="flex flex-col items-center justify-center h-full text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-purple-500 mb-4" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <h2 class="text-xl font-medium text-gray-900 mb-2">Clientes</h2>
+            <p class="text-gray-600 text-center">Administra tu cartera de clientes</p>
+          </div>
+        </div>
+      </router-link>
+
+      <!-- 8. Descuentos y Promociones -->
       <router-link to="/promotions" class="block">
         <div
           class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-rose-500">
@@ -140,7 +156,7 @@
         </div>
       </router-link>
 
-      <!-- 8. Vales y Tarjetas de Regalo -->
+      <!-- 9. Vales y Tarjetas de Regalo -->
       <router-link to="/vouchers" class="block">
         <div
           class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-amber-500">
@@ -154,22 +170,6 @@
             </svg>
             <h2 class="text-xl font-medium text-gray-900 mb-2">Vales y Tarjetas de Regalo</h2>
             <p class="text-gray-600 text-center">Gestiona vales de consumo y tarjetas de regalo</p>
-          </div>
-        </div>
-      </router-link>
-
-      <!-- 9. Clientes -->
-      <router-link to="/customers" class="block">
-        <div
-          class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-purple-500">
-          <div class="flex flex-col items-center justify-center h-full text-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-purple-500 mb-4" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-            <h2 class="text-xl font-medium text-gray-900 mb-2">Clientes</h2>
-            <p class="text-gray-600 text-center">Administra tu cartera de clientes</p>
           </div>
         </div>
       </router-link>

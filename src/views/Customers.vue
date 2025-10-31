@@ -105,15 +105,9 @@
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <button
                   @click="editCustomer(customer)"
-                  class="text-indigo-600 hover:text-indigo-900 mr-3"
+                  class="text-indigo-600 hover:text-indigo-900"
                 >
                   Editar
-                </button>
-                <button
-                  @click="deleteCustomer(customer)"
-                  class="text-red-600 hover:text-red-900"
-                >
-                  Eliminar
                 </button>
               </td>
             </tr>
@@ -201,7 +195,7 @@
                 </label>
                 <select
                   v-model="customerForm.document_type"
-                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                   required
                   :disabled="isEditing"
                 >
@@ -219,7 +213,7 @@
                     v-model="customerForm.document_number"
                     type="text"
                     :maxlength="customerForm.document_type === '1' ? 8 : 11"
-                    class="flex-1 rounded-l-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    class="flex-1 px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                     required
                     :disabled="isEditing"
                   >
@@ -243,7 +237,7 @@
                   <input
                     v-model="customerForm.nombres"
                     type="text"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                     required
                   >
                 </div>
@@ -255,7 +249,7 @@
                   <input
                     v-model="customerForm.apellidos"
                     type="text"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                     required
                   >
                 </div>
@@ -269,7 +263,7 @@
                   <input
                     v-model="customerForm.razonSocial"
                     type="text"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                     required
                   >
                 </div>
@@ -282,7 +276,7 @@
                 <input
                   v-model="customerForm.email"
                   type="email"
-                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 >
               </div>
 
@@ -293,7 +287,7 @@
                 <input
                   v-model="customerForm.phone"
                   type="tel"
-                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 >
               </div>
             </div>
@@ -318,49 +312,6 @@
       </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
-    <div v-if="showDeleteModal" class="fixed z-10 inset-0 overflow-y-auto">
-      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
-        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-          <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-            <div class="sm:flex sm:items-start">
-              <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-              <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                <h3 class="text-lg leading-6 font-medium text-gray-900">
-                  Eliminar Cliente
-                </h3>
-                <div class="mt-2">
-                  <p class="text-sm text-gray-500">
-                    ¿Está seguro que desea eliminar este cliente? Esta acción no se puede deshacer.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-            <button
-              type="button"
-              @click="confirmDelete"
-              class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
-            >
-              Eliminar
-            </button>
-            <button
-              type="button"
-              @click="closeDeleteModal"
-              class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -378,7 +329,6 @@ let searchTimeout = null;
 
 // Modal state
 const showModal = ref(false);
-const showDeleteModal = ref(false);
 const isEditing = ref(false);
 const consultingDocument = ref(false);
 const customerForm = ref({
@@ -391,7 +341,6 @@ const customerForm = ref({
   email: '',
   phone: ''
 });
-const customerToDelete = ref(null);
 
 // Computed properties
 const displayedCustomers = computed(() => {
@@ -620,33 +569,6 @@ async function saveCustomer() {
   } catch (error) {
     console.error('Error saving customer:', error);
     alert('Error al guardar cliente');
-  }
-}
-
-function deleteCustomer(customer) {
-  customerToDelete.value = customer;
-  showDeleteModal.value = true;
-}
-
-function closeDeleteModal() {
-  showDeleteModal.value = false;
-  customerToDelete.value = null;
-}
-
-async function confirmDelete() {
-  try {
-    const result = await customersStore.deleteCustomer(customerToDelete.value.id);
-
-    if (result.success) {
-      closeDeleteModal();
-      loadCustomers();
-      alert('Cliente eliminado correctamente');
-    } else {
-      alert(result.error || 'Error al eliminar cliente');
-    }
-  } catch (error) {
-    console.error('Error deleting customer:', error);
-    alert('Error al eliminar cliente');
   }
 }
 
