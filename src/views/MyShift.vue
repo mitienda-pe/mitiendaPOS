@@ -38,8 +38,23 @@
 
     <!-- Main Content -->
     <div v-else class="space-y-6">
-      <!-- Control Section: Open/Close Shift -->
-      <div class="bg-white rounded-lg shadow-md p-6">
+      <!-- No Active Shift Message -->
+      <div v-if="!shiftStore.hasActiveShift" class="bg-white rounded-lg shadow-md p-6">
+        <div class="text-center py-12">
+          <div class="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-8 mb-4 inline-block">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 text-yellow-500 mx-auto mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <p class="text-xl font-medium text-yellow-800 mb-2">No hay turno activo</p>
+            <p class="text-sm text-yellow-600">Usa el botón "✅ Abrir Turno" en el encabezado para comenzar</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Shift Status -->
+      <div v-else class="bg-white rounded-lg shadow-md p-6">
         <h2 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="8" cy="8" r="6"/>
@@ -47,90 +62,40 @@
             <path d="M7 6h1v4"/>
             <path d="m16.71 13.88.7.71-2.82 2.82"/>
           </svg>
-          Control de Turno
+          Estado del Turno
         </h2>
 
-        <!-- No Active Shift -->
-        <div v-if="!shiftStore.hasActiveShift" class="text-center py-8">
-          <div class="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6 mb-4 inline-block">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-yellow-500 mx-auto mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="12" y1="8" x2="12" y2="12"/>
-              <line x1="12" y1="16" x2="12.01" y2="16"/>
-            </svg>
-            <p class="text-lg font-medium text-yellow-800">No hay turno activo</p>
-            <p class="text-sm text-yellow-600 mt-1">Debes abrir un turno para comenzar a trabajar</p>
-          </div>
-          <button
-            @click="handleOpenShift"
-            class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-base font-medium shadow-md">
-            ✅ Abrir Turno
-          </button>
-        </div>
-
-        <!-- Active Shift -->
-        <div v-else class="space-y-4">
-          <!-- Shift Status Badge -->
-          <div class="bg-green-50 border-2 border-green-200 rounded-lg p-4">
-            <div class="flex items-center justify-between">
-              <div class="flex-1">
-                <p class="text-sm font-medium text-green-800 mb-1">✅ Turno Abierto</p>
-                <p class="text-xs text-green-600">
-                  Inicio: {{ formatDateTime(shiftStore.activeShift.fecha_apertura) }}
-                </p>
-                <p class="text-xs text-green-600 mt-1">
-                  ⏱️ {{ elapsedTime }}
-                </p>
-              </div>
-              <div class="text-right">
-                <p class="text-xs text-green-700 font-medium mb-1">Monto Inicial</p>
-                <p class="text-2xl font-bold text-green-900">
-                  S/ {{ shiftStore.activeShift.monto_inicial.toFixed(2) }}
-                </p>
-              </div>
-              <div class="ml-4">
-                <button
-                  @click="handleForceRefresh"
-                  class="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded border border-gray-300"
-                  title="Si ves datos incorrectos, usa esto para forzar recarga">
-                  🔄 Verificar
-                </button>
-              </div>
+        <div class="bg-green-50 border-2 border-green-200 rounded-lg p-4">
+          <div class="flex items-center justify-between">
+            <div class="flex-1">
+              <p class="text-sm font-medium text-green-800 mb-1">✅ Turno Abierto</p>
+              <p class="text-xs text-green-600">
+                Inicio: {{ formatDateTime(shiftStore.activeShift.fecha_apertura) }}
+              </p>
+              <p class="text-xs text-green-600 mt-1">
+                ⏱️ {{ elapsedTime }}
+              </p>
+            </div>
+            <div class="text-right">
+              <p class="text-xs text-green-700 font-medium mb-1">Monto Inicial</p>
+              <p class="text-2xl font-bold text-green-900">
+                S/ {{ shiftStore.activeShift.monto_inicial.toFixed(2) }}
+              </p>
+            </div>
+            <div class="ml-4">
+              <button
+                @click="handleForceRefresh"
+                class="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded border border-gray-300"
+                title="Si ves datos incorrectos, usa esto para forzar recarga">
+                🔄 Verificar
+              </button>
             </div>
           </div>
-
-          <!-- Cashier Authentication Alert (if shift open but no cashier) -->
-          <div v-if="!cashierStore.isCashierAuthenticated" class="bg-amber-50 border-2 border-amber-300 rounded-lg p-4 mb-4">
-            <div class="flex items-start">
-              <svg class="h-6 w-6 text-amber-600 mr-3 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              <div class="flex-1">
-                <h4 class="font-medium text-amber-900">Sin cajero autenticado</h4>
-                <p class="text-sm text-amber-700 mt-1">Debes autenticarte con tu PIN de cajero para gestionar este turno</p>
-                <button
-                  @click="handleAuthenticateCashier"
-                  class="mt-3 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm font-medium">
-                  🔑 Autenticar con PIN
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Close Shift Button -->
-          <button
-            @click="handleCloseShift"
-            :disabled="!cashierStore.isCashierAuthenticated"
-            :class="cashierStore.isCashierAuthenticated
-              ? 'bg-red-600 hover:bg-red-700 cursor-pointer'
-              : 'bg-gray-400 cursor-not-allowed'"
-            class="w-full px-6 py-3 text-white rounded-lg transition-colors text-base font-medium shadow-md">
-            🔒 Cerrar Turno
-          </button>
-          <p v-if="!cashierStore.isCashierAuthenticated" class="text-xs text-gray-500 text-center">
-            Debes autenticarte como cajero para cerrar el turno
-          </p>
         </div>
+
+        <p class="text-xs text-gray-500 mt-4 text-center">
+          Usa el botón "🔒 Cerrar Turno" en el encabezado para finalizar tu jornada
+        </p>
       </div>
 
       <!-- Real-time Summary Section (only if shift is active) -->
@@ -563,12 +528,6 @@ const onCashierAuthenticated = async (cashier) => {
     );
 
     if (result.success) {
-      const mensaje = `✅ Turno abierto exitosamente\n\n` +
-        `🧑‍💼 Cajero: ${cashier.empleado_nombres} ${cashier.empleado_apellidos}\n` +
-        `📍 ${pendingShiftData.value.sucursalInfo.nombre}\n` +
-        `🖥️ Caja ${pendingShiftData.value.cajaNumero}`;
-
-      alert(mensaje);
       pendingShiftData.value = null;
 
       // Reload shift data
@@ -622,9 +581,6 @@ const onShiftClosed = async (data) => {
       activeShift: shiftStore.activeShift,
       cashierStillAuthenticated: cashierStore.isCashierAuthenticated
     });
-
-    // Show success message
-    alert('✅ Turno cerrado exitosamente\n\nPuedes abrir un nuevo turno cuando lo necesites.');
   } else {
     console.error('❌ [MyShift] Error al cerrar turno:', result.error);
     alert(`❌ Error al cerrar turno:\n\n${result.error}`);

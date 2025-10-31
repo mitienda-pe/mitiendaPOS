@@ -22,43 +22,18 @@
 
       <!-- 2. Mi Turno (Caja) -->
       <router-link to="/my-shift" class="block">
-        <div class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full"
-          :class="shiftStore.hasActiveShift ? 'border-l-4 border-green-500' : 'border-l-4 border-red-500'">
+        <div
+          class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-green-500">
           <div class="flex flex-col items-center justify-center h-full text-center">
-            <svg xmlns="http://www.w3.org/2000/svg"
-              :class="shiftStore.hasActiveShift ? 'text-green-500' : 'text-red-500'" class="h-16 w-16 mb-4"
-              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-green-500 mb-4" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="8" cy="8" r="6"/>
               <path d="M18.09 10.37A6 6 0 1 1 10.34 18"/>
               <path d="M7 6h1v4"/>
               <path d="m16.71 13.88.7.71-2.82 2.82"/>
             </svg>
-
             <h2 class="text-xl font-medium text-gray-900 mb-2">Mi Turno</h2>
-
-            <!-- Estado del turno -->
-            <div v-if="shiftStore.hasActiveShift" class="w-full">
-              <div class="bg-green-50 border border-green-200 rounded-lg p-3">
-                <p class="text-xs font-medium text-green-800 mb-1">✅ Turno Abierto</p>
-                <p class="text-sm text-green-700">{{ formatTime(shiftStore.activeShift.fecha_apertura) }}</p>
-                <p class="text-lg font-bold text-green-900 mt-1">
-                  S/ {{ shiftStore.activeShift.monto_inicial.toFixed(2) }}
-                </p>
-                <p v-if="shiftStore.activeShift.caja_numero" class="text-xs text-green-600 mt-1">
-                  {{ shiftStore.activeShift.caja_numero }}
-                </p>
-              </div>
-            </div>
-
-            <div v-else class="w-full">
-              <div class="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p class="text-xs font-medium text-red-800 mb-1">❌ Sin Turno</p>
-                <p class="text-sm text-red-700">Debes abrir un turno</p>
-              </div>
-            </div>
-
-            <p class="text-gray-600 text-sm mt-3">Gestiona tu caja y turnos</p>
+            <p class="text-gray-600 text-center">Gestiona tu caja y turnos</p>
           </div>
         </div>
       </router-link>
@@ -258,25 +233,4 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
-import { useShiftStore } from '../stores/shift';
-
-const shiftStore = useShiftStore();
-
-onMounted(async () => {
-  // Load active shift on mount
-  await shiftStore.fetchActiveShift();
-});
-
-const formatTime = (dateString) => {
-  if (!dateString) return '';
-  const date = new Date(dateString);
-  return date.toLocaleString('es-PE', {
-    hour: '2-digit',
-    minute: '2-digit',
-    day: '2-digit',
-    month: 'short'
-  });
-};
-
 </script>

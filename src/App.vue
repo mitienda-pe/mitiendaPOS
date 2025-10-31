@@ -34,10 +34,25 @@
                       <!-- Cajero activo en POS -->
                       <p v-if="cashierStore.isCashierAuthenticated" class="text-green-400 text-xs">
                         🧑‍💼 {{ cashierStore.cashierName }}
-                        <span v-if="cashierStore.workLocation" class="text-gray-400">• {{ cashierStore.workLocation }}</span>
+                        <span v-if="shiftStore.hasActiveShift && cashierStore.workLocation" class="text-gray-400">• {{ cashierStore.workLocation }}</span>
                       </p>
                       <p v-else class="text-gray-500 text-xs italic">Sin cajero autenticado</p>
                     </div>
+                    <!-- Open/Close Shift Button (only if cashier is authenticated) -->
+                    <button
+                      v-if="cashierStore.isCashierAuthenticated && !shiftStore.hasActiveShift"
+                      @click="handleOpenShift"
+                      class="bg-green-600 text-white hover:bg-green-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                      title="Abrir turno">
+                      ✅ Abrir Turno
+                    </button>
+                    <button
+                      v-else-if="cashierStore.isCashierAuthenticated && shiftStore.hasActiveShift"
+                      @click="handleCloseShift"
+                      class="bg-red-600 text-white hover:bg-red-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                      title="Cerrar turno">
+                      🔒 Cerrar Turno
+                    </button>
                     <!-- Lock Button (only if cashier is authenticated) -->
                     <button
                       v-if="cashierStore.isCashierAuthenticated"
@@ -82,6 +97,19 @@
       @unlocked="handleUnlock"
     />
 
+    <!-- Open Shift Modal -->
+    <OpenShiftModal
+      v-model="showOpenShiftModal"
+      @opened="onShiftOpened"
+    />
+
+    <!-- Close Shift Modal -->
+    <CloseShiftModal
+      v-model="showCloseShiftModal"
+      :shift="shiftStore.activeShift"
+      @shift-closed="onShiftClosed"
+    />
+
     <!-- Main Content -->
     <main class="flex-1 overflow-hidden">
       <router-view v-if="!isLoading"></router-view>
@@ -105,16 +133,23 @@
 import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue';
 import { useAuthStore } from './stores/auth';
 import { useCashierStore } from './stores/cashier';
+import { useShiftStore } from './stores/shift';
 import { useRouter, useRoute } from 'vue-router';
 import LockScreenModal from './components/LockScreenModal.vue';
+import OpenShiftModal from './components/OpenShiftModal.vue';
+import CloseShiftModal from './components/CloseShiftModal.vue';
 
 const authStore = useAuthStore();
 const cashierStore = useCashierStore();
+const shiftStore = useShiftStore();
 const router = useRouter();
 const route = useRoute();
 const errorMessage = ref('');
 const isLoading = ref(true);
 const showLockScreen = ref(false);
+const showOpenShiftModal = ref(false);
+const showCloseShiftModal = ref(false);
+const pendingShiftData = ref(null);
 
 // Configuración de inactividad
 const INACTIVITY_TIMEOUT = 3 * 60 * 1000; // 3 minutos en milisegundos
@@ -144,6 +179,71 @@ const handleLock = () => {
 const handleUnlock = () => {
   cashierStore.unlock();
   resetInactivityTimer();
+};
+
+// Handle open shift
+const handleOpenShift = () => {
+  showOpenShiftModal.value = true;
+};
+
+// Handle close shift
+const handleCloseShift = () => {
+  if (!cashierStore.isCashierAuthenticated) {
+    alert('⚠️ Debes autenticarte como cajero primero');
+    return;
+  }
+  showCloseShiftModal.value = true;
+};
+
+// On shift opened
+const onShiftOpened = async (data) => {
+  showOpenShiftModal.value = false;
+
+  // Guardar datos para crear turno
+  pendingShiftData.value = {
+    montoInicial: data.montoInicial,
+    notas: data.notas,
+    cajaNumero: data.cajaNumero
+  };
+
+  try {
+    const result = await shiftStore.openShift(
+      data.montoInicial,
+      data.notas,
+      `Caja ${data.cajaNumero}`,
+      cashierStore.cashier.empleado_id
+    );
+
+    if (result.success) {
+      // Refrescar estado
+      await shiftStore.fetchActiveShift();
+      pendingShiftData.value = null;
+    } else {
+      alert(`❌ Error al abrir turno:\n\n${result.error}`);
+    }
+  } catch (err) {
+    console.error('Error opening shift:', err);
+    alert(`❌ Error inesperado:\n\n${err.message}`);
+  }
+};
+
+// On shift closed
+const onShiftClosed = async (data) => {
+  showCloseShiftModal.value = false;
+
+  const result = await shiftStore.closeShift(data.montoReal, data.notas);
+
+  if (result.success) {
+    // Refrescar estado
+    await shiftStore.fetchActiveShift();
+
+    // Redirigir al menú si está en módulo POS
+    if (route.path === '/pos') {
+      router.push('/menu');
+    }
+  } else {
+    alert(`❌ Error al cerrar turno:\n\n${result.error}`);
+  }
 };
 
 // Resetear timer de inactividad
