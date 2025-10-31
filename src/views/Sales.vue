@@ -179,6 +179,79 @@
             </tbody>
           </table>
         </div>
+
+        <!-- Pagination -->
+        <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+          <div class="flex-1 flex justify-between sm:hidden">
+            <button
+              @click="previousPage"
+              :disabled="currentPage === 1"
+              class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Anterior
+            </button>
+            <button
+              @click="nextPage"
+              :disabled="currentPage >= totalPages"
+              class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Siguiente
+            </button>
+          </div>
+          <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+              <p class="text-sm text-gray-700">
+                Mostrando
+                <span class="font-medium">{{ startItem }}</span>
+                a
+                <span class="font-medium">{{ endItem }}</span>
+                de
+                <span class="font-medium">{{ totalOrders }}</span>
+                ventas
+              </p>
+            </div>
+            <div>
+              <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                <button
+                  @click="previousPage"
+                  :disabled="currentPage === 1"
+                  class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span class="sr-only">Anterior</span>
+                  <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
+                </button>
+
+                <!-- Page numbers -->
+                <button
+                  v-for="page in displayedPages"
+                  :key="page"
+                  @click="goToPage(page)"
+                  :class="[
+                    page === currentPage
+                      ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                      : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50',
+                    'relative inline-flex items-center px-4 py-2 border text-sm font-medium'
+                  ]"
+                >
+                  {{ page }}
+                </button>
+
+                <button
+                  @click="nextPage"
+                  :disabled="currentPage >= totalPages"
+                  class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span class="sr-only">Siguiente</span>
+                  <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                  </svg>
+                </button>
+              </nav>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Empty State -->
@@ -218,10 +291,15 @@ const selectedStatus = ref('1'); // Default: Aprobado (1)
 const dateFrom = ref(''); // Default: Sin filtro de fecha (mostrar todas las ventas)
 const dateTo = ref(''); // Default: Sin filtro de fecha (mostrar todas las ventas)
 
+// Pagination
+const currentPage = ref(1);
+const itemsPerPage = ref(20);
+const totalOrders = ref(0);
+
 let searchTimeout = null;
 
-// Filtrar órdenes en el frontend para la búsqueda
-const orders = computed(() => {
+// Filtrar órdenes en el frontend para la búsqueda y paginar
+const filteredOrders = computed(() => {
   if (!searchQuery.value) return allOrders.value;
 
   const query = searchQuery.value.toLowerCase();
@@ -236,13 +314,58 @@ const orders = computed(() => {
   });
 });
 
+// Paginated orders
+const orders = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  const end = start + itemsPerPage.value;
+  return filteredOrders.value.slice(start, end);
+});
+
+// Pagination computed properties
+const totalPages = computed(() => {
+  return Math.ceil(filteredOrders.value.length / itemsPerPage.value);
+});
+
+const startItem = computed(() => {
+  return (currentPage.value - 1) * itemsPerPage.value + 1;
+});
+
+const endItem = computed(() => {
+  return Math.min(currentPage.value * itemsPerPage.value, filteredOrders.value.length);
+});
+
+const displayedPages = computed(() => {
+  const pages = [];
+  const maxPages = 5;
+
+  if (totalPages.value <= maxPages) {
+    for (let i = 1; i <= totalPages.value; i++) {
+      pages.push(i);
+    }
+  } else {
+    let startPage = Math.max(1, currentPage.value - Math.floor(maxPages / 2));
+    let endPage = Math.min(totalPages.value, startPage + maxPages - 1);
+
+    if (endPage - startPage + 1 < maxPages) {
+      startPage = Math.max(1, endPage - maxPages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+  }
+
+  return pages;
+});
+
 const fetchOrders = async () => {
   loading.value = true;
   error.value = null;
+  currentPage.value = 1; // Reset to first page when fetching
 
   try {
     const filters = {
-      limit: 100
+      limit: 1000 // Cargar más registros para paginar en frontend
     };
 
     // Agregar filtros solo si tienen valor
@@ -307,8 +430,8 @@ const fetchOrders = async () => {
 };
 
 const debouncedSearch = () => {
-  // El filtrado se hace automáticamente mediante la computed property
-  // No es necesario hacer fetch nuevamente
+  // Resetear a la página 1 cuando se busca
+  currentPage.value = 1;
 };
 
 const formatDate = (dateString) => {
@@ -381,7 +504,25 @@ const clearFilters = () => {
   selectedStatus.value = '1';
   dateFrom.value = getTodayDate();
   dateTo.value = getTodayDate();
+  currentPage.value = 1;
   fetchOrders();
+};
+
+// Pagination functions
+const previousPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+  }
+};
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+  }
+};
+
+const goToPage = (page) => {
+  currentPage.value = page;
 };
 
 onMounted(() => {
