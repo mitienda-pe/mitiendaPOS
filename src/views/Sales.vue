@@ -206,7 +206,7 @@
                 a
                 <span class="font-medium">{{ endItem }}</span>
                 de
-                <span class="font-medium">{{ totalOrders }}</span>
+                <span class="font-medium">{{ filteredOrders.length }}</span>
                 ventas
               </p>
             </div>
@@ -294,7 +294,6 @@ const dateTo = ref(''); // Default: Sin filtro de fecha (mostrar todas las venta
 // Pagination
 const currentPage = ref(1);
 const itemsPerPage = ref(20);
-const totalOrders = ref(0);
 
 let searchTimeout = null;
 
