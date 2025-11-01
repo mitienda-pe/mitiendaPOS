@@ -93,7 +93,7 @@
 
               <!-- Customer Results -->
               <div v-if="customerFound" class="mb-4 p-4 border rounded-lg bg-green-50">
-                <div class="flex items-start justify-between">
+                <div class="flex items-start justify-between mb-2">
                   <div>
                     <p class="text-sm font-medium text-gray-900">
                       {{ customerFound.name || customerFound.razonSocial || `${customerFound.nombres || ''} ${customerFound.apellidos || ''}`.trim() || 'Cliente' }}
@@ -116,6 +116,27 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
+                </div>
+
+                <!-- Form to complete missing data -->
+                <div v-if="!hasCompleteContactInfo" class="mt-3 pt-3 border-t border-green-200">
+                  <p class="text-xs text-gray-700 mb-2 font-medium">Complete la información de contacto:</p>
+                  <div class="space-y-2">
+                    <input
+                      v-if="!customerFound.email && !customerFound.correoElectronico"
+                      v-model="updateCustomer.email"
+                      type="email"
+                      placeholder="Correo electrónico (opcional)"
+                      class="p-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 w-full text-sm"
+                    />
+                    <input
+                      v-if="!customerFound.phone && !customerFound.telefono"
+                      v-model="updateCustomer.phone"
+                      type="tel"
+                      placeholder="Teléfono (opcional)"
+                      class="p-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 w-full text-sm"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -250,6 +271,10 @@ const searching = ref(false);
 const showCreateForm = ref(false);
 const docInput = ref(null);
 const lookupData = ref(null); // Store Decolecta lookup data
+const updateCustomer = ref({
+  email: '',
+  phone: ''
+});
 
 // Watch for document type changes and adjust tipoDoc accordingly
 watch(selectedDocumentType, (newType) => {
@@ -287,6 +312,13 @@ const isNewCustomerValid = computed(() => {
   } else {
     return newCustomer.value.razonSocial;
   }
+});
+
+const hasCompleteContactInfo = computed(() => {
+  if (!customerFound.value) return true;
+  const hasEmail = customerFound.value.email || customerFound.value.correoElectronico;
+  const hasPhone = customerFound.value.phone || customerFound.value.telefono;
+  return hasEmail && hasPhone;
 });
 
 const handleDocumentChange = () => {
@@ -419,15 +451,42 @@ const clearCustomer = () => {
   showCreateForm.value = false;
 };
 
-const startWithCustomer = () => {
+const startWithCustomer = async () => {
   // Validar si es factura y no tiene RUC
   if (selectedDocumentType.value === 'factura' && !customerFound.value) {
     alert('Para emitir una factura es obligatorio seleccionar un cliente con RUC');
     return;
   }
 
+  let customerToSend = customerFound.value;
+
+  // Si se completó información de contacto, actualizar el cliente
+  if (!hasCompleteContactInfo.value && (updateCustomer.value.email || updateCustomer.value.phone)) {
+    try {
+      const updateData = {};
+      if (updateCustomer.value.email) updateData.email = updateCustomer.value.email;
+      if (updateCustomer.value.phone) updateData.telefono = updateCustomer.value.phone;
+
+      const response = await customersApi.updateCustomer(customerFound.value.id, updateData);
+
+      if (response.success) {
+        // Actualizar los datos del cliente con la respuesta
+        customerToSend = response.data;
+      }
+    } catch (error) {
+      console.error('Error updating customer:', error);
+      // Continuar de todos modos - los datos se agregarán manualmente
+      if (updateCustomer.value.email) {
+        customerToSend = { ...customerToSend, email: updateCustomer.value.email };
+      }
+      if (updateCustomer.value.phone) {
+        customerToSend = { ...customerToSend, phone: updateCustomer.value.phone };
+      }
+    }
+  }
+
   emit('start', {
-    customer: customerFound.value,
+    customer: customerToSend,
     billingDocumentType: selectedDocumentType.value // 'boleta' o 'factura'
   });
   closeModal();
@@ -460,6 +519,10 @@ const resetForm = () => {
   showCreateForm.value = false;
   searching.value = false;
   lookupData.value = null;
+  updateCustomer.value = {
+    email: '',
+    phone: ''
+  };
   newCustomer.value = {
     nombres: '',
     apellidos: '',

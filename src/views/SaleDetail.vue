@@ -42,15 +42,53 @@
           Volver al Historial
         </router-link>
 
-        <button
-          @click="printTicket"
-          class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+        <div class="flex gap-3">
+          <button
+            v-if="canSendEmail()"
+            @click="sendEmail"
+            :disabled="sendingEmail"
+            class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg v-if="!sendingEmail" class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            <svg v-else class="animate-spin h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            {{ sendingEmail ? 'Enviando...' : 'Enviar Email' }}
+          </button>
+
+          <button
+            @click="printTicket"
+            class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            </svg>
+            Reimprimir
+          </button>
+        </div>
+      </div>
+
+      <!-- Notificación de éxito -->
+      <div v-if="emailSuccess" class="mb-4 bg-green-50 border-l-4 border-green-500 p-4 rounded">
+        <div class="flex">
+          <svg class="h-5 w-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          Reimprimir
-        </button>
+          <p class="text-green-700">{{ emailSuccess }}</p>
+        </div>
+      </div>
+
+      <!-- Notificación de error -->
+      <div v-if="emailError" class="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded">
+        <div class="flex">
+          <svg class="h-5 w-5 text-red-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p class="text-red-700">{{ emailError }}</p>
+        </div>
       </div>
 
       <!-- Ticket Container -->
@@ -169,6 +207,9 @@ const order = ref(null);
 const loading = ref(false);
 const error = ref(null);
 const showDebug = ref(false);
+const sendingEmail = ref(false);
+const emailSuccess = ref(null);
+const emailError = ref(null);
 
 const loadOrderDetail = async () => {
   loading.value = true;
@@ -448,6 +489,53 @@ const printTicket = () => {
     printWindow.print();
     setTimeout(() => printWindow.close(), 1000);
   };
+};
+
+const sendEmail = async () => {
+  // Validar que hay email
+  if (!order.value?.customer?.email) {
+    emailError.value = 'Esta venta no tiene un email de cliente asociado';
+    setTimeout(() => emailError.value = null, 5000);
+    return;
+  }
+
+  // Validar formato de email
+  if (!order.value.customer.email.includes('@')) {
+    emailError.value = 'El email del cliente no es válido';
+    setTimeout(() => emailError.value = null, 5000);
+    return;
+  }
+
+  try {
+    sendingEmail.value = true;
+    emailSuccess.value = null;
+    emailError.value = null;
+
+    const response = await ordersApi.resendInvoiceEmail(order.value.id);
+
+    if (response.error === 0) {
+      emailSuccess.value = `Factura enviada a ${order.value.customer.email}`;
+      setTimeout(() => emailSuccess.value = null, 5000);
+    } else {
+      throw new Error(response.message || 'Error al enviar el email');
+    }
+  } catch (err) {
+    console.error('Error sending email:', err);
+    emailError.value = err.message || 'No se pudo enviar el email. Verifica que la venta tenga factura emitida.';
+    setTimeout(() => emailError.value = null, 5000);
+  } finally {
+    sendingEmail.value = false;
+  }
+};
+
+const canSendEmail = () => {
+  // Puede enviar email si:
+  // - La orden está aprobada (status = 1)
+  // - Tiene email válido
+  return order.value &&
+         order.value.status == 1 &&
+         order.value.customer?.email &&
+         order.value.customer.email.includes('@');
 };
 
 onMounted(() => {

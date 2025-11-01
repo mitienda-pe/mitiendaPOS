@@ -61,5 +61,22 @@ export const ordersApi = {
 
     const response = await apiClient.get(`/orders/summary/daily?${params.toString()}`);
     return response.data;
+  },
+
+  // Reenviar email de factura al cliente
+  async resendInvoiceEmail(orderId) {
+    try {
+      const response = await apiClient.post(`/orders/${orderId}/resend-invoice-email`);
+      return response.data;
+    } catch (error) {
+      console.error('❌ [ordersApi] Error resending invoice email:', error);
+      console.error('❌ [ordersApi] Error response:', error.response?.data);
+
+      // Re-throw with better error info
+      if (error.response?.data) {
+        throw new Error(error.response.data.message || JSON.stringify(error.response.data));
+      }
+      throw error;
+    }
   }
 };

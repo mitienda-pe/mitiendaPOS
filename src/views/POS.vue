@@ -494,8 +494,8 @@ const handlePaymentCompleted = async () => {
       customer: {
         id: selectedCustomer.value ? selectedCustomer.value.id : null,
         name: selectedCustomer.value ? selectedCustomer.value.name : 'Cliente General',
-        email: selectedCustomer.value?.email || '',
-        phone: selectedCustomer.value?.phone || '',
+        email: selectedCustomer.value?.email || selectedCustomer.value?.correo || selectedCustomer.value?.tiendacliente_correo_electronico || selectedCustomer.value?.tiendacliente_correo || '',
+        phone: selectedCustomer.value?.phone || selectedCustomer.value?.telefono || selectedCustomer.value?.tiendacliente_telefono || '',
         document_number: selectedCustomer.value?.document_number || '',
         document_type: selectedCustomer.value?.document_type || 'dni'
       },
