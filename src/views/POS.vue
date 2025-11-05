@@ -18,6 +18,7 @@ import ConfirmProductsModal from '../components/ConfirmProductsModal.vue';
 import MergeSalesModal from '../components/MergeSalesModal.vue';
 import BarcodeScanner from '../components/BarcodeScanner.vue';
 import BillingDocumentModal from '../components/BillingDocumentModal.vue';
+import ProcessingOverlay from '../components/ProcessingOverlay.vue';
 import { useBillingStore } from '../stores/billing.js';
 
 // Stores
@@ -69,6 +70,9 @@ const pendingAction = ref({ type: null, data: null });
 
 // Completed order data (for billing)
 const completedOrder = ref(null);
+
+// Snapshot of completed sale data (for ticket display)
+const completedSaleSnapshot = ref(null);
 
 // Billing document info (from legacy API)
 const billingDocumentInfo = ref(null);
@@ -532,10 +536,19 @@ const handlePaymentCompleted = async () => {
     const response = await ordersApi.createOrder(orderData);
 
     console.log('📥 [POS] Response from API:', response);
+    console.log('📥 [POS] Response.error:', response.error);
     console.log('📥 [POS] Response.success:', response.success);
+    console.log('📥 [POS] Response.message:', response.message);
     console.log('📥 [POS] Response.data:', response.data);
+    console.log('📥 [POS] Response.data type:', typeof response.data);
+    console.log('📥 [POS] Response.data keys:', Object.keys(response.data || {}));
 
-    if (response.success) {
+    // El backend puede devolver dos formatos:
+    // 1. {error: 0, message: '...', data: {...}} (formato estándar)
+    // 2. {success: true, message: '...', data: {...}} (formato alternativo)
+    const isSuccess = response.error === 0 || response.error === false || response.success === true;
+
+    if (isSuccess) {
       console.log('Orden creada exitosamente:', response.data);
 
       // El backend legacy ya actualiza el stock automáticamente
@@ -582,29 +595,131 @@ const handlePaymentCompleted = async () => {
       }
 
       // Guardar datos de la orden para facturación
-      const orderId = response.data.order_id || response.data.id;
-      const orderNumber = response.data.order_number || response.data.order_code;
+      // Intentar extraer el ID de diferentes posibles ubicaciones en la respuesta
+      const orderId = response.data?.order_id
+                   || response.data?.id
+                   || response.data?.tiendaventa_id
+                   || response.order_id
+                   || response.id;
+
+      const orderNumber = response.data?.order_number
+                       || response.data?.order_code
+                       || response.data?.tiendaventa_codigoreferencia
+                       || response.order_number
+                       || response.order_code;
+
+      console.log('🔍 [POS] Extracted orderId:', orderId);
+      console.log('🔍 [POS] Extracted orderNumber:', orderNumber);
 
       const orderInfo = {
-        order_id: orderId ? parseInt(orderId, 10) : null, // Convertir a número
-        order_code: orderNumber || `VENTA-${orderId}`,
+        order_id: orderId ? parseInt(orderId, 10) : null,
+        order_code: orderNumber || (orderId ? `VENTA-${orderId}` : `VENTA-${Date.now()}`),
         total: total.value,
         customer: selectedCustomer.value
       };
 
       console.log('📦 [POS] Order info prepared:', orderInfo);
 
-      // Mostrar el ticket
-      showTicket.value = true;
+      // Si tenemos order_id, obtener datos completos del backend
+      // Si no, usar datos locales (fallback)
+      if (orderId) {
+        try {
+          console.log('🔍 [POS] Fetching complete order data from backend...');
+          const orderDetails = await ordersApi.getOrder(orderId);
+          console.log('✅ [POS] Order details received:', orderDetails);
+          console.log('🔍 [POS] orderDetails.subtotal:', orderDetails.subtotal);
+          console.log('🔍 [POS] orderDetails.tax:', orderDetails.tax);
+          console.log('🔍 [POS] orderDetails.tiendaventa_totalpagar:', orderDetails.tiendaventa_totalpagar);
+          console.log('🔍 [POS] orderDetails.total_amount:', orderDetails.total_amount);
+          console.log('🔍 [POS] orderDetails.payments:', orderDetails.payments);
+          if (orderDetails.payments && orderDetails.payments.length > 0) {
+            console.log('🔍 [POS] First payment:', orderDetails.payments[0]);
+          }
+          console.log('🔍 [POS] orderDetails.products:', orderDetails.products);
+          console.log('🔍 [POS] orderDetails.order_items:', orderDetails.order_items);
+          if (orderDetails.order_items && orderDetails.order_items.length > 0) {
+            console.log('🔍 [POS] First item:', orderDetails.order_items[0]);
+          }
 
-      // El API legacy emite el comprobante automáticamente
-      // Solo necesitamos esperar un momento para que el usuario vea el ticket
-      setTimeout(() => {
-        console.log('✅ [POS] Sale completed successfully. Billing document was emitted by legacy API.');
-        resetSale();
-      }, 2000); // 2 segundos para que el usuario vea el ticket
+          // Mapear los datos del backend al formato que espera el modal
+        completedSaleSnapshot.value = {
+          orderId: parseInt(orderDetails.tiendaventa_id || orderId),
+          orderNumber: orderDetails.tiendaventa_codigoreferencia || orderNumber,
+          customer: {
+            name: `${orderDetails.tiendaventa_nombres || ''} ${orderDetails.tiendaventa_apellidos || ''}`.trim() || 'Cliente General',
+            email: orderDetails.tiendaventa_correoelectronico || '',
+            phone: orderDetails.tiendaventa_telefono || '',
+            document_number: orderDetails.customer?.document_number || '',
+            document_type: orderDetails.customer?.document_type || 'dni'
+          },
+          items: (orderDetails.products || orderDetails.order_items || []).map(item => ({
+            id: item.id,
+            nombre: item.name || item.product_name || item.tittle || 'Producto',
+            quantity: item.quantity || item.cantidad || 1,
+            precio: parseFloat(item.price || item.precio || 0),
+            total: parseFloat(item.total || 0)
+          })),
+          payments: (orderDetails.payments || []).map(payment => ({
+            method: payment.method || payment.metodo || 'efectivo',
+            methodName: payment.method_name || payment.metodo || 'Efectivo',
+            amount: parseFloat(payment.amount || payment.monto || 0),
+            reference: payment.reference || ''
+          })),
+          subtotal: parseFloat(orderDetails.subtotal || 0),
+          tax: parseFloat(orderDetails.tax || 0),
+          total: parseFloat(orderDetails.tiendaventa_totalpagar || orderDetails.total || 0),
+          documentType: billingDocumentType.value,
+          createdAt: orderDetails.tiendaventa_fecha || new Date().toISOString(),
+          cajero: orderDetails.cajero_nombre || authStore.user?.name || '',
+          _rawData: orderDetails // Guardar datos originales por si se necesitan
+        };
+
+        console.log('📸 [POS] Sale data fetched and mapped:', completedSaleSnapshot.value);
+
+        // Mostrar el ticket
+        showTicket.value = true;
+
+        // El API legacy emite el comprobante automáticamente
+        // Solo necesitamos esperar un momento para que el usuario vea el ticket
+        setTimeout(() => {
+          console.log('✅ [POS] Sale completed successfully. Billing document was emitted by legacy API.');
+          resetSale();
+        }, 2000); // 2 segundos para que el usuario vea el ticket
+        } catch (fetchError) {
+          console.error('❌ [POS] Error fetching order details:', fetchError);
+          // Si falla la obtención, mostrar el ticket con datos locales como fallback
+          alert('La venta se completó exitosamente, pero no se pudieron obtener todos los detalles.\n\nPuede consultar la venta en el módulo de Ventas.');
+          resetSale();
+        }
+      } else {
+        // No hay order_id - usar datos locales como fallback
+        console.warn('⚠️ [POS] No order_id received, using local data for ticket');
+        completedSaleSnapshot.value = {
+          orderId: null,
+          orderNumber: orderNumber || `VENTA-${Date.now()}`,
+          customer: selectedCustomer.value ? { ...selectedCustomer.value } : null,
+          items: cartItems.value.map(item => ({ ...item })),
+          payments: payments.value.map(payment => ({ ...payment })),
+          subtotal: subtotal.value,
+          tax: tax.value,
+          total: total.value,
+          documentType: billingDocumentType.value,
+          createdAt: new Date().toISOString(),
+          cajero: authStore.user?.name || '',
+        };
+
+        showTicket.value = true;
+
+        setTimeout(() => {
+          console.log('✅ [POS] Sale completed successfully with local data.');
+          resetSale();
+        }, 2000);
+      }
     } else {
-      throw new Error(response.message || 'Error al crear la orden');
+      // Si error no es 0, es un error del backend
+      const errorMsg = response.message || response.error_message || 'Error al crear la orden';
+      const errorDetails = response.messages?.mensaje || response.details || '';
+      throw new Error(errorMsg + (errorDetails ? `\n\n${errorDetails}` : ''));
     }
   } catch (error) {
     console.error('Error al procesar el pago:', error);
@@ -830,6 +945,14 @@ watch(showPaymentModal, (newValue) => {
     // No reseteamos la venta automáticamente
     // La venta solo debe resetearse cuando el usuario explícitamente finaliza la venta
     // con el botón "Completar venta"
+  }
+});
+
+// Watcher para showTicket - limpiar snapshot cuando se cierra el ticket
+watch(showTicket, (newValue) => {
+  if (!newValue && completedSaleSnapshot.value) {
+    console.log('🧹 [POS] Cleaning up sale snapshot after ticket closed');
+    completedSaleSnapshot.value = null;
   }
 });
 
@@ -1168,15 +1291,11 @@ const getPaymentMethodName = (method) => {
             <button v-if="payments.length > 0 && remainingAmount === 0" @click="handlePaymentCompleted"
               :disabled="processingOrder"
               class="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center">
-              <svg v-if="processingOrder" class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none"
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              {{ processingOrder ? 'Procesando...' : 'Completar Venta' }}
+              Completar Venta
             </button>
             <div class="flex space-x-2">
 
@@ -1271,6 +1390,7 @@ const getPaymentMethodName = (method) => {
   <!-- Payment Modal -->
   <PaymentModal v-model="showPaymentModal" :total="total" :subtotal="subtotal" :tax="tax" :customer="selectedCustomer" :items="cartItems"
     :payments="payments" :document-type="documentType" :remaining-amount="remainingAmount" :show-ticket="showTicket"
+    :completed-sale-data="completedSaleSnapshot"
     @payment-added="handlePaymentAdded" @sale-finalized="resetSale" @update:show-ticket="showTicket = $event" />
 
   <!-- Saved Sales Modal -->
@@ -1320,5 +1440,12 @@ const getPaymentMethodName = (method) => {
     :customer="completedOrder.customer"
     @success="handleBillingSuccess"
     @error="handleBillingError"
+  />
+
+  <!-- Processing Overlay -->
+  <ProcessingOverlay
+    :show="processingOrder"
+    title="Procesando Venta"
+    message="Por favor espere mientras completamos su venta..."
   />
 </template>

@@ -358,21 +358,22 @@
               <!-- Ticket -->
               <div class="mb-4 p-4 border rounded-lg bg-gray-50 font-mono text-sm">
                 <div class="text-center mb-3">
-                  <div class="font-bold">EMPRESA EJEMPLO S.A.C.</div>
-                  <div>RUC: 20123456789</div>
-                  <div>Av. Ejemplo 123, Lima</div>
-                  <div>Tel: 01-123-4567</div>
+                  <div class="font-bold text-lg">COMPROBANTE DE VENTA</div>
                   <div class="mt-2 font-bold">
-                    {{ props.documentType === 'boleta' ? 'BOLETA DE VENTA ELECTRÓNICA' : 'FACTURA ELECTRÓNICA' }}
+                    {{ displayDocumentType === 'boleta' ? 'BOLETA DE VENTA ELECTRÓNICA' : 'FACTURA ELECTRÓNICA' }}
                   </div>
-                  <div>{{ props.documentType === 'boleta' ? 'B001-00001234' : 'F001-00001234' }}</div>
-                  <div>Fecha: {{ new Date().toLocaleDateString() }}</div>
+                  <div class="font-semibold">N° {{ displayOrderNumber }}</div>
+                  <div>Fecha: {{ displayOrderDate }}</div>
+                  <div v-if="displayCajero" class="text-xs mt-1">Atendido por: {{ displayCajero }}</div>
                 </div>
 
-                <div v-if="props.customer" class="mb-3">
-                  <div>Cliente:
-                    {{ props.customer.razonSocial || `${props.customer.nombres} ${props.customer.apellidos}` }}</div>
-                  <div>{{ props.customer.tipoDoc }}: {{ props.customer.numDoc }}</div>
+                <div v-if="displayCustomer && (displayCustomer.name || displayCustomer.document_number)" class="mb-3 border-t border-b border-gray-300 py-2">
+                  <div><strong>Cliente:</strong> {{ displayCustomer.name || 'Cliente General' }}</div>
+                  <div v-if="displayCustomer.document_number">
+                    <strong>{{ (displayCustomer.document_type || 'dni').toUpperCase() }}:</strong> {{ displayCustomer.document_number }}
+                  </div>
+                  <div v-if="displayCustomer.email" class="text-xs">Email: {{ displayCustomer.email }}</div>
+                  <div v-if="displayCustomer.phone" class="text-xs">Tel: {{ displayCustomer.phone }}</div>
                 </div>
 
                 <div class="mb-3">
@@ -382,7 +383,7 @@
                     <span class="w-1/6 text-right">P.Unit</span>
                     <span class="w-1/6 text-right">Total</span>
                   </div>
-                  <div v-for="(item, index) in props.items" :key="index" class="flex text-xs py-1">
+                  <div v-for="(item, index) in displayItems" :key="index" class="flex text-xs py-1">
                     <span class="w-1/2 truncate">{{ item.nombre }}</span>
                     <span class="w-1/6 text-right">{{ item.quantity }}</span>
                     <span class="w-1/6 text-right">{{ formatCurrency(item.precio) }}</span>
@@ -393,15 +394,15 @@
                 <div class="border-t border-gray-300 pt-1">
                   <div class="flex justify-between">
                     <span>Subtotal:</span>
-                    <span>{{ formatCurrency(props.subtotal) }}</span>
+                    <span>{{ formatCurrency(displaySubtotal) }}</span>
                   </div>
                   <div class="flex justify-between">
                     <span>IGV (18%):</span>
-                    <span>{{ formatCurrency(props.tax) }}</span>
+                    <span>{{ formatCurrency(displayTax) }}</span>
                   </div>
                   <div class="flex justify-between font-bold">
                     <span>Total:</span>
-                    <span>{{ formatCurrency(props.total) }}</span>
+                    <span>{{ formatCurrency(displayTotal) }}</span>
                   </div>
                   <!-- Redondeo (solo si aplica) -->
                   <div v-if="roundingApplied !== 0" class="flex justify-between text-xs mt-1 border-t border-dashed border-gray-300 pt-1">
@@ -412,11 +413,11 @@
                   </div>
                   <div v-if="roundingApplied !== 0" class="flex justify-between font-bold text-sm border-t border-gray-300 pt-1 mt-1">
                     <span>Total a Pagar:</span>
-                    <span>{{ formatCurrency(props.total + roundingApplied) }}</span>
+                    <span>{{ formatCurrency(displayTotal + roundingApplied) }}</span>
                   </div>
                   <div class="mt-2">
                     <div>Forma de pago:</div>
-                    <div v-for="(payment, index) in props.payments" :key="index">
+                    <div v-for="(payment, index) in displayPayments" :key="index">
                       {{ getPaymentMethodName(payment.method) }}: {{ formatCurrency(payment.amount) }}
                       <span v-if="payment.reference" class="text-xs ml-1">(Ref: {{ payment.reference }})</span>
                     </div>
@@ -607,6 +608,10 @@ const props = defineProps({
   showTicket: {
     type: Boolean,
     default: false
+  },
+  completedSaleData: {
+    type: Object,
+    default: null
   }
 });
 
@@ -630,6 +635,63 @@ const phoneNumber = ref('');
 const paymentSuggestions = ref([]);
 const cashValidation = ref(null);
 const changeBreakdownDisplay = ref(null);
+
+// Computed properties que usan el snapshot cuando está disponible (para el ticket)
+// o los datos en vivo cuando no lo está (para el modal de pago)
+const displayCustomer = computed(() => {
+  return props.completedSaleData?.customer || props.customer;
+});
+
+const displayItems = computed(() => {
+  return props.completedSaleData?.items || props.items;
+});
+
+const displayPayments = computed(() => {
+  return props.completedSaleData?.payments || props.payments;
+});
+
+const displaySubtotal = computed(() => {
+  return props.completedSaleData?.subtotal ?? props.subtotal;
+});
+
+const displayTax = computed(() => {
+  return props.completedSaleData?.tax ?? props.tax;
+});
+
+const displayTotal = computed(() => {
+  return props.completedSaleData?.total ?? props.total;
+});
+
+const displayDocumentType = computed(() => {
+  return props.completedSaleData?.documentType || props.documentType;
+});
+
+const displayOrderNumber = computed(() => {
+  return props.completedSaleData?.orderNumber || 'N/A';
+});
+
+const displayOrderDate = computed(() => {
+  if (props.completedSaleData?.createdAt) {
+    return new Date(props.completedSaleData.createdAt).toLocaleDateString('es-PE', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+  return new Date().toLocaleDateString('es-PE', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+});
+
+const displayCajero = computed(() => {
+  return props.completedSaleData?.cajero || '';
+});
 
 // Validaciones
 const isPaymentValid = computed(() => {
@@ -850,11 +912,13 @@ const resetForm = () => {
 
 // Propiedades computadas para el ticket
 const totalPaid = computed(() => {
-  return props.payments.reduce((sum, payment) => sum + payment.amount, 0);
+  const payments = displayPayments.value || [];
+  return payments.reduce((sum, payment) => sum + payment.amount, 0);
 });
 
 const totalChange = computed(() => {
-  const cashPayments = props.payments.filter(p => p.method === 'efectivo');
+  const payments = displayPayments.value || [];
+  const cashPayments = payments.filter(p => p.method === 'efectivo');
   let totalChangeAmount = 0;
 
   cashPayments.forEach(payment => {
@@ -870,7 +934,8 @@ const totalChange = computed(() => {
 
 const roundingApplied = computed(() => {
   // Buscar el redondeo en el primer pago de efectivo
-  const cashPayment = props.payments.find(p => p.method === 'efectivo');
+  const payments = displayPayments.value || [];
+  const cashPayment = payments.find(p => p.method === 'efectivo');
   return cashPayment?.roundingAmount || 0;
 });
 
