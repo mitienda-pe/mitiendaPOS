@@ -497,11 +497,43 @@ const handlePaymentCompleted = async () => {
       pasarela_id: 98, // ID especial para ventas del POS
       customer: {
         id: selectedCustomer.value ? selectedCustomer.value.id : null,
-        name: selectedCustomer.value ? selectedCustomer.value.name : 'Cliente General',
         email: selectedCustomer.value?.email || selectedCustomer.value?.correo || selectedCustomer.value?.tiendacliente_correo_electronico || selectedCustomer.value?.tiendacliente_correo || '',
         phone: selectedCustomer.value?.phone || selectedCustomer.value?.telefono || selectedCustomer.value?.tiendacliente_telefono || '',
         document_number: selectedCustomer.value?.document_number || '',
-        document_type: selectedCustomer.value?.document_type || 'dni'
+        // Convertir document_type a código numérico si viene como string
+        document_type: (() => {
+          const docType = selectedCustomer.value?.document_type || '1';
+          if (docType === 'ruc' || docType === '6') return '6';
+          if (docType === 'dni' || docType === '1') return '1';
+          return docType; // Si ya es numérico, usarlo tal cual
+        })(),
+        // Para RUC (tipo 6): enviar business_name y dejar name/lastname vacíos
+        // Para DNI (tipo 1): enviar name/lastname y dejar business_name vacío
+        ...((() => {
+          const docType = selectedCustomer.value?.document_type || '1';
+          const isRuc = docType === 'ruc' || docType === '6';
+
+          if (isRuc) {
+            // Para RUC: toda la razón social va en business_name
+            return {
+              business_name: selectedCustomer.value?.business_name || selectedCustomer.value?.name || 'EMPRESA',
+              name: '',
+              lastname: ''
+            };
+          } else {
+            // Para DNI: separar nombre y apellido
+            const fullName = selectedCustomer.value?.name || 'Cliente General';
+            const nameParts = fullName.trim().split(' ');
+            const firstName = nameParts[0] || '';
+            const lastName = nameParts.slice(1).join(' ') || '';
+
+            return {
+              name: firstName,
+              lastname: lastName,
+              business_name: ''
+            };
+          }
+        })())
       },
       document_type: billingDocumentType.value, // 'boleta' o 'factura'
       items: cartItems.value.map(item => ({
