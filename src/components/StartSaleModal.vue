@@ -462,19 +462,35 @@ const startWithCustomer = async () => {
 
   // Si se completó información de contacto, actualizar el cliente
   if (!hasCompleteContactInfo.value && (updateCustomer.value.email || updateCustomer.value.phone)) {
+    console.log('📝 [StartSaleModal] Actualizando datos de contacto del cliente:', {
+      email: updateCustomer.value.email,
+      phone: updateCustomer.value.phone
+    });
+
     try {
       const updateData = {};
       if (updateCustomer.value.email) updateData.email = updateCustomer.value.email;
       if (updateCustomer.value.phone) updateData.telefono = updateCustomer.value.phone;
 
+      console.log('📤 [StartSaleModal] Enviando actualización al API...');
       const response = await customersApi.updateCustomer(customerFound.value.id, updateData);
 
       if (response.success) {
+        console.log('✅ [StartSaleModal] Cliente actualizado exitosamente:', response.data);
         // Actualizar los datos del cliente con la respuesta
         customerToSend = response.data;
+      } else {
+        console.warn('⚠️ [StartSaleModal] Actualización falló, agregando datos manualmente');
+        // Continuar de todos modos - los datos se agregarán manualmente
+        if (updateCustomer.value.email) {
+          customerToSend = { ...customerToSend, email: updateCustomer.value.email };
+        }
+        if (updateCustomer.value.phone) {
+          customerToSend = { ...customerToSend, phone: updateCustomer.value.phone };
+        }
       }
     } catch (error) {
-      console.error('Error updating customer:', error);
+      console.error('❌ [StartSaleModal] Error actualizando cliente:', error);
       // Continuar de todos modos - los datos se agregarán manualmente
       if (updateCustomer.value.email) {
         customerToSend = { ...customerToSend, email: updateCustomer.value.email };
@@ -482,9 +498,11 @@ const startWithCustomer = async () => {
       if (updateCustomer.value.phone) {
         customerToSend = { ...customerToSend, phone: updateCustomer.value.phone };
       }
+      console.log('📋 [StartSaleModal] Datos agregados manualmente a customerToSend:', customerToSend);
     }
   }
 
+  console.log('🚀 [StartSaleModal] Emitiendo evento start con customer:', customerToSend);
   emit('start', {
     customer: customerToSend,
     billingDocumentType: selectedDocumentType.value // 'boleta' o 'factura'
