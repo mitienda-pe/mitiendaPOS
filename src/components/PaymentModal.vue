@@ -445,7 +445,7 @@
               <!-- Botones de acción -->
               <div class="flex justify-between mt-6">
                 <button
-                  class="py-4 px-6 rounded-lg text-lg font-medium transition-all duration-200 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                  class="py-4 px-6 rounded-lg text-lg font-medium transition-all duration-200 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-1 relative"
                   @click="printTicket">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 inline" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -453,7 +453,10 @@
                     <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
                     <rect x="6" y="14" width="12" height="8"></rect>
                   </svg>
-                  Imprimir
+                  {{ displayBillingDocument?.files?.pdf ? 'Abrir PDF' : 'Imprimir' }}
+                  <span v-if="displayBillingDocument?.serie" class="ml-2 text-xs opacity-75">
+                    ({{ displayBillingDocument.serie }}-{{ displayBillingDocument.correlative }})
+                  </span>
                 </button>
 
                 <button
@@ -509,10 +512,10 @@
                   </div>
                 </div>
 
-                <div>
-                  <button v-if="!showWhatsAppForm"
+                <div v-if="displayCustomer?.phone && displayBillingDocument?.files?.pdf">
+                  <button
                     class="w-full py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 bg-green-500 hover:bg-green-600 text-white shadow-md hover:shadow-lg"
-                    @click="showWhatsAppForm = true">
+                    @click="sendByWhatsApp">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 inline" viewBox="0 0 24 24" fill="none"
                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21"></path>
@@ -522,32 +525,6 @@
                     </svg>
                     Enviar por WhatsApp
                   </button>
-
-                  <div v-if="showWhatsAppForm" class="border rounded-lg p-3 bg-gray-50">
-                    <div class="flex justify-between items-center mb-2">
-                      <h4 class="font-medium">Enviar por WhatsApp</h4>
-                      <button @click="showWhatsAppForm = false"
-                        class="text-gray-400 hover:text-gray-500 focus:outline-none">
-                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                          stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                    <div class="mb-2">
-                      <label class="block text-sm font-medium text-gray-700 mb-1">Número de teléfono</label>
-                      <input type="tel" v-model="phoneNumber"
-                        class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="+51 999 999 999" />
-                    </div>
-                    <button
-                      class="w-full py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 bg-green-500 hover:bg-green-600 text-white"
-                      @click="sendByWhatsApp" :disabled="!isValidPhone"
-                      :class="isValidPhone ? '' : 'opacity-50 cursor-not-allowed'">
-                      Enviar
-                    </button>
-                  </div>
                 </div>
               </div>
             </div>
@@ -628,8 +605,6 @@ const currentReference = ref('');
 const showTicket = ref(props.showTicket);
 const showEmailForm = ref(false);
 const emailAddress = ref('');
-const showWhatsAppForm = ref(false);
-const phoneNumber = ref('');
 
 // Estados para sugerencias y validaciones de efectivo
 const paymentSuggestions = ref([]);
@@ -693,6 +668,10 @@ const displayCajero = computed(() => {
   return props.completedSaleData?.cajero || '';
 });
 
+const displayBillingDocument = computed(() => {
+  return props.completedSaleData?.billingDocument || null;
+});
+
 // Validaciones
 const isPaymentValid = computed(() => {
   if (!paymentMethod.value) return false;
@@ -728,11 +707,6 @@ const isPaymentValid = computed(() => {
 const isValidEmail = computed(() => {
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   return emailRegex.test(emailAddress.value);
-});
-
-const isValidPhone = computed(() => {
-  const phoneRegex = /^\+51 \d{3} \d{3} \d{3}$/;
-  return phoneRegex.test(phoneNumber.value);
 });
 
 // Métodos
@@ -903,8 +877,6 @@ const resetForm = () => {
   showTicket.value = false;
   showEmailForm.value = false;
   emailAddress.value = '';
-  showWhatsAppForm.value = false;
-  phoneNumber.value = '';
   paymentSuggestions.value = [];
   cashValidation.value = null;
   changeBreakdownDisplay.value = null;
@@ -940,8 +912,15 @@ const roundingApplied = computed(() => {
 });
 
 const printTicket = () => {
-  // Implementar la funcionalidad de impresión
-  window.print();
+  // Si hay un PDF del comprobante electrónico, abrirlo en nueva pestaña
+  if (displayBillingDocument.value?.files?.pdf) {
+    console.log('📄 [PaymentModal] Opening billing document PDF:', displayBillingDocument.value.files.pdf);
+    window.open(displayBillingDocument.value.files.pdf, '_blank');
+  } else {
+    // Si no hay PDF, usar window.print() para imprimir la página actual
+    console.log('🖨️ [PaymentModal] No PDF available, using window.print()');
+    window.print();
+  }
 };
 
 const finalizeSale = () => {
@@ -964,20 +943,31 @@ const sendByEmail = () => {
 };
 
 const sendByWhatsApp = () => {
-  // Implementar la funcionalidad de envío por WhatsApp
-  if (!isValidPhone.value) return;
+  // Obtener datos del comprobante y cliente
+  const phone = displayCustomer.value?.phone;
+  const pdfUrl = displayBillingDocument.value?.files?.pdf;
+  const serie = displayBillingDocument.value?.serie;
+  const correlative = displayBillingDocument.value?.correlative;
+  const total = displayTotal.value;
 
-  console.log(`Enviando ticket por WhatsApp al número: ${phoneNumber.value}`);
-  // Aquí iría la lógica para enviar el mensaje por WhatsApp
-  // Por ejemplo, abrir WhatsApp Web con el número y un mensaje predefinido
-  const message = encodeURIComponent(`Ticket de compra - Total: ${formatCurrency(props.total)}`);
-  const whatsappUrl = `https://wa.me/${phoneNumber.value.replace(/\s+/g, '')}?text=${message}`;
+  if (!phone || !pdfUrl) {
+    console.error('No hay teléfono o PDF disponible');
+    return;
+  }
 
-  // Abrir WhatsApp en una nueva ventana
+  // Limpiar número de teléfono (remover espacios y caracteres especiales)
+  const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
+
+  // Crear mensaje con información del comprobante y enlace al PDF
+  const documentNumber = serie && correlative ? `${serie}-${correlative}` : displayOrderNumber.value;
+  const message = `Hola! 👋\n\nTe compartimos tu comprobante de pago:\n\n📄 *${documentNumber}*\nTotal: *${formatCurrency(total)}*\n\n🔗 Ver/Descargar PDF:\n${pdfUrl}\n\n¡Gracias por tu compra!`;
+
+  const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+
+  console.log('📱 [PaymentModal] Opening WhatsApp:', { phone: cleanPhone, documentNumber, pdfUrl });
+
+  // Abrir WhatsApp Web en una nueva ventana
   window.open(whatsappUrl, '_blank');
-
-  showWhatsAppForm.value = false;
-  phoneNumber.value = '';
 };
 
 // Formateo de moneda

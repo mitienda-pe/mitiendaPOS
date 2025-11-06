@@ -671,10 +671,24 @@ const handlePaymentCompleted = async () => {
           documentType: billingDocumentType.value,
           createdAt: orderDetails.tiendaventa_fecha || new Date().toISOString(),
           cajero: orderDetails.cajero_nombre || authStore.user?.name || '',
+          // Información del comprobante electrónico (si está facturado)
+          billingDocument: orderDetails.billing_info?.['e-billing'] ? {
+            serie: orderDetails.billing_info['e-billing'].serie,
+            correlative: orderDetails.billing_info['e-billing'].correlative,
+            status: orderDetails.billing_info['e-billing'].status,
+            billingDate: orderDetails.billing_info['e-billing'].billing_date,
+            files: {
+              pdf: orderDetails.billing_info['e-billing'].url_pdf,
+              xml: orderDetails.billing_info['e-billing'].url_xml
+            }
+          } : null,
           _rawData: orderDetails // Guardar datos originales por si se necesitan
         };
 
         console.log('📸 [POS] Sale data fetched and mapped:', completedSaleSnapshot.value);
+        if (completedSaleSnapshot.value.billingDocument) {
+          console.log('📄 [POS] Billing document found:', completedSaleSnapshot.value.billingDocument);
+        }
 
         // Mostrar el ticket
         showTicket.value = true;
