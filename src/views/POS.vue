@@ -491,6 +491,15 @@ const handlePaymentCompleted = async () => {
       }
     }
 
+    // Debug: Ver qué contiene selectedCustomer antes de crear la orden
+    console.log('🔍 [DEBUG] selectedCustomer.value:', selectedCustomer.value);
+    console.log('🔍 [DEBUG] selectedCustomer.value?.email:', selectedCustomer.value?.email);
+    console.log('🔍 [DEBUG] selectedCustomer.value?.correo:', selectedCustomer.value?.correo);
+    console.log('🔍 [DEBUG] selectedCustomer.value?.phone:', selectedCustomer.value?.phone);
+    console.log('🔍 [DEBUG] selectedCustomer.value?.telefono:', selectedCustomer.value?.telefono);
+    console.log('🔍 [DEBUG] selectedCustomer.value?.document_type:', selectedCustomer.value?.document_type);
+    console.log('🔍 [DEBUG] selectedCustomer.value?.document_number:', selectedCustomer.value?.document_number);
+
     // Preparar datos de la orden
     const orderData = {
       source: 'pos', // Identificar que la venta viene del POS

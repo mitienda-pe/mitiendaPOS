@@ -184,7 +184,24 @@ export const customersApi = {
    */
   async updateCustomer(id, customerData) {
     try {
-      const response = await apiClient.put(`/customers/${id}`, customerData);
+      // Map frontend format to backend format
+      const backendData = {};
+
+      if (customerData.email !== undefined) {
+        backendData.tiendacliente_correo_electronico = customerData.email;
+      }
+      if (customerData.telefono !== undefined || customerData.phone !== undefined) {
+        backendData.tiendacliente_telefono = customerData.telefono || customerData.phone;
+      }
+      if (customerData.nombres !== undefined || customerData.firstName !== undefined) {
+        backendData.tiendacliente_nombres = customerData.nombres || customerData.firstName;
+      }
+      if (customerData.apellidos !== undefined || customerData.lastName !== undefined) {
+        backendData.tiendacliente_apellidos = customerData.apellidos || customerData.lastName;
+      }
+
+      console.log('🔄 [customersApi] Updating customer', id, 'with data:', backendData);
+      const response = await apiClient.put(`/customers/${id}`, backendData);
 
       return {
         success: true,
@@ -192,6 +209,7 @@ export const customersApi = {
       };
     } catch (error) {
       console.error('Error updating customer:', error);
+      console.error('Error details:', error.response?.data);
       return {
         success: false,
         error: error.response?.data?.message || error.message || 'Error updating customer'
