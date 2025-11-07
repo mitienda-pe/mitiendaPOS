@@ -791,10 +791,12 @@ const handlePaymentCompleted = async () => {
 
     // Detectar error de stock insuficiente en NetSuite
     const errorData = error.response?.data;
-    if (errorData?.unavailable_items && Array.isArray(errorData.unavailable_items)) {
+    const unavailableItems = errorData?.unavailable_items || errorData?.messages?.unavailable_items;
+
+    if (unavailableItems && Array.isArray(unavailableItems)) {
       // Mostrar modal especializado para errores de stock
-      console.log('🚨 [POS] Stock validation failed:', errorData.unavailable_items);
-      stockValidationErrors.value = errorData.unavailable_items;
+      console.log('🚨 [POS] Stock validation failed:', unavailableItems);
+      stockValidationErrors.value = unavailableItems;
       showStockValidationError.value = true;
     } else {
       // Error genérico
