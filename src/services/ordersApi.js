@@ -26,6 +26,20 @@ export const ordersApi = {
     }
   },
 
+  // Validar stock antes de procesar el pago
+  async validateStock(data) {
+    try {
+      console.log('🔍 [ordersApi] Validating stock:', data);
+      const response = await apiClient.post('/orders/validate-stock', data);
+      console.log('✅ [ordersApi] Stock validation response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ [ordersApi] Error validating stock:', error);
+      console.error('❌ [ordersApi] Error response:', error.response?.data);
+      throw error;
+    }
+  },
+
   // Crear orden usando el endpoint nativo (EN DESARROLLO - NO USAR AÚN)
   async createOrderNative(orderData) {
     const response = await apiClient.post('/orders/pos', orderData);

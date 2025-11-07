@@ -6,6 +6,7 @@ import { useCartStore } from '../stores/cart';
 import { useShiftStore } from '../stores/shift';
 import { productsApi } from '../services/productsApi';
 import { ordersApi } from '../services/ordersApi';
+import { netsuiteStockApi } from '../services/netsuiteStockApi';
 import { mockCustomersApi } from '../api/mockCustomers';
 import { useSavedSalesStore } from '../stores/savedSales';
 import { cashMovementsApi } from '../services/cashMovementsApi';
@@ -19,6 +20,7 @@ import MergeSalesModal from '../components/MergeSalesModal.vue';
 import BarcodeScanner from '../components/BarcodeScanner.vue';
 import BillingDocumentModal from '../components/BillingDocumentModal.vue';
 import ProcessingOverlay from '../components/ProcessingOverlay.vue';
+import StockValidationErrorModal from '../components/StockValidationErrorModal.vue';
 import { useBillingStore } from '../stores/billing.js';
 
 // Stores
@@ -58,9 +60,13 @@ const showConfirmProducts = ref(false);
 const showMergeSales = ref(false);
 const showBarcodeScanner = ref(false);
 const showBillingModal = ref(false);
+const showStockValidationError = ref(false);
 
 // Datos para el modal de fusión
 const existingSaleForMerge = ref(null);
+
+// Stock validation error data
+const stockValidationErrors = ref([]);
 
 // Tipo de comprobante seleccionado al inicio de la venta
 const billingDocumentType = ref('boleta'); // 'boleta' o 'factura'
@@ -420,12 +426,64 @@ const resumeSavedSale = (sale) => {
   saleHasUnsavedChanges.value = false;
 };
 
-const processPayment = () => {
+const processPayment = async () => {
   // Validar que hay turno de caja abierto
   if (!shiftStore.hasActiveShift) {
     console.error('❌ [POS] No active shift - cannot process payment');
     alert('⚠️ No hay turno de caja abierto. No se pueden registrar pagos.\n\nDebes abrir un turno primero desde el menú principal.');
     return;
+  }
+
+  // Validar stock ANTES de abrir el modal de pago
+  console.log('🔍 [POS] Validating stock before payment...');
+  try {
+    const items = cartItems.value.map(item => ({
+      product_id: item.id,
+      sku: item.sku,
+      quantity: item.quantity
+    }));
+
+    const response = await ordersApi.validateStock({ items });
+
+    if (!response.success) {
+      console.error('❌ [POS] Stock validation failed:', response);
+
+      // Show stock validation error modal
+      const unavailableItems = response.unavailable_items || response.messages?.unavailable_items;
+      if (unavailableItems && Array.isArray(unavailableItems)) {
+        stockValidationErrors.value = unavailableItems;
+        showStockValidationError.value = true;
+        return;
+      }
+
+      // Generic error fallback
+      alert('No se puede procesar la venta. Por favor, verifica el stock de los productos.');
+      return;
+    }
+
+    console.log('✅ [POS] Stock validation passed');
+  } catch (error) {
+    console.error('❌ [POS] Error validating stock:', error);
+
+    // Check if error contains unavailable_items
+    const errorData = error.response?.data;
+    const unavailableItems = errorData?.unavailable_items || errorData?.messages?.unavailable_items;
+
+    if (unavailableItems && Array.isArray(unavailableItems)) {
+      // Show stock validation error modal
+      stockValidationErrors.value = unavailableItems;
+      showStockValidationError.value = true;
+      return;
+    }
+
+    // If validation endpoint is not available (404) or validation is disabled, continue
+    if (error.response?.status === 404 || errorData?.validation_skipped) {
+      console.log('⚠️ [POS] Stock validation skipped or not available');
+    } else {
+      // Other errors - show generic message
+      alert('Error al validar stock. Por favor, intente nuevamente.');
+      return;
+    }
   }
 
   // Solo mostrar el modal si hay un saldo pendiente
@@ -574,6 +632,8 @@ const handlePaymentCompleted = async () => {
     console.log('📤 [POS] Enviando orden al API:', JSON.stringify(orderData, null, 2));
 
     // Crear la orden en el backend
+    // NOTA: El backend validará automáticamente el stock con NetSuite si la tienda
+    // tiene habilitada la validación (tienda_netsuite_stock_validation = 1)
     const response = await ordersApi.createOrder(orderData);
 
     console.log('📥 [POS] Response from API:', response);
@@ -780,10 +840,23 @@ const handlePaymentCompleted = async () => {
     console.error('Error al procesar el pago:', error);
     console.error('Error response:', error.response);
     console.error('Error response data:', error.response?.data);
-    const errorMessage = error.response?.data?.message || error.message || 'Error al procesar la venta';
-    const errorDetails = error.response?.data?.errors || error.response?.data?.data || '';
-    const fullMessage = errorDetails ? `${errorMessage}\n\nDetalles: ${JSON.stringify(errorDetails)}` : errorMessage;
-    alert(`Error: ${fullMessage}\n\nPor favor, intente nuevamente.`);
+
+    // Detectar error de stock insuficiente en NetSuite
+    const errorData = error.response?.data;
+    const unavailableItems = errorData?.unavailable_items || errorData?.messages?.unavailable_items;
+
+    if (unavailableItems && Array.isArray(unavailableItems)) {
+      // Mostrar modal especializado para errores de stock
+      console.log('🚨 [POS] Stock validation failed:', unavailableItems);
+      stockValidationErrors.value = unavailableItems;
+      showStockValidationError.value = true;
+    } else {
+      // Error genérico
+      const errorMessage = error.response?.data?.message || error.message || 'Error al procesar la venta';
+      const errorDetails = error.response?.data?.errors || error.response?.data?.data || '';
+      const fullMessage = errorDetails ? `${errorMessage}\n\nDetalles: ${JSON.stringify(errorDetails)}` : errorMessage;
+      alert(`Error: ${fullMessage}\n\nPor favor, intente nuevamente.`);
+    }
   } finally {
     processingOrder.value = false;
   }
@@ -1502,5 +1575,12 @@ const getPaymentMethodName = (method) => {
     :show="processingOrder"
     title="Procesando Venta"
     message="Por favor espere mientras completamos su venta..."
+  />
+
+  <!-- Stock Validation Error Modal -->
+  <StockValidationErrorModal
+    :is-visible="showStockValidationError"
+    :unavailable-items="stockValidationErrors"
+    @close="showStockValidationError = false"
   />
 </template>
