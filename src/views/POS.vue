@@ -6,6 +6,7 @@ import { useCartStore } from '../stores/cart';
 import { useShiftStore } from '../stores/shift';
 import { productsApi } from '../services/productsApi';
 import { ordersApi } from '../services/ordersApi';
+import { netsuiteStockApi } from '../services/netsuiteStockApi';
 import { mockCustomersApi } from '../api/mockCustomers';
 import { useSavedSalesStore } from '../stores/savedSales';
 import { cashMovementsApi } from '../services/cashMovementsApi';
@@ -19,6 +20,7 @@ import MergeSalesModal from '../components/MergeSalesModal.vue';
 import BarcodeScanner from '../components/BarcodeScanner.vue';
 import BillingDocumentModal from '../components/BillingDocumentModal.vue';
 import ProcessingOverlay from '../components/ProcessingOverlay.vue';
+import StockValidationErrorModal from '../components/StockValidationErrorModal.vue';
 import { useBillingStore } from '../stores/billing.js';
 
 // Stores
@@ -58,9 +60,13 @@ const showConfirmProducts = ref(false);
 const showMergeSales = ref(false);
 const showBarcodeScanner = ref(false);
 const showBillingModal = ref(false);
+const showStockValidationError = ref(false);
 
 // Datos para el modal de fusión
 const existingSaleForMerge = ref(null);
+
+// Stock validation error data
+const stockValidationErrors = ref([]);
 
 // Tipo de comprobante seleccionado al inicio de la venta
 const billingDocumentType = ref('boleta'); // 'boleta' o 'factura'
@@ -574,6 +580,8 @@ const handlePaymentCompleted = async () => {
     console.log('📤 [POS] Enviando orden al API:', JSON.stringify(orderData, null, 2));
 
     // Crear la orden en el backend
+    // NOTA: El backend validará automáticamente el stock con NetSuite si la tienda
+    // tiene habilitada la validación (tienda_netsuite_stock_validation = 1)
     const response = await ordersApi.createOrder(orderData);
 
     console.log('📥 [POS] Response from API:', response);
@@ -780,10 +788,21 @@ const handlePaymentCompleted = async () => {
     console.error('Error al procesar el pago:', error);
     console.error('Error response:', error.response);
     console.error('Error response data:', error.response?.data);
-    const errorMessage = error.response?.data?.message || error.message || 'Error al procesar la venta';
-    const errorDetails = error.response?.data?.errors || error.response?.data?.data || '';
-    const fullMessage = errorDetails ? `${errorMessage}\n\nDetalles: ${JSON.stringify(errorDetails)}` : errorMessage;
-    alert(`Error: ${fullMessage}\n\nPor favor, intente nuevamente.`);
+
+    // Detectar error de stock insuficiente en NetSuite
+    const errorData = error.response?.data;
+    if (errorData?.unavailable_items && Array.isArray(errorData.unavailable_items)) {
+      // Mostrar modal especializado para errores de stock
+      console.log('🚨 [POS] Stock validation failed:', errorData.unavailable_items);
+      stockValidationErrors.value = errorData.unavailable_items;
+      showStockValidationError.value = true;
+    } else {
+      // Error genérico
+      const errorMessage = error.response?.data?.message || error.message || 'Error al procesar la venta';
+      const errorDetails = error.response?.data?.errors || error.response?.data?.data || '';
+      const fullMessage = errorDetails ? `${errorMessage}\n\nDetalles: ${JSON.stringify(errorDetails)}` : errorMessage;
+      alert(`Error: ${fullMessage}\n\nPor favor, intente nuevamente.`);
+    }
   } finally {
     processingOrder.value = false;
   }
@@ -1502,5 +1521,12 @@ const getPaymentMethodName = (method) => {
     :show="processingOrder"
     title="Procesando Venta"
     message="Por favor espere mientras completamos su venta..."
+  />
+
+  <!-- Stock Validation Error Modal -->
+  <StockValidationErrorModal
+    :is-visible="showStockValidationError"
+    :unavailable-items="stockValidationErrors"
+    @close="showStockValidationError = false"
   />
 </template>
