@@ -426,12 +426,64 @@ const resumeSavedSale = (sale) => {
   saleHasUnsavedChanges.value = false;
 };
 
-const processPayment = () => {
+const processPayment = async () => {
   // Validar que hay turno de caja abierto
   if (!shiftStore.hasActiveShift) {
     console.error('❌ [POS] No active shift - cannot process payment');
     alert('⚠️ No hay turno de caja abierto. No se pueden registrar pagos.\n\nDebes abrir un turno primero desde el menú principal.');
     return;
+  }
+
+  // Validar stock ANTES de abrir el modal de pago
+  console.log('🔍 [POS] Validating stock before payment...');
+  try {
+    const items = cartItems.value.map(item => ({
+      product_id: item.id,
+      sku: item.sku,
+      quantity: item.quantity
+    }));
+
+    const response = await ordersApi.validateStock({ items });
+
+    if (!response.success) {
+      console.error('❌ [POS] Stock validation failed:', response);
+
+      // Show stock validation error modal
+      const unavailableItems = response.unavailable_items || response.messages?.unavailable_items;
+      if (unavailableItems && Array.isArray(unavailableItems)) {
+        stockValidationErrors.value = unavailableItems;
+        showStockValidationError.value = true;
+        return;
+      }
+
+      // Generic error fallback
+      alert('No se puede procesar la venta. Por favor, verifica el stock de los productos.');
+      return;
+    }
+
+    console.log('✅ [POS] Stock validation passed');
+  } catch (error) {
+    console.error('❌ [POS] Error validating stock:', error);
+
+    // Check if error contains unavailable_items
+    const errorData = error.response?.data;
+    const unavailableItems = errorData?.unavailable_items || errorData?.messages?.unavailable_items;
+
+    if (unavailableItems && Array.isArray(unavailableItems)) {
+      // Show stock validation error modal
+      stockValidationErrors.value = unavailableItems;
+      showStockValidationError.value = true;
+      return;
+    }
+
+    // If validation endpoint is not available (404) or validation is disabled, continue
+    if (error.response?.status === 404 || errorData?.validation_skipped) {
+      console.log('⚠️ [POS] Stock validation skipped or not available');
+    } else {
+      // Other errors - show generic message
+      alert('Error al validar stock. Por favor, intente nuevamente.');
+      return;
+    }
   }
 
   // Solo mostrar el modal si hay un saldo pendiente
