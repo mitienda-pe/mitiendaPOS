@@ -100,6 +100,12 @@ const routes = [
     meta: { requiresAuth: true, roles: ['cajero', 'supervisor', 'administrador'] }
   },
   {
+    path: '/promotions/:id',
+    name: 'PromotionDetail',
+    component: () => import('../views/PromotionDetail.vue'),
+    meta: { requiresAuth: true, roles: ['cajero', 'supervisor', 'administrador'] }
+  },
+  {
     path: '/cashier',
     name: 'Cashier',
     component: Cashier,

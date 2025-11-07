@@ -44,6 +44,13 @@ export const shiftsApi = {
         payload.empleado_id = empleadoId;
       }
 
+      console.log('📤 [SHIFTS API] Enviando petición de apertura:', {
+        url: '/cash-register-shifts/open',
+        payload: payload,
+        empleadoId: empleadoId,
+        cajaNumero: cajaNumero
+      });
+
       const response = await apiClient.post('/cash-register-shifts/open', payload);
 
       console.log('✅ [SHIFTS API] Turno creado - Response:', {
@@ -61,7 +68,15 @@ export const shiftsApi = {
       console.error('❌ [SHIFTS API] Error opening shift:', {
         message: error.message,
         status: error.response?.status,
+        statusText: error.response?.statusText,
         serverMessage: error.response?.data?.message,
+        serverData: error.response?.data,
+        payload: {
+          monto_inicial: montoInicial,
+          notas_apertura: notasApertura,
+          caja_numero: cajaNumero,
+          empleado_id: empleadoId
+        },
         fullError: error
       });
       return {
