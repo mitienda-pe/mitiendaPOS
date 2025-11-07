@@ -383,13 +383,22 @@ const formatCurrency = (value) => {
 const formatDate = (dateString) => {
   if (!dateString) return '-'
 
-  const date = new Date(dateString)
-  const day = date.getDate().toString().padStart(2, '0')
-  const month = (date.getMonth() + 1).toString().padStart(2, '0')
-  const year = date.getFullYear()
-  const hours = date.getHours().toString().padStart(2, '0')
-  const minutes = date.getMinutes().toString().padStart(2, '0')
+  // Si viene en formato ISO con hora (YYYY-MM-DD HH:MM:SS o YYYY-MM-DDTHH:MM:SS)
+  if (dateString.includes(' ') || dateString.includes('T')) {
+    // Separar fecha y hora para evitar problemas de zona horaria
+    const [datePart, timePart] = dateString.replace('T', ' ').split(' ')
+    const [year, month, day] = datePart.split('-')
 
-  return `${day}/${month}/${year} ${hours}:${minutes}`
+    if (timePart) {
+      const [hours, minutes] = timePart.split(':')
+      return `${day}/${month}/${year} ${hours}:${minutes}`
+    }
+
+    return `${day}/${month}/${year}`
+  }
+
+  // Si viene solo la fecha (YYYY-MM-DD)
+  const [year, month, day] = dateString.split('-')
+  return `${day}/${month}/${year}`
 }
 </script>
