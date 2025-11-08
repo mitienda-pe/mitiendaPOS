@@ -330,9 +330,9 @@ const loadShiftData = async () => {
 
     // Calculate summary
     if (shiftStore.hasActiveShift) {
-      console.log('✅ [MyShift] Turno activo encontrado, calculando resumen...');
-      calculateSummary();
-      await loadMovements();
+      console.log('✅ [MyShift] Turno activo encontrado, cargando movimientos...');
+      await loadMovements(); // Primero cargar movimientos
+      calculateSummary(); // Luego calcular resumen
       startElapsedTimer();
     } else {
       console.log('❌ [MyShift] No hay turno activo');
