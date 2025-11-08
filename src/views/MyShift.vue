@@ -108,7 +108,7 @@
           Resumen en Tiempo Real
         </h2>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <!-- Initial Amount -->
           <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
             <p class="text-xs font-medium text-gray-600 mb-1">💰 Inicial</p>
@@ -117,9 +117,16 @@
 
           <!-- Total Sales -->
           <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
-            <p class="text-xs font-medium text-blue-700 mb-1">💳 Ventas</p>
+            <p class="text-xs font-medium text-blue-700 mb-1">💳 Ventas Total</p>
             <p class="text-2xl font-bold text-blue-900">S/ {{ summary.totalVentas.toFixed(2) }}</p>
             <p class="text-xs text-blue-600 mt-1">{{ summary.numeroVentas }} operaciones</p>
+          </div>
+
+          <!-- Cash Sales -->
+          <div class="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
+            <p class="text-xs font-medium text-emerald-700 mb-1">💵 Efectivo</p>
+            <p class="text-2xl font-bold text-emerald-900">S/ {{ summary.totalVentasEfectivo.toFixed(2) }}</p>
+            <p class="text-xs text-emerald-600 mt-1">Ventas en caja</p>
           </div>
 
           <!-- Cash Movements -->
@@ -135,8 +142,9 @@
 
           <!-- Expected Cash -->
           <div class="bg-green-50 rounded-lg p-4 border border-green-200">
-            <p class="text-xs font-medium text-green-700 mb-1">💵 Esperado</p>
+            <p class="text-xs font-medium text-green-700 mb-1">🎯 Esperado en Caja</p>
             <p class="text-2xl font-bold text-green-900">S/ {{ summary.efectivoEsperado.toFixed(2) }}</p>
+            <p class="text-xs text-green-600 mt-1">Solo efectivo</p>
           </div>
         </div>
       </div>
@@ -181,7 +189,7 @@
               <tr>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hora</th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Concepto</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código/Concepto</th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Método</th>
                 <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Monto</th>
               </tr>
@@ -197,7 +205,15 @@
                   </span>
                 </td>
                 <td class="px-4 py-3 text-sm text-gray-700">
-                  {{ movement.concepto }}
+                  <div v-if="movement.tipo === 'venta' && movement.referencia">
+                    <router-link
+                      :to="`/order/${movement.referencia}`"
+                      class="text-blue-600 hover:text-blue-800 font-medium">
+                      🛒 Venta #{{ movement.referencia }}
+                    </router-link>
+                    <p class="text-xs text-gray-500 mt-1">{{ movement.concepto }}</p>
+                  </div>
+                  <span v-else>{{ movement.concepto }}</span>
                 </td>
                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
                   {{ movement.metodo_pago || '-' }}
@@ -275,6 +291,8 @@ const summary = ref({
   montoInicial: 0,
   totalVentas: 0,
   numeroVentas: 0,
+  totalVentasEfectivo: 0, // Solo ventas en efectivo
+  totalVentasOtros: 0, // Ventas con otros métodos
   totalMovimientos: 0,
   numeroMovimientos: 0,
   efectivoEsperado: 0
@@ -336,12 +354,24 @@ const calculateSummary = () => {
   if (!shift) return;
 
   summary.value.montoInicial = shift.monto_inicial || 0;
+
+  // Usar los totales del backend que ya separan por método de pago
   summary.value.totalVentas = shift.total_ventas || 0;
   summary.value.numeroVentas = shift.numero_ventas || 0;
 
-  // Calculate movements (entries - withdrawals)
+  // Total de ventas en efectivo
+  summary.value.totalVentasEfectivo = shift.total_efectivo || 0;
+
+  // Total de ventas con otros métodos (tarjeta, yape, plin, transferencia)
+  summary.value.totalVentasOtros =
+    (shift.total_tarjeta || 0) +
+    (shift.total_yape || 0) +
+    (shift.total_plin || 0) +
+    (shift.total_transferencia || 0);
+
+  // Calculate movements (entries - withdrawals) - solo efectivo
   const entradas = movements.value
-    .filter(m => m.tipo === 'entrada')
+    .filter(m => m.tipo === 'entrada' && (!m.metodo_pago || m.metodo_pago.toLowerCase() === 'efectivo'))
     .reduce((sum, m) => sum + parseFloat(m.monto), 0);
 
   const salidas = movements.value
@@ -351,11 +381,11 @@ const calculateSummary = () => {
   summary.value.totalMovimientos = entradas - salidas;
   summary.value.numeroMovimientos = movements.value.filter(m => m.tipo !== 'venta').length;
 
-  // Expected cash = initial + sales (cash only) + entries - withdrawals
-  // For now, assume all sales are cash (we'll improve this later with payment method breakdown)
+  // Expected cash = initial + cash sales + cash entries - cash withdrawals
+  // NO incluir ventas con tarjeta/yape/plin/transferencia porque no entran a la caja
   summary.value.efectivoEsperado =
     summary.value.montoInicial +
-    summary.value.totalVentas +
+    summary.value.totalVentasEfectivo +
     summary.value.totalMovimientos;
 };
 
