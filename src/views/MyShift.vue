@@ -397,14 +397,20 @@ const loadMovements = async () => {
 
   try {
     loadingMovements.value = true;
+    console.log('📡 [MyShift] Cargando movimientos para turno:', shiftStore.activeShift.id);
     const response = await cashRegisterShiftsApi.getShiftMovements(shiftStore.activeShift.id);
+
+    console.log('📊 [MyShift] Respuesta de getShiftMovements:', response);
 
     if (response.data.success) {
       movements.value = response.data.data || [];
+      console.log('✅ [MyShift] Movimientos cargados:', movements.value.length, movements.value);
       calculateSummary(); // Recalculate after loading movements
+    } else {
+      console.warn('⚠️ [MyShift] API retornó success=false');
     }
   } catch (err) {
-    console.error('Error loading movements:', err);
+    console.error('❌ [MyShift] Error loading movements:', err);
   } finally {
     loadingMovements.value = false;
   }
