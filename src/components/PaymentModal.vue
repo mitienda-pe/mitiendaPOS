@@ -339,31 +339,19 @@
 
   <!-- Modal de confirmación y ticket -->
   <div v-if="showTicket" class="fixed z-20 inset-0 overflow-y-auto">
-    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+    <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
       <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
       <div
-        class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full">
+        class="inline-block align-middle bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-4xl sm:w-full">
         <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-          <div class="sm:flex sm:items-start">
-            <div class="w-full">
-              <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg leading-6 font-medium text-gray-900">Pago Completado</h3>
-                <button @click="closeTicket" class="text-gray-400 hover:text-gray-500 focus:outline-none">
-                  <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Columna izquierda: Ticket -->
+            <div>
               <!-- Ticket -->
-              <div class="mb-4 p-4 border rounded-lg bg-gray-50 font-mono text-sm">
+              <div id="ticket-print-area" class="mb-4 p-4 border rounded-lg bg-gray-50 font-mono text-sm">
                 <div class="text-center mb-3">
                   <div class="font-bold text-lg">COMPROBANTE DE VENTA</div>
-                  <div class="mt-2 font-bold">
-                    {{ displayDocumentType === 'boleta' ? 'BOLETA DE VENTA ELECTRÓNICA' : 'FACTURA ELECTRÓNICA' }}
-                  </div>
-                  <div class="font-semibold">N° {{ displayOrderNumber }}</div>
+                  <div class="font-semibold mt-2">N° {{ displayOrderNumber }}</div>
                   <div>Fecha: {{ displayOrderDate }}</div>
                   <div v-if="displayCajero" class="text-xs mt-1">Atendido por: {{ displayCajero }}</div>
                 </div>
@@ -425,25 +413,25 @@
                       </div>
 
                       <!-- Detalles para pago en efectivo -->
-                      <div v-if="payment.method === 'efectivo'" class="text-xs text-gray-600 mt-1 ml-4 space-y-0.5">
+                      <div v-if="payment.method === 'efectivo'" class="text-black mt-1 space-y-0.5">
                         <!-- Mostrar monto entregado si hay cambio -->
                         <div v-if="payment.reference && payment.reference.includes('Cambio:')">
                           <div class="flex justify-between">
                             <span>Monto entregado:</span>
                             <span>{{ formatCurrency(payment.amount + parseChangeFromReference(payment.reference)) }}</span>
                           </div>
-                          <div class="flex justify-between text-green-600 font-medium">
+                          <div class="flex justify-between">
                             <span>Cambio:</span>
                             <span>{{ formatCurrency(parseChangeFromReference(payment.reference)) }}</span>
                           </div>
                         </div>
                         <!-- Pago parcial -->
                         <div v-else-if="payment.reference && payment.reference.includes('Pago parcial')">
-                          <span class="text-orange-600">{{ payment.reference }}</span>
+                          <span>{{ payment.reference }}</span>
                         </div>
                         <!-- Pago exacto -->
                         <div v-else-if="payment.reference === 'Pago exacto'">
-                          <span class="text-green-600">Pago exacto</span>
+                          <span>Pago exacto</span>
                         </div>
                       </div>
 
@@ -467,39 +455,85 @@
                   <div>¡Gracias por su compra!</div>
                   <div>Visite nuestra página web: www.ejemplo.com</div>
                 </div>
+
+                <!-- QR Code para impresión (oculto en pantalla) -->
+                <div v-if="displayBillingDocument?.files?.pdf" class="qr-print-only text-center mt-3" style="display: none;">
+                  <div class="text-xs mb-1">
+                    Comprobante Electrónico
+                    <span v-if="displayBillingDocument?.serie">
+                      {{ displayBillingDocument.serie }}-{{ displayBillingDocument.correlative }}
+                    </span>
+                  </div>
+                  <img :src="`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(displayBillingDocument.files.pdf)}`"
+                       alt="QR Comprobante"
+                       style="width: 100px; height: 100px; margin: 0 auto;" />
+                  <div class="text-xs mt-1">Escanea para ver el PDF</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Columna derecha: Botones de acción -->
+            <div class="flex flex-col gap-4">
+              <!-- Header con título y botón cerrar -->
+              <div class="flex justify-between items-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Pago Completado</h3>
+                <button @click="closeTicket" class="text-gray-400 hover:text-gray-500 focus:outline-none">
+                  <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
 
-              <!-- Botones de acción -->
-              <div class="flex justify-between mt-6">
-                <button
-                  class="py-4 px-6 rounded-lg text-lg font-medium transition-all duration-200 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-1 relative"
-                  @click="printTicket">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 inline" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                    <rect x="6" y="14" width="12" height="8"></rect>
-                  </svg>
-                  {{ displayBillingDocument?.files?.pdf ? 'Abrir PDF' : 'Imprimir' }}
-                  <span v-if="displayBillingDocument?.serie" class="ml-2 text-xs opacity-75">
-                    ({{ displayBillingDocument.serie }}-{{ displayBillingDocument.correlative }})
-                  </span>
-                </button>
+              <!-- Botón Finalizar -->
+              <button
+                class="w-full py-4 px-6 rounded-lg text-lg font-medium transition-all duration-200 bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl"
+                @click="finalizeSale">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 inline" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                Finalizar
+              </button>
 
-                <button
-                  class="py-4 px-6 rounded-lg text-lg font-medium transition-all duration-200 bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-1"
-                  @click="finalizeSale">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 inline" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                  </svg>
-                  Finalizar
-                </button>
-              </div>
+              <!-- Botón Imprimir Ticket -->
+              <button
+                class="w-full py-3 px-6 rounded-lg text-base font-medium transition-all duration-200 bg-gray-600 hover:bg-gray-700 text-white shadow-lg hover:shadow-xl"
+                @click="printTicketDirect">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 inline" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                  <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                  <rect x="6" y="14" width="12" height="8"></rect>
+                </svg>
+                Imprimir Ticket
+              </button>
+
+              <!-- Botón Abrir PDF -->
+              <button
+                v-if="displayBillingDocument?.files?.pdf"
+                class="w-full py-3 px-6 rounded-lg text-base font-medium transition-all duration-200 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl"
+                @click="printTicket">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 inline" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                Abrir PDF
+                <span v-if="displayBillingDocument?.serie" class="ml-2 text-xs opacity-75">
+                  ({{ displayBillingDocument.serie }}-{{ displayBillingDocument.correlative }})
+                </span>
+              </button>
+
+              <!-- Divisor -->
+              <div class="border-t border-gray-300 my-2"></div>
 
               <!-- Botones para compartir el ticket -->
-              <div class="mt-4">
+              <div>
                 <div class="mb-3">
                   <button v-if="!showEmailForm"
                     class="w-full py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg"
@@ -975,6 +1009,120 @@ const printTicket = () => {
     console.log('🖨️ [PaymentModal] No PDF available, using window.print()');
     window.print();
   }
+};
+
+const printTicketDirect = () => {
+  // Imprimir solo el contenido del ticket
+  console.log('🖨️ [PaymentModal] Printing ticket directly');
+
+  const ticketElement = document.getElementById('ticket-print-area');
+  if (!ticketElement) {
+    console.error('❌ [PaymentModal] Ticket element not found');
+    return;
+  }
+
+  // Crear una ventana de impresión con solo el contenido del ticket
+  const printWindow = window.open('', '', 'width=800,height=600');
+  if (!printWindow) {
+    console.error('❌ [PaymentModal] Could not open print window');
+    return;
+  }
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Ticket de Venta</title>
+      <style>
+        @media print {
+          @page {
+            margin: 0.5cm;
+            size: 80mm auto;
+          }
+          body {
+            margin: 0;
+            padding: 0;
+          }
+        }
+        body {
+          font-family: 'Courier New', monospace;
+          font-size: 12px;
+          line-height: 1.4;
+          margin: 0;
+          padding: 10px;
+          max-width: 80mm;
+        }
+        .text-center {
+          text-align: center;
+        }
+        .font-bold {
+          font-weight: bold;
+        }
+        .text-lg {
+          font-size: 16px;
+        }
+        .text-xs {
+          font-size: 10px;
+        }
+        .text-sm {
+          font-size: 11px;
+        }
+        .mb-1 { margin-bottom: 0.25rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-3 { margin-bottom: 0.75rem; }
+        .mt-1 { margin-top: 0.25rem; }
+        .mt-2 { margin-top: 0.5rem; }
+        .mt-3 { margin-top: 0.75rem; }
+        .pb-1 { padding-bottom: 0.25rem; }
+        .pt-1 { padding-top: 0.25rem; }
+        .pt-2 { padding-top: 0.5rem; }
+        .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+        .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+        .border-t { border-top: 1px solid #ccc; }
+        .border-b { border-bottom: 1px solid #ccc; }
+        .border-dashed { border-style: dashed; }
+        .flex {
+          display: flex;
+        }
+        .justify-between {
+          justify-content: space-between;
+        }
+        .text-right {
+          text-align: right;
+        }
+        .truncate {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .w-1-2 { width: 50%; }
+        .w-1-6 { width: 16.666%; }
+        .space-y-0-5 > * + * {
+          margin-top: 0.125rem;
+        }
+        /* Mostrar QR code solo en impresión */
+        .qr-print-only {
+          display: block !important;
+        }
+        .qr-print-only img {
+          display: block !important;
+        }
+      </style>
+    </head>
+    <body>
+      ${ticketElement.innerHTML}
+    </body>
+    </html>
+  `);
+
+  printWindow.document.close();
+  printWindow.focus();
+
+  // Esperar a que se cargue el contenido antes de imprimir
+  setTimeout(() => {
+    printWindow.print();
+    printWindow.close();
+  }, 250);
 };
 
 const finalizeSale = () => {
