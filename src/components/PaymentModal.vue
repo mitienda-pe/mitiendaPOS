@@ -416,22 +416,48 @@
                     <span>Total a Pagar:</span>
                     <span>{{ formatCurrency(displayTotal + roundingApplied) }}</span>
                   </div>
-                  <div class="mt-2">
-                    <div>Forma de pago:</div>
-                    <div v-for="(payment, index) in displayPayments" :key="index">
-                      {{ getPaymentMethodName(payment.method) }}: {{ formatCurrency(payment.amount) }}
-                      <span v-if="payment.reference" class="text-xs ml-1">(Ref: {{ payment.reference }})</span>
+                  <div class="mt-2 border-t border-gray-300 pt-2">
+                    <div class="font-semibold mb-1">Forma de pago:</div>
+                    <div v-for="(payment, index) in displayPayments" :key="index" class="mb-2">
+                      <div class="flex justify-between">
+                        <span class="font-medium">{{ getPaymentMethodName(payment.method) }}:</span>
+                        <span class="font-bold">{{ formatCurrency(payment.amount) }}</span>
+                      </div>
+
+                      <!-- Detalles para pago en efectivo -->
+                      <div v-if="payment.method === 'efectivo'" class="text-xs text-gray-600 mt-1 ml-4 space-y-0.5">
+                        <!-- Mostrar monto entregado si hay cambio -->
+                        <div v-if="payment.reference && payment.reference.includes('Cambio:')">
+                          <div class="flex justify-between">
+                            <span>Monto entregado:</span>
+                            <span>{{ formatCurrency(payment.amount + parseChangeFromReference(payment.reference)) }}</span>
+                          </div>
+                          <div class="flex justify-between text-green-600 font-medium">
+                            <span>Cambio:</span>
+                            <span>{{ formatCurrency(parseChangeFromReference(payment.reference)) }}</span>
+                          </div>
+                        </div>
+                        <!-- Pago parcial -->
+                        <div v-else-if="payment.reference && payment.reference.includes('Pago parcial')">
+                          <span class="text-orange-600">{{ payment.reference }}</span>
+                        </div>
+                        <!-- Pago exacto -->
+                        <div v-else-if="payment.reference === 'Pago exacto'">
+                          <span class="text-green-600">Pago exacto</span>
+                        </div>
+                      </div>
+
+                      <!-- Referencia para otros métodos -->
+                      <div v-if="payment.method !== 'efectivo' && payment.reference" class="text-xs text-gray-600 ml-4">
+                        {{ payment.reference }}
+                      </div>
                     </div>
 
-                    <!-- Total pagado y cambio -->
-                    <div class="mt-2 pt-1 border-t border-gray-300">
-                      <div class="flex justify-between">
+                    <!-- Total pagado -->
+                    <div class="mt-2 pt-2 border-t border-gray-300">
+                      <div class="flex justify-between font-bold">
                         <span>Total pagado:</span>
-                        <span class="font-bold">{{ formatCurrency(totalPaid) }}</span>
-                      </div>
-                      <div v-if="totalChange > 0" class="flex justify-between">
-                        <span>Cambio:</span>
-                        <span class="font-bold text-green-600">{{ formatCurrency(totalChange) }}</span>
+                        <span>{{ formatCurrency(totalPaid) }}</span>
                       </div>
                     </div>
                   </div>
@@ -760,6 +786,19 @@ const applySuggestion = (suggestion) => {
   console.log('✨ [PaymentModal] Aplicando sugerencia:', suggestion);
   cashAmount.value = suggestion.amount;
   // calculateChange se ejecutará automáticamente por el watcher
+};
+
+// Helper para extraer el monto del cambio de la referencia
+const parseChangeFromReference = (reference) => {
+  if (!reference || !reference.includes('Cambio:')) return 0;
+
+  // Extraer el monto del cambio de la referencia
+  // Formato: "Cambio: S/ X.XX" o "Cambio: S/ X.XX (desglose)"
+  const match = reference.match(/Cambio:\s*S\/\s*([\d,]+\.?\d*)/);
+  if (match && match[1]) {
+    return parseFloat(match[1].replace(/,/g, ''));
+  }
+  return 0;
 };
 
 const formatDenomination = (value) => {
