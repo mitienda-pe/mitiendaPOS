@@ -61,6 +61,7 @@ const showMergeSales = ref(false);
 const showBarcodeScanner = ref(false);
 const showBillingModal = ref(false);
 const showStockValidationError = ref(false);
+const validatingStock = ref(false);
 
 // Datos para el modal de fusión
 const existingSaleForMerge = ref(null);
@@ -434,6 +435,9 @@ const processPayment = async () => {
     return;
   }
 
+  // Mostrar overlay de "Consultando Stock"
+  validatingStock.value = true;
+
   // Validar stock ANTES de abrir el modal de pago
   console.log('🔍 [POS] Validating stock before payment...');
   try {
@@ -448,10 +452,22 @@ const processPayment = async () => {
     if (!response.success) {
       console.error('❌ [POS] Stock validation failed:', response);
 
+      // Ocultar overlay de validación
+      validatingStock.value = false;
+
       // Show stock validation error modal
       const unavailableItems = response.unavailable_items || response.messages?.unavailable_items;
       if (unavailableItems && Array.isArray(unavailableItems)) {
-        stockValidationErrors.value = unavailableItems;
+        // Enriquecer con nombre del producto desde el carrito
+        stockValidationErrors.value = unavailableItems.map(item => {
+          const cartItem = cartItems.value.find(ci => ci.id === item.product_id || ci.sku === item.sku);
+          // Priorizar nombre del carrito, luego backend, luego fallback
+          const productName = cartItem?.nombre || item.product_name || 'Producto desconocido';
+          return {
+            ...item,
+            product_name: productName
+          };
+        });
         showStockValidationError.value = true;
         return;
       }
@@ -462,8 +478,15 @@ const processPayment = async () => {
     }
 
     console.log('✅ [POS] Stock validation passed');
+
+    // Ocultar overlay de validación
+    validatingStock.value = false;
+
   } catch (error) {
     console.error('❌ [POS] Error validating stock:', error);
+
+    // Ocultar overlay de validación
+    validatingStock.value = false;
 
     // Check if error contains unavailable_items
     const errorData = error.response?.data;
@@ -471,7 +494,16 @@ const processPayment = async () => {
 
     if (unavailableItems && Array.isArray(unavailableItems)) {
       // Show stock validation error modal
-      stockValidationErrors.value = unavailableItems;
+      // Enriquecer con nombre del producto desde el carrito
+      stockValidationErrors.value = unavailableItems.map(item => {
+        const cartItem = cartItems.value.find(ci => ci.id === item.product_id || ci.sku === item.sku);
+        // Priorizar nombre del carrito, luego backend, luego fallback
+        const productName = cartItem?.nombre || item.product_name || 'Producto desconocido';
+        return {
+          ...item,
+          product_name: productName
+        };
+      });
       showStockValidationError.value = true;
       return;
     }
@@ -848,7 +880,16 @@ const handlePaymentCompleted = async () => {
     if (unavailableItems && Array.isArray(unavailableItems)) {
       // Mostrar modal especializado para errores de stock
       console.log('🚨 [POS] Stock validation failed:', unavailableItems);
-      stockValidationErrors.value = unavailableItems;
+      // Enriquecer con nombre del producto desde el carrito
+      stockValidationErrors.value = unavailableItems.map(item => {
+        const cartItem = cartItems.value.find(ci => ci.id === item.product_id || ci.sku === item.sku);
+        // Priorizar nombre del carrito, luego backend, luego fallback
+        const productName = cartItem?.nombre || item.product_name || 'Producto desconocido';
+        return {
+          ...item,
+          product_name: productName
+        };
+      });
       showStockValidationError.value = true;
     } else {
       // Error genérico
@@ -1568,6 +1609,13 @@ const getPaymentMethodName = (method) => {
     :customer="completedOrder.customer"
     @success="handleBillingSuccess"
     @error="handleBillingError"
+  />
+
+  <!-- Stock Validation Overlay -->
+  <ProcessingOverlay
+    :show="validatingStock"
+    title="Consultando Stock"
+    message="Verificando disponibilidad de productos..."
   />
 
   <!-- Processing Overlay -->
