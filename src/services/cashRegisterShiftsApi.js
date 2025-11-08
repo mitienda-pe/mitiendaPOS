@@ -55,6 +55,15 @@ const cashRegisterShiftsApi = {
   },
 
   /**
+   * Get shift detail by ID
+   * @param {number} shiftId - Shift ID
+   * @returns {Promise}
+   */
+  getShift(shiftId) {
+    return apiClient.get(`/cash-register-shifts/${shiftId}`);
+  },
+
+  /**
    * Get shift movements (cash register transactions)
    * @param {number} shiftId - Shift ID
    * @returns {Promise}

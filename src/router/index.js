@@ -124,6 +124,12 @@ const routes = [
     meta: { requiresAuth: true, roles: ['cajero', 'supervisor', 'administrador'] }
   },
   {
+    path: '/shifts/:id',
+    name: 'ShiftDetail',
+    component: () => import('../views/ShiftDetail.vue'),
+    meta: { requiresAuth: true, roles: ['cajero', 'supervisor', 'administrador'] }
+  },
+  {
     path: '/settings',
     component: Settings,
     meta: { requiresAuth: true, roles: ['supervisor', 'administrador'] },

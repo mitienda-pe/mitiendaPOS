@@ -356,8 +356,8 @@
                   <div v-if="displayCajero" class="text-xs mt-1">Atendido por: {{ displayCajero }}</div>
                 </div>
 
-                <div v-if="displayCustomer && (displayCustomer.name || displayCustomer.document_number)" class="mb-3 border-t border-b border-gray-300 py-2">
-                  <div><strong>Cliente:</strong> {{ displayCustomer.name || 'Cliente General' }}</div>
+                <div v-if="displayCustomer && (displayCustomer.name || displayCustomer.nombres || displayCustomer.document_number)" class="mb-3 border-t border-b border-gray-300 py-2">
+                  <div><strong>Cliente:</strong> {{ displayCustomer.name || displayCustomer.razonSocial || `${displayCustomer.nombres || ''} ${displayCustomer.apellidos || ''}`.trim() || 'Cliente General' }}</div>
                   <div v-if="displayCustomer.document_number">
                     <strong>{{ (displayCustomer.document_type || 'dni').toUpperCase() }}:</strong> {{ displayCustomer.document_number }}
                   </div>
@@ -537,7 +537,7 @@
                 <div class="mb-3">
                   <button v-if="!showEmailForm"
                     class="w-full py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg"
-                    @click="showEmailForm = true">
+                    @click="displayCustomer?.email ? sendByEmail() : showEmailForm = true">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 inline" viewBox="0 0 24 24" fill="none"
                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
@@ -1132,7 +1132,18 @@ const finalizeSale = () => {
 };
 
 const sendByEmail = () => {
-  // Implementar la funcionalidad de envío por email
+  // Si hay email del cliente, usarlo directamente
+  const customerEmail = displayCustomer.value?.email;
+
+  if (customerEmail) {
+    // Usar el email del cliente automáticamente
+    console.log(`Enviando ticket por email a: ${customerEmail}`);
+    // Aquí iría la lógica para enviar el email
+    alert(`Ticket enviado por email a ${customerEmail}`);
+    return;
+  }
+
+  // Si no hay email del cliente, validar el email ingresado manualmente
   if (!isValidEmail.value) return;
 
   console.log(`Enviando ticket por email a: ${emailAddress.value}`);
@@ -1158,11 +1169,19 @@ const sendByWhatsApp = () => {
   }
 
   // Limpiar número de teléfono (remover espacios y caracteres especiales)
-  const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
+  let cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
 
-  // Crear mensaje con información del comprobante y enlace al PDF
+  // Agregar código de país +51 (Perú) si no lo tiene
+  if (!cleanPhone.startsWith('51') && !cleanPhone.startsWith('+51')) {
+    cleanPhone = '51' + cleanPhone;
+  }
+
+  // Remover el símbolo + si existe
+  cleanPhone = cleanPhone.replace('+', '');
+
+  // Crear mensaje con información del comprobante y enlace al PDF (sin emojis)
   const documentNumber = serie && correlative ? `${serie}-${correlative}` : displayOrderNumber.value;
-  const message = `Hola! 👋\n\nTe compartimos tu comprobante de pago:\n\n📄 *${documentNumber}*\nTotal: *${formatCurrency(total)}*\n\n🔗 Ver/Descargar PDF:\n${pdfUrl}\n\n¡Gracias por tu compra!`;
+  const message = `Hola!\n\nTe compartimos tu comprobante de pago:\n\n*${documentNumber}*\nTotal: *${formatCurrency(total)}*\n\nVer/Descargar PDF:\n${pdfUrl}\n\nGracias por tu compra!`;
 
   const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
 

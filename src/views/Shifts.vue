@@ -51,11 +51,11 @@
 
       <!-- Shifts Cards -->
       <div v-else class="grid grid-cols-1 gap-6">
-        <div
+        <router-link
           v-for="shift in shifts"
           :key="shift.id"
-          class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
-          @click="selectShift(shift)">
+          :to="`/shifts/${shift.id}`"
+          class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer block">
 
           <!-- Header -->
           <div class="px-6 py-4 border-b border-gray-200" :class="getShiftHeaderClass(shift)">
@@ -146,7 +146,7 @@
           <div class="px-6 py-2 bg-gray-100 text-center text-xs text-gray-500">
             Clic para ver detalles →
           </div>
-        </div>
+        </router-link>
       </div>
 
       <!-- Pagination -->
@@ -173,12 +173,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Shift Detail Modal -->
-    <ShiftDetailModal
-      v-model="showDetailModal"
-      :shift="selectedShift"
-    />
   </div>
 </template>
 
@@ -186,7 +180,6 @@
 import { ref, onMounted } from 'vue';
 import { useCashierStore } from '@/stores/cashier';
 import cashRegisterShiftsApi from '@/services/cashRegisterShiftsApi';
-import ShiftDetailModal from '@/components/ShiftDetailModal.vue';
 
 const cashierStore = useCashierStore();
 
@@ -199,9 +192,6 @@ const pagination = ref({
   total: 0,
   total_pages: 0
 });
-
-const showDetailModal = ref(false);
-const selectedShift = ref(null);
 
 /**
  * Load shifts with pagination
@@ -236,14 +226,6 @@ const loadShifts = async (page = 1) => {
 const loadPage = (page) => {
   if (page < 1 || page > pagination.value.total_pages) return;
   loadShifts(page);
-};
-
-/**
- * Select shift to view details
- */
-const selectShift = (shift) => {
-  selectedShift.value = shift;
-  showDetailModal.value = true;
 };
 
 /**
