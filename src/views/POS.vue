@@ -799,10 +799,11 @@ const handlePaymentCompleted = async () => {
             precio: parseFloat(item.price || item.precio || 0),
             total: parseFloat(item.total || 0)
           })),
-          payments: (orderDetails.payments || []).map(payment => ({
-            method: payment.method || payment.metodo || 'efectivo',
-            methodName: payment.method_name || payment.metodo || 'Efectivo',
-            amount: parseFloat(payment.amount || payment.monto || 0),
+          // Usar pagos locales en lugar de los del backend (que pueden venir como 'unknown')
+          payments: payments.value.map(payment => ({
+            method: payment.method,
+            methodName: payment.methodName,
+            amount: payment.amount,
             reference: payment.reference || ''
           })),
           subtotal: parseFloat(orderDetails.subtotal || 0),
