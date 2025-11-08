@@ -790,8 +790,27 @@ const addPayment = () => {
 
   switch (paymentMethod.value) {
     case 'efectivo':
-      amount = props.remainingAmount; // Siempre cobrar el total restante
-      reference = `Cambio: ${formatCurrency(change.value)}`;
+      // Usar el monto ingresado, limitado al saldo pendiente
+      amount = Math.min(cashAmount.value, props.remainingAmount);
+
+      // Calcular cambio solo si el monto cubre o excede el saldo
+      const changeValue = cashAmount.value - props.remainingAmount;
+
+      if (changeValue > 0) {
+        reference = `Cambio: ${formatCurrency(changeValue)}`;
+
+        // Agregar desglose del vuelto a la referencia si existe
+        if (changeBreakdownDisplay.value && changeBreakdownDisplay.value.breakdown.length > 0) {
+          const breakdown = changeBreakdownDisplay.value.breakdown
+            .map(item => `${item.count}x${formatDenomination(item.value)}`)
+            .join(', ');
+          reference += ` (${breakdown})`;
+        }
+      } else if (changeValue < 0) {
+        reference = `Pago parcial: S/ ${cashAmount.value.toFixed(2)}`;
+      } else {
+        reference = 'Pago exacto';
+      }
 
       // Calcular redondeo aplicado (solo para el primer pago en efectivo)
       // El redondeo es la diferencia entre el total original y el total redondeado
@@ -799,20 +818,15 @@ const addPayment = () => {
       const roundedTotal = roundToValidAmount(totalBeforeRounding);
       roundingAmount = roundToValidAmount(roundedTotal - totalBeforeRounding);
 
-      console.log('💰 [PaymentModal] Calculando redondeo:', {
-        totalOriginal: totalBeforeRounding,
-        totalRedondeado: roundedTotal,
+      console.log('💰 [PaymentModal] Calculando pago en efectivo:', {
+        montoIngresado: cashAmount.value,
+        saldoPendiente: props.remainingAmount,
+        montoAPagar: amount,
+        cambio: changeValue,
         redondeo: roundingAmount
       });
-
-      // Agregar desglose del vuelto a la referencia si existe
-      if (changeBreakdownDisplay.value && changeBreakdownDisplay.value.breakdown.length > 0) {
-        const breakdown = changeBreakdownDisplay.value.breakdown
-          .map(item => `${item.count}x${formatDenomination(item.value)}`)
-          .join(', ');
-        reference += ` (${breakdown})`;
-      }
       break;
+
     case 'tarjeta':
       amount = Math.min(paymentAmount.value, props.remainingAmount);
       reference = `Auth: ${cardCode.value}`;
@@ -852,7 +866,7 @@ const addPayment = () => {
 
   emit('payment-added', paymentData);
 
-  // Cerrar el modal después de agregar el pago
+  // Siempre cerrar el modal después de agregar el pago
   closeModal();
 };
 

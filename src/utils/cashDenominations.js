@@ -211,9 +211,9 @@ export function validateCashPayment(cashReceived, amountDue) {
   const errors = [];
   const warnings = [];
 
-  // Validar que cubra el monto
-  if (cashReceived < amountDue) {
-    errors.push('El monto entregado es menor al total a pagar');
+  // Validar que sea un monto positivo
+  if (cashReceived <= 0) {
+    errors.push('El monto debe ser mayor a cero');
   }
 
   // Validar redondeo
@@ -222,9 +222,10 @@ export function validateCashPayment(cashReceived, amountDue) {
     warnings.push(`El monto se redondeará a S/ ${rounded.toFixed(2)}`);
   }
 
-  // Calcular vuelto
+  // Calcular vuelto (puede ser negativo si es pago parcial)
   const change = roundToValidAmount(cashReceived - amountDue);
 
+  // Solo validar denominaciones del vuelto si hay cambio positivo
   if (change > 0) {
     const changeBreakdown = calculateChangeBreakdown(change);
 
@@ -233,6 +234,11 @@ export function validateCashPayment(cashReceived, amountDue) {
     } else if (changeBreakdown.breakdown.length > 5) {
       warnings.push(`El vuelto requiere ${changeBreakdown.breakdown.length} billetes/monedas`);
     }
+  }
+
+  // Informar si es un pago parcial
+  if (change < 0) {
+    warnings.push(`Pago parcial: falta S/ ${Math.abs(change).toFixed(2)}`);
   }
 
   return {

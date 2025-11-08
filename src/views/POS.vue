@@ -544,8 +544,15 @@ const handlePaymentAdded = (paymentData) => {
       reference: paymentData.reference
     });
 
-    // Ya no procesamos la venta automáticamente cuando el saldo llega a cero
-    // Esto permite al usuario ver el resumen de la orden
+    // Auto-finalizar si el pago completa el total y el modal se cerró
+    // (el modal se cierra solo cuando newRemaining <= 0.01)
+    if (remainingAmount.value <= 0.01) {
+      console.log('✅ [POS] Pago completo detectado, auto-finalizando venta...');
+      // Dar un pequeño delay para que el usuario vea que se agregó el pago
+      setTimeout(() => {
+        handlePaymentCompleted();
+      }, 300);
+    }
   } catch (error) {
     alert(error.message);
   }
