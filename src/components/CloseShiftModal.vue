@@ -265,6 +265,7 @@
 import { ref, computed, watch, nextTick } from 'vue';
 import CashBreakdownInput from './CashBreakdownInput.vue';
 import { useCashierStore } from '../stores/cashier';
+import { useShiftStore } from '../stores/shift';
 import { posEmpleadosApi } from '../services/posEmpleadosApi';
 import { useAuthStore } from '../stores/auth';
 
@@ -277,6 +278,7 @@ const emit = defineEmits(['update:modelValue', 'shift-closed']);
 
 const authStore = useAuthStore();
 const cashierStore = useCashierStore();
+const shiftStore = useShiftStore();
 
 // Step control: 'closing' or 'pin'
 // Start with 'closing' to match the opening flow (data first, then PIN)
@@ -420,7 +422,7 @@ watch(pin, (value) => {
 });
 
 // Auto-focus and reset when modal opens
-watch(() => props.modelValue, (value) => {
+watch(() => props.modelValue, async (value) => {
   if (value) {
     console.log('🔔 [CloseShiftModal] Modal ABIERTO', {
       shift: props.shift ? {
@@ -443,6 +445,11 @@ watch(() => props.modelValue, (value) => {
         name: authStore.store.name
       } : null
     });
+
+    // FIX: Refrescar datos del turno antes de cerrar para evitar trabajar con datos desactualizados
+    console.log('🔄 [CloseShiftModal] Refrescando datos del turno activo...');
+    await shiftStore.fetchActiveShift();
+    console.log('✅ [CloseShiftModal] Datos del turno actualizados');
 
     // Reset to closing step (data first, matching opening flow)
     currentStep.value = 'closing';

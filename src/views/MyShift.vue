@@ -359,7 +359,8 @@ const calculateSummary = () => {
   summary.value.totalVentas = shift.total_ventas || 0;
   summary.value.numeroVentas = shift.numero_ventas || 0;
 
-  // Total de ventas en efectivo
+  // Total de efectivo: el backend ya calcula (ventas + entradas - salidas) en efectivo
+  // shift.total_efectivo ya incluye TODO el efectivo del turno
   summary.value.totalVentasEfectivo = shift.total_efectivo || 0;
 
   // Total de ventas con otros métodos (tarjeta, yape, plin, transferencia)
@@ -369,7 +370,8 @@ const calculateSummary = () => {
     (shift.total_plin || 0) +
     (shift.total_transferencia || 0);
 
-  // Calculate movements (entries - withdrawals) - solo efectivo
+  // Calculate movements SOLO para mostrar en UI (NO para cálculos de efectivo)
+  // Estos valores son informativos, NO se usan en el cálculo del efectivo esperado
   const entradas = movements.value
     .filter(m => m.tipo === 'entrada' && (!m.metodo_pago || m.metodo_pago.toLowerCase() === 'efectivo'))
     .reduce((sum, m) => sum + parseFloat(m.monto), 0);
@@ -381,12 +383,10 @@ const calculateSummary = () => {
   summary.value.totalMovimientos = entradas - salidas;
   summary.value.numeroMovimientos = movements.value.filter(m => m.tipo !== 'venta').length;
 
-  // Expected cash = initial + cash sales + cash entries - cash withdrawals
-  // NO incluir ventas con tarjeta/yape/plin/transferencia porque no entran a la caja
-  summary.value.efectivoEsperado =
-    summary.value.montoInicial +
-    summary.value.totalVentasEfectivo +
-    summary.value.totalMovimientos;
+  // FIX: Confiar 100% en el backend para el cálculo del efectivo esperado
+  // El backend ya calcula correctamente: inicial + total_efectivo (que incluye ventas + entradas - salidas)
+  // NO recalcular aquí para evitar doble conteo de movimientos
+  summary.value.efectivoEsperado = summary.value.montoInicial + summary.value.totalVentasEfectivo;
 };
 
 /**
