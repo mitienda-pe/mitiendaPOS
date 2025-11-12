@@ -197,6 +197,21 @@
 
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">
+              NetSuite Location ID (opcional)
+            </label>
+            <input
+              v-model="formData.tiendadireccion_netsuite_location_id"
+              type="text"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              placeholder="Ej: 324"
+            />
+            <p class="mt-1 text-xs text-gray-500">
+              ID de ubicación en NetSuite para inventario y facturación
+            </p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
               Referencia (opcional)
             </label>
             <textarea
@@ -286,6 +301,7 @@ const formData = ref({
   tiendadireccion_prov: '',
   tiendadireccion_dpto: '',
   tiendadireccion_numero_cajas: 1,
+  tiendadireccion_netsuite_location_id: '',
   tiendadireccion_referencia: '',
   tiendadireccion_latitud: '0',
   tiendadireccion_longitud: '0',
@@ -326,6 +342,7 @@ const editBranch = (branch) => {
     tiendadireccion_prov: branch.tiendadireccion_prov || '',
     tiendadireccion_dpto: branch.tiendadireccion_dpto || '',
     tiendadireccion_numero_cajas: branch.tiendadireccion_numero_cajas || 1,
+    tiendadireccion_netsuite_location_id: branch.tiendadireccion_netsuite_location_id || '',
     tiendadireccion_referencia: branch.tiendadireccion_referencia || '',
     tiendadireccion_latitud: branch.tiendadireccion_latitud || '0',
     tiendadireccion_longitud: branch.tiendadireccion_longitud || '0',
