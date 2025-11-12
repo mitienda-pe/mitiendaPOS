@@ -603,9 +603,9 @@ const handlePaymentCompleted = async () => {
       pasarela_id: 98, // ID especial para ventas del POS
       customer: {
         id: selectedCustomer.value ? selectedCustomer.value.id : null,
-        email: selectedCustomer.value?.email || selectedCustomer.value?.correo || selectedCustomer.value?.tiendacliente_correo_electronico || selectedCustomer.value?.tiendacliente_correo || '',
+        email: selectedCustomer.value?.email || selectedCustomer.value?.correoElectronico || selectedCustomer.value?.correo || selectedCustomer.value?.tiendacliente_correo_electronico || selectedCustomer.value?.tiendacliente_correo || '',
         phone: selectedCustomer.value?.phone || selectedCustomer.value?.telefono || selectedCustomer.value?.tiendacliente_telefono || '',
-        document_number: selectedCustomer.value?.document_number || '',
+        document_number: selectedCustomer.value?.document_number || selectedCustomer.value?.numeroDocumento || '',
         // Convertir document_type a código numérico si viene como string
         document_type: (() => {
           const docType = selectedCustomer.value?.document_type || '1';
@@ -627,11 +627,25 @@ const handlePaymentCompleted = async () => {
               lastname: ''
             };
           } else {
-            // Para DNI: separar nombre y apellido
-            const fullName = selectedCustomer.value?.name || 'Cliente General';
-            const nameParts = fullName.trim().split(' ');
-            const firstName = nameParts[0] || '';
-            const lastName = nameParts.slice(1).join(' ') || '';
+            // Para DNI: usar nombres y apellidos directos si están disponibles
+            // Si no, intentar separar desde 'name' como fallback
+            let firstName = '';
+            let lastName = '';
+
+            if (selectedCustomer.value?.nombres || selectedCustomer.value?.apellidos) {
+              // Prioridad 1: usar campos nombres/apellidos directos
+              firstName = selectedCustomer.value?.nombres || '';
+              lastName = selectedCustomer.value?.apellidos || '';
+            } else if (selectedCustomer.value?.name) {
+              // Fallback: separar desde 'name' si es todo lo que tenemos
+              const fullName = selectedCustomer.value?.name || 'Cliente General';
+              const nameParts = fullName.trim().split(' ');
+              firstName = nameParts[0] || '';
+              lastName = nameParts.slice(1).join(' ') || '';
+            } else {
+              firstName = 'Cliente';
+              lastName = 'General';
+            }
 
             return {
               name: firstName,
