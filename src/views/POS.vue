@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia';
 import { useAuthStore } from '../stores/auth';
 import { useCartStore } from '../stores/cart';
 import { useShiftStore } from '../stores/shift';
+import { useCashierStore } from '../stores/cashier';
 import { productsApi } from '../services/productsApi';
 import { ordersApi } from '../services/ordersApi';
 import { netsuiteStockApi } from '../services/netsuiteStockApi';
@@ -28,6 +29,7 @@ const authStore = useAuthStore();
 const savedSalesStore = useSavedSalesStore();
 const cartStore = useCartStore();
 const shiftStore = useShiftStore();
+const cashierStore = useCashierStore();
 const billingStore = useBillingStore();
 
 // Cart store refs (reactivos)
@@ -601,6 +603,7 @@ const handlePaymentCompleted = async () => {
     const orderData = {
       source: 'pos', // Identificar que la venta viene del POS
       pasarela_id: 98, // ID especial para ventas del POS
+      tiendadireccion_id: cashierStore.sucursal?.id || null, // Sucursal desde el login del cajero
       customer: {
         id: selectedCustomer.value ? selectedCustomer.value.id : null,
         email: selectedCustomer.value?.email || selectedCustomer.value?.correoElectronico || selectedCustomer.value?.correo || selectedCustomer.value?.tiendacliente_correo_electronico || selectedCustomer.value?.tiendacliente_correo || '',
