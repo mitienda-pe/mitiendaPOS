@@ -588,18 +588,20 @@ const onCashierAuthenticated = async (cashier) => {
  * On shift closed
  */
 const onShiftClosed = async (data) => {
-  console.log('📥 [MyShift] Evento "shift-closed" recibido', data);
+  console.log('📥 [MyShift] Evento "shift-closed" recibido', { ...data, pin: data.pin ? '****' : 'N/A' });
 
   showCloseShiftModal.value = false;
   stopElapsedTimer();
 
   console.log('🔒 [MyShift] Llamando al API para cerrar turno...', {
     shiftId: shiftStore.activeShift?.id,
-    data
+    montoReal: data.montoReal,
+    has_pin: !!data.pin
   });
 
   // Cerrar el turno en el backend
-  const result = await shiftStore.closeShift(data.montoReal, data.notas);
+  // ✅ FIX: Pasar PIN para validación en backend
+  const result = await shiftStore.closeShift(data.montoReal, data.notas, data.pin);
 
   console.log('📡 [MyShift] Respuesta del API:', result);
 

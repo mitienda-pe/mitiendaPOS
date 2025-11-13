@@ -64,11 +64,12 @@ export const useShiftStore = defineStore('shift', {
       }
     },
 
-    async closeShift(montoReal, notasCierre = '') {
+    async closeShift(montoReal, notasCierre = '', pin = null) {
       console.log('🔒 [SHIFT STORE] closeShift() llamado', {
         shiftId: this.activeShift?.id,
         montoReal,
-        notasCierre
+        notasCierre,
+        has_pin: !!pin
       });
 
       if (!this.activeShift) {
@@ -84,7 +85,8 @@ export const useShiftStore = defineStore('shift', {
         const response = await shiftsApi.closeShift(
           this.activeShift.id,
           montoReal,
-          notasCierre
+          notasCierre,
+          pin  // ✅ FIX: Pasar PIN para validación en backend
         );
 
         console.log('📡 [SHIFT STORE] Respuesta del API:', response);

@@ -91,13 +91,29 @@ export const shiftsApi = {
    * @param {number} shiftId - Shift ID
    * @param {number} montoReal - Real cash amount counted
    * @param {string} notasCierre - Closing notes
+   * @param {string} pin - Cashier PIN for validation (required)
    */
-  async closeShift(shiftId, montoReal, notasCierre = '') {
+  async closeShift(shiftId, montoReal, notasCierre = '', pin = null) {
     try {
-      const response = await apiClient.post(`/cash-register-shifts/close/${shiftId}`, {
+      const payload = {
         monto_real: montoReal,
         notas_cierre: notasCierre
+      };
+
+      // ✅ FIX: Incluir PIN obligatorio para validación en backend
+      if (pin) {
+        payload.pin = pin;
+      }
+
+      console.log('📤 [SHIFTS API] Cerrando turno:', {
+        shiftId,
+        monto_real: montoReal,
+        has_pin: !!pin
       });
+
+      const response = await apiClient.post(`/cash-register-shifts/close/${shiftId}`, payload);
+
+      console.log('✅ [SHIFTS API] Turno cerrado exitosamente');
 
       return {
         success: response.data.success,
@@ -105,7 +121,10 @@ export const shiftsApi = {
         message: response.data.message
       };
     } catch (error) {
-      console.error('Error closing shift:', error);
+      console.error('❌ [SHIFTS API] Error closing shift:', {
+        status: error.response?.status,
+        message: error.response?.data?.message || error.message
+      });
       return {
         success: false,
         error: error.response?.data?.message || error.message || 'Error closing shift'

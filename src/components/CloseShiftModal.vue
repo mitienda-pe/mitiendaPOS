@@ -214,14 +214,6 @@
                 <!-- PIN Error Message -->
                 <div v-if="pinError" class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
                   <p class="text-sm text-red-700 text-center">{{ pinError }}</p>
-                  <!-- Emergency bypass button (for debugging) -->
-                  <button
-                    type="button"
-                    @click="bypassPinValidation"
-                    class="mt-2 w-full px-3 py-2 text-xs bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded border border-yellow-300 transition-colors"
-                  >
-                    ⚠️ Omitir validación (emergencia)
-                  </button>
                 </div>
               </div>
             </div>
@@ -374,7 +366,8 @@ const validatePin = async () => {
 
     const data = {
       montoReal: parseFloat(montoReal.value),
-      notas: notas.value.trim()
+      notas: notas.value.trim(),
+      pin: pin.value  // ✅ FIX: Incluir PIN para validación en backend
     };
 
     // Si usó desglose, agregarlo
@@ -382,7 +375,7 @@ const validatePin = async () => {
       data.breakdown = { ...denominationCounts.value };
     }
 
-    console.log('📤 [CloseShiftModal] Emitiendo evento "shift-closed"', data);
+    console.log('📤 [CloseShiftModal] Emitiendo evento "shift-closed"', { ...data, pin: '****' });
     emit('shift-closed', data);
 
   } catch (err) {
@@ -395,16 +388,6 @@ const validatePin = async () => {
   } finally {
     processing.value = false;
   }
-};
-
-// Bypass para emergencias (omitir validación de PIN)
-const bypassPinValidation = () => {
-  console.warn('⚠️ [CloseShift] Bypass de validación de PIN activado');
-  currentStep.value = 'closing';
-  pinError.value = null;
-  nextTick(() => {
-    montoInput.value?.focus();
-  });
 };
 
 // Auto-submit PIN cuando tenga 4 dígitos
@@ -518,7 +501,8 @@ const handleClose = async () => {
   try {
     const data = {
       montoReal: parseFloat(montoReal.value),
-      notas: notas.value.trim()
+      notas: notas.value.trim(),
+      pin: pin.value  // ✅ FIX: Incluir PIN para validación en backend
     };
 
     // Si usó desglose, agregarlo
@@ -526,7 +510,7 @@ const handleClose = async () => {
       data.breakdown = { ...denominationCounts.value };
     }
 
-    console.log('📤 [CloseShiftModal] Emitiendo evento "shift-closed"', data);
+    console.log('📤 [CloseShiftModal] Emitiendo evento "shift-closed"', { ...data, pin: '****' });
     emit('shift-closed', data);
   } catch (err) {
     console.error('❌ [CloseShiftModal] Error al cerrar:', err);
