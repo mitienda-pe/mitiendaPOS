@@ -229,9 +229,12 @@ const onShiftOpened = async (data) => {
 
 // On shift closed
 const onShiftClosed = async (data) => {
+  console.log('📥 [APP] Evento "shift-closed" recibido', { ...data, pin: data.pin ? '****' : 'N/A' });
+
   showCloseShiftModal.value = false;
 
-  const result = await shiftStore.closeShift(data.montoReal, data.notas);
+  // ✅ FIX: Pasar PIN para validación en backend
+  const result = await shiftStore.closeShift(data.montoReal, data.notas, data.pin);
 
   if (result.success) {
     // Refrescar estado
