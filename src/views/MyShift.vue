@@ -588,46 +588,56 @@ const onCashierAuthenticated = async (cashier) => {
  * On shift closed
  */
 const onShiftClosed = async (data) => {
-  console.log('📥 [MyShift] Evento "shift-closed" recibido', { ...data, pin: data.pin ? '****' : 'N/A' });
+  console.log('📥 [MyShift] Evento "shift-closed" recibido', {
+    ...data,
+    pin: data.pin ? '****' : 'N/A',
+    data_type: typeof data,
+    data_constructor: data?.constructor?.name
+  });
 
   showCloseShiftModal.value = false;
   stopElapsedTimer();
 
-  // ✅ FIX CRÍTICO: Usar toRaw() para unwrap el objeto reactivo
-  // Vue convierte los parámetros de eventos en Proxies reactivos
-  const rawData = toRaw(data);
-  const pinValue = rawData.pin ? String(rawData.pin) : null;
+  try {
+    // ✅ FIX CRÍTICO: El PIN ya viene como string del modal, solo necesitamos extraerlo
+    // No necesitamos toRaw() porque ya es un valor primitivo
+    const pinValue = data.pin ? String(data.pin) : null;
 
-  console.log('🔒 [MyShift] Llamando al API para cerrar turno...', {
-    shiftId: shiftStore.activeShift?.id,
-    montoReal: rawData.montoReal,
-    has_pin: !!pinValue,
-    pin_type: typeof pinValue
-  });
-
-  // Cerrar el turno en el backend
-  // ✅ FIX: Pasar PIN unwrapped para validación en backend
-  const result = await shiftStore.closeShift(rawData.montoReal, rawData.notas, pinValue);
-
-  console.log('📡 [MyShift] Respuesta del API:', result);
-
-  if (result.success) {
-    console.log('✅ [MyShift] Turno cerrado exitosamente en BD');
-
-    // NO hacer logout del cajero - permitir que abra un nuevo turno sin re-autenticarse
-    // Solo limpiar el estado del turno activo
-
-    // Reload shift data
-    await loadShiftData();
-
-    console.log('🔄 [MyShift] Estado actualizado:', {
-      hasActiveShift: shiftStore.hasActiveShift,
-      activeShift: shiftStore.activeShift,
-      cashierStillAuthenticated: cashierStore.isCashierAuthenticated
+    console.log('🔒 [MyShift] Llamando al API para cerrar turno...', {
+      shiftId: shiftStore.activeShift?.id,
+      montoReal: data.montoReal,
+      has_pin: !!pinValue,
+      pin_value_preview: pinValue ? '****' : 'null',
+      pin_type: typeof pinValue
     });
-  } else {
-    console.error('❌ [MyShift] Error al cerrar turno:', result.error);
-    alert(`❌ Error al cerrar turno:\n\n${result.error}`);
+
+    // Cerrar el turno en el backend
+    // ✅ FIX: Pasar PIN para validación en backend
+    const result = await shiftStore.closeShift(data.montoReal, data.notas, pinValue);
+
+    console.log('📡 [MyShift] Respuesta del API:', result);
+
+    if (result.success) {
+      console.log('✅ [MyShift] Turno cerrado exitosamente en BD');
+
+      // NO hacer logout del cajero - permitir que abra un nuevo turno sin re-autenticarse
+      // Solo limpiar el estado del turno activo
+
+      // Reload shift data
+      await loadShiftData();
+
+      console.log('🔄 [MyShift] Estado actualizado:', {
+        hasActiveShift: shiftStore.hasActiveShift,
+        activeShift: shiftStore.activeShift,
+        cashierStillAuthenticated: cashierStore.isCashierAuthenticated
+      });
+    } else {
+      console.error('❌ [MyShift] Error al cerrar turno:', result.error);
+      alert(`❌ Error al cerrar turno:\n\n${result.error}`);
+    }
+  } catch (error) {
+    console.error('💥 [MyShift] EXCEPTION en onShiftClosed:', error);
+    alert(`❌ Error inesperado:\n\n${error.message}`);
   }
 };
 
