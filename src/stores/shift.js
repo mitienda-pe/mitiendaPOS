@@ -84,9 +84,11 @@ export const useShiftStore = defineStore('shift', {
         console.log('📡 [SHIFT STORE] Llamando API closeShift...');
         const response = await shiftsApi.closeShift(
           this.activeShift.id,
-          montoReal,
-          notasCierre,
-          pin  // ✅ FIX: Pasar PIN para validación en backend
+          {
+            monto_real: montoReal,
+            notas_cierre: notasCierre,
+            pin: pin  // ✅ FIX: Pasar PIN para validación en backend
+          }
         );
 
         console.log('📡 [SHIFT STORE] Respuesta del API:', response);
