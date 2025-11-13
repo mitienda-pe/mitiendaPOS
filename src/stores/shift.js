@@ -69,6 +69,8 @@ export const useShiftStore = defineStore('shift', {
         shiftId: this.activeShift?.id,
         montoReal,
         notasCierre,
+        pin_value: pin,
+        pin_type: typeof pin,
         has_pin: !!pin
       });
 
