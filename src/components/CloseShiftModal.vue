@@ -254,7 +254,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue';
+import { ref, computed, watch, nextTick, toRaw } from 'vue';
 import CashBreakdownInput from './CashBreakdownInput.vue';
 import { useCashierStore } from '../stores/cashier';
 import { useShiftStore } from '../stores/shift';
@@ -364,10 +364,14 @@ const validatePin = async () => {
     // PIN válido - AHORA CERRAR EL TURNO
     console.log('✅ [CloseShiftModal] PIN válido, cerrando turno...');
 
+    // ✅ FIX: Usar toRaw() para convertir el ref reactivo a valor primitivo
+    // Sin esto, Vue envuelve pin.value en un Proxy que llega como null al store
+    const pinValue = pin.value ? String(toRaw(pin.value)) : null;
+
     const data = {
       montoReal: parseFloat(montoReal.value),
       notas: notas.value.trim(),
-      pin: pin.value  // ✅ FIX: Incluir PIN para validación en backend
+      pin: pinValue  // ✅ FIX: Pasar valor primitivo, no ref reactivo
     };
 
     // Si usó desglose, agregarlo
@@ -375,7 +379,11 @@ const validatePin = async () => {
       data.breakdown = { ...denominationCounts.value };
     }
 
-    console.log('📤 [CloseShiftModal] Emitiendo evento "shift-closed"', { ...data, pin: '****' });
+    console.log('📤 [CloseShiftModal] Emitiendo evento "shift-closed"', {
+      ...data,
+      pin: pinValue ? '****' : 'null',
+      pin_type: typeof pinValue
+    });
     emit('shift-closed', data);
 
   } catch (err) {
