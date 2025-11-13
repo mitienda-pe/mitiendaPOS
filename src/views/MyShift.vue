@@ -264,7 +264,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, toRaw } from 'vue';
 import { useCashierStore } from '@/stores/cashier';
 import { useShiftStore } from '@/stores/shift';
 import { useAuthStore } from '@/stores/auth';
@@ -593,15 +593,21 @@ const onShiftClosed = async (data) => {
   showCloseShiftModal.value = false;
   stopElapsedTimer();
 
+  // ✅ FIX CRÍTICO: Usar toRaw() para unwrap el objeto reactivo
+  // Vue convierte los parámetros de eventos en Proxies reactivos
+  const rawData = toRaw(data);
+  const pinValue = rawData.pin ? String(rawData.pin) : null;
+
   console.log('🔒 [MyShift] Llamando al API para cerrar turno...', {
     shiftId: shiftStore.activeShift?.id,
-    montoReal: data.montoReal,
-    has_pin: !!data.pin
+    montoReal: rawData.montoReal,
+    has_pin: !!pinValue,
+    pin_type: typeof pinValue
   });
 
   // Cerrar el turno en el backend
-  // ✅ FIX: Pasar PIN para validación en backend
-  const result = await shiftStore.closeShift(data.montoReal, data.notas, data.pin);
+  // ✅ FIX: Pasar PIN unwrapped para validación en backend
+  const result = await shiftStore.closeShift(rawData.montoReal, rawData.notas, pinValue);
 
   console.log('📡 [MyShift] Respuesta del API:', result);
 
