@@ -479,8 +479,29 @@ const handleForceRefresh = async () => {
 
 /**
  * Handle open shift
+ * ✅ FIX: Validar preventivamente si ya tiene turno abierto
  */
-const handleOpenShift = () => {
+const handleOpenShift = async () => {
+  // Verificar si ya tiene un turno activo
+  console.log('🔍 [MyShift] Verificando si hay turno activo antes de abrir modal...');
+  await shiftStore.fetchActiveShift();
+
+  if (shiftStore.hasActiveShift) {
+    const mensaje = `⚠️ Ya tienes un turno abierto\n\n` +
+                   `Debes cerrar el turno actual antes de abrir uno nuevo.\n\n` +
+                   `Turno actual:\n` +
+                   `• Caja: ${shiftStore.activeShift.caja_numero || 'N/A'}\n` +
+                   `• Abierto: ${new Date(shiftStore.activeShift.fecha_apertura).toLocaleString('es-PE')}\n` +
+                   `• Monto inicial: S/ ${shiftStore.activeShift.monto_inicial?.toFixed(2) || '0.00'}\n\n` +
+                   `Por favor, cierra el turno en la sección "Mi Turno" a continuación.`;
+
+    alert(mensaje);
+    // Scroll automático a la sección "Mi Turno" si es necesario
+    await loadShiftData();
+    return;
+  }
+
+  // Si no hay turno activo, permitir abrir
   showOpenShiftModal.value = true;
 };
 
@@ -570,9 +591,31 @@ const onCashierAuthenticated = async (cashier) => {
       loadShiftData();
     } else {
       error.value = result.error || 'Error al abrir el turno';
-      // Show error message instead of reopening modal to prevent infinite loop
-      const errorMsg = `❌ Error al abrir turno:\n\n${result.error}\n\nSi ya tiene un turno abierto, debe cerrarlo primero.`;
-      alert(errorMsg);
+
+      // ✅ FIX: Detectar si el error es por turno ya abierto
+      const errorMessage = result.error || '';
+      const hasTurnoAbierto = errorMessage.includes('turno abierto') ||
+                              errorMessage.includes('shift') ||
+                              errorMessage.includes('Ya tienes');
+
+      if (hasTurnoAbierto) {
+        // Ofrecer opciones al usuario
+        const mensaje = `⚠️ Ya tienes un turno abierto\n\n${errorMessage}\n\n` +
+                       `¿Qué deseas hacer?\n\n` +
+                       `• OK: Ir a "Mi Turno" para cerrar el turno anterior\n` +
+                       `• Cancelar: Quedarse aquí`;
+
+        const irATurno = confirm(mensaje);
+
+        if (irATurno) {
+          // Recargar datos para mostrar el turno activo
+          await loadShiftData();
+        }
+      } else {
+        // Error genérico
+        alert(`❌ Error al abrir turno:\n\n${errorMessage}`);
+      }
+
       pendingShiftData.value = null;
       // Reload to show current state
       loadShiftData();
