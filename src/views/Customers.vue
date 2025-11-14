@@ -200,7 +200,7 @@
                   :disabled="isEditing"
                 >
                   <option value="1">DNI</option>
-                  <option value="6">RUC</option>
+                  <option value="2">RUC</option>
                 </select>
               </div>
 
@@ -333,7 +333,7 @@ const isEditing = ref(false);
 const consultingDocument = ref(false);
 const customerForm = ref({
   id: null,
-  document_type: '1', // 1=DNI, 6=RUC
+  document_type: '1', // 1=DNI, 2=RUC
   document_number: '',
   nombres: '',
   apellidos: '',
@@ -349,7 +349,7 @@ const displayedCustomers = computed(() => {
     name: customer.name,
     email: customer.email,
     phone: customer.phone,
-    document_type: customer.document_type === '6' ? 'RUC' : 'DNI',
+    document_type: customer.document_type === '2' ? 'RUC' : 'DNI',
     document_number: customer.document_number,
     created_at: customer.created_at,
     verified: customer.verified,
@@ -500,7 +500,7 @@ function openAddModal() {
 function editCustomer(customer) {
   customerForm.value = {
     id: customer.id,
-    document_type: customer.document_type === 'RUC' ? '6' : '1',
+    document_type: customer.document_type === 'RUC' ? '2' : '1',
     document_number: customer.document_number,
     nombres: customer.name.split(' ')[0] || '',
     apellidos: customer.name.split(' ').slice(1).join(' ') || '',
