@@ -59,7 +59,7 @@ export const customersApi = {
   /**
    * Search customer by document number
    * @param {string} documentNumber - Document number (DNI or RUC)
-   * @param {string} documentType - '1' for DNI, '6' for RUC (optional)
+   * @param {string} documentType - '1' for DNI, '2' for RUC (optional)
    */
   async searchByDocument(documentNumber, documentType = null) {
     try {
@@ -144,7 +144,7 @@ export const customersApi = {
         tiendacliente_correo_electronico: customerData.email || customerData.correoElectronico || '',
         tiendacliente_telefono: customerData.telefono || customerData.phone || '',
         tiendacliente_numerodocumento: customerData.numeroDocumento || customerData.documentNumber || '',
-        documento_id: customerData.tipoDocumento || customerData.documentType || '1', // 1=DNI, 6=RUC
+        documento_id: customerData.tipoDocumento || customerData.documentType || '1', // 1=DNI, 2=RUC
         password: customerData.password || Math.random().toString(36).slice(-12) // Generate random password if not provided
       };
 

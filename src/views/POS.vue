@@ -612,15 +612,16 @@ const handlePaymentCompleted = async () => {
         // Convertir document_type a código numérico si viene como string
         document_type: (() => {
           const docType = selectedCustomer.value?.document_type || '1';
-          if (docType === 'ruc' || docType === '6') return '6';
+          // Normalizar a esquema MiTienda: DNI=1, RUC=2
+          if (docType === 'ruc' || docType === '2' || docType === '6') return '2';
           if (docType === 'dni' || docType === '1') return '1';
           return docType; // Si ya es numérico, usarlo tal cual
         })(),
-        // Para RUC (tipo 6): enviar business_name y dejar name/lastname vacíos
+        // Para RUC (tipo 2): enviar business_name y dejar name/lastname vacíos
         // Para DNI (tipo 1): enviar name/lastname y dejar business_name vacío
         ...((() => {
           const docType = selectedCustomer.value?.document_type || '1';
-          const isRuc = docType === 'ruc' || docType === '6';
+          const isRuc = docType === 'ruc' || docType === '2' || docType === '6';
 
           if (isRuc) {
             // Para RUC: toda la razón social va en business_name
