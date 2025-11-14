@@ -176,9 +176,17 @@ const handleLock = () => {
 };
 
 // Desbloqueo
-const handleUnlock = () => {
+const handleUnlock = async () => {
   cashierStore.unlock();
   resetInactivityTimer();
+
+  // ✅ FIX: Refrescar estado del turno después de desbloquear
+  // Esto asegura que los botones "Abrir Turno" / "Cerrar Turno" reflejen el estado correcto
+  await shiftStore.fetchActiveShift();
+  console.log('🔄 [APP] Estado del turno actualizado después de desbloquear:', {
+    hasActiveShift: shiftStore.hasActiveShift,
+    shiftId: shiftStore.activeShift?.id
+  });
 };
 
 // Handle open shift
