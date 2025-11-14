@@ -91,95 +91,23 @@
         </div>
       </div>
 
-      <!-- Ticket Container -->
-      <div class="bg-white shadow-lg rounded-lg overflow-hidden border-2 border-gray-200">
-        <div class="p-8">
-          <!-- Header del Ticket -->
-          <div class="text-center mb-6 pb-6 border-b-2 border-dashed border-gray-300">
-            <h1 class="text-2xl font-bold text-gray-900 mb-2">COMPROBANTE DE VENTA</h1>
-            <p class="text-lg font-semibold text-gray-700">Nro: {{ order.order_number }}</p>
-            <p class="text-sm text-gray-500 mt-2">{{ formatDate(order.created_at) }}</p>
-          </div>
-
-          <!-- Información del Cliente -->
-          <div class="mb-6 pb-6 border-b-2 border-dashed border-gray-300">
-            <h2 class="text-sm font-semibold text-gray-600 uppercase mb-3">Datos del Cliente</h2>
-            <div class="space-y-1">
-              <p class="text-gray-900"><span class="font-medium">Nombre:</span> {{ order.customer?.name || 'Cliente General' }}</p>
-              <p v-if="order.customer?.email" class="text-gray-900"><span class="font-medium">Email:</span> {{ order.customer.email }}</p>
-              <p v-if="order.customer?.phone" class="text-gray-900"><span class="font-medium">Teléfono:</span> {{ order.customer.phone }}</p>
-              <p v-if="order.cajero_nombre" class="text-gray-900"><span class="font-medium">Atendido por:</span> {{ order.cajero_nombre }}</p>
-            </div>
-            <div class="mt-3 flex items-center gap-4">
-              <span :class="getStatusClass(order.status)" class="px-3 py-1 text-xs font-semibold rounded-full">
-                {{ getStatusText(order.status) }}
-              </span>
-              <span :class="getSourceClass(order.source)" class="px-3 py-1 text-xs font-semibold rounded-full">
-                {{ getSourceText(order.source) }}
-              </span>
-            </div>
-          </div>
-
-          <!-- Productos -->
-          <div class="mb-6 pb-6 border-b-2 border-dashed border-gray-300">
-            <h2 class="text-sm font-semibold text-gray-600 uppercase mb-3">Productos</h2>
-            <div class="space-y-3">
-              <div v-if="getProducts().length > 0"
-                   v-for="item in getProducts()"
-                   :key="item.id"
-                   class="flex justify-between items-start">
-                <div class="flex-1">
-                  <p class="font-medium text-gray-900">{{ item.name }}</p>
-                  <p class="text-sm text-gray-600">
-                    {{ item.quantity }} x {{ formatCurrency(item.price) }}
-                  </p>
-                </div>
-                <p class="font-semibold text-gray-900">
-                  {{ formatCurrency(item.total) }}
-                </p>
-              </div>
-              <div v-else class="text-center py-4 text-gray-500">
-                No hay información de productos disponible
-              </div>
-            </div>
-          </div>
-
-          <!-- Métodos de Pago -->
-          <div v-if="order._rawDetail?.payments && order._rawDetail.payments.length > 0"
-               class="mb-6 pb-6 border-b-2 border-dashed border-gray-300">
-            <h2 class="text-sm font-semibold text-gray-600 uppercase mb-3">Métodos de Pago</h2>
-            <div class="space-y-2">
-              <div v-for="payment in order._rawDetail.payments"
-                   :key="payment.id"
-                   class="flex justify-between items-center">
-                <span class="text-gray-700">{{ payment.method_name || payment.metodo }}</span>
-                <span class="font-medium text-gray-900">{{ formatCurrency(payment.amount || payment.monto) }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Totales -->
-          <div class="space-y-2">
-            <div class="flex justify-between text-gray-700">
-              <span>Subtotal:</span>
-              <span class="font-medium">{{ formatCurrency(getSubtotal()) }}</span>
-            </div>
-            <div class="flex justify-between text-gray-700">
-              <span>IGV (18%):</span>
-              <span class="font-medium">{{ formatCurrency(getTax()) }}</span>
-            </div>
-            <div class="flex justify-between text-xl font-bold text-gray-900 pt-2 border-t-2 border-gray-300">
-              <span>TOTAL:</span>
-              <span class="text-blue-600">{{ formatCurrency(getTotal()) }}</span>
-            </div>
-          </div>
-
-          <!-- Footer -->
-          <div class="mt-8 pt-6 border-t-2 border-dashed border-gray-300 text-center">
-            <p class="text-gray-600">¡Gracias por su compra!</p>
-          </div>
-        </div>
-      </div>
+      <!-- Componente de Ticket Reutilizable -->
+      <ReceiptTicket
+        :order-number="order.order_number"
+        :created-at="order.created_at"
+        :customer="order.customer"
+        :items="getProducts()"
+        :payments="order._rawDetail?.payments || []"
+        :subtotal="getSubtotal()"
+        :tax="getTax()"
+        :total="getTotal()"
+        :cajero-name="order.cajero_nombre"
+        :status="order.status"
+        :source="order.source"
+        :billing-document="getBillingDocument()"
+        :show-badges="true"
+        :show-reprint="true"
+      />
 
       <!-- Debug Info (Collapsible) -->
       <div class="mt-6">
@@ -199,6 +127,7 @@
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ordersApi } from '../services/ordersApi';
+import ReceiptTicket from '../components/ReceiptTicket.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -227,6 +156,8 @@ const loadOrderDetail = async () => {
       let customerName = 'Cliente General';
       let customerEmail = '';
       let customerPhone = '';
+      let customerDocumentNumber = '';
+      let customerDocumentType = '';
 
       // Prioridad 1: Campos directos de la tabla
       if (response.tiendaventa_nombres || response.tiendaventa_apellidos) {
@@ -242,13 +173,21 @@ const loadOrderDetail = async () => {
         customerPhone = billing.phone_number || '';
       }
 
+      // Obtener información del documento si existe
+      if (response.customer) {
+        customerDocumentNumber = response.customer.document_number || '';
+        customerDocumentType = response.customer.document_type || '';
+      }
+
       order.value = {
         id: parseInt(response.tiendaventa_id || orderId),
         order_number: response.tiendaventa_codigoreferencia || response.code || orderId,
         customer: {
           name: customerName,
           email: customerEmail,
-          phone: customerPhone
+          phone: customerPhone,
+          document_number: customerDocumentNumber,
+          document_type: customerDocumentType
         },
         cajero_nombre: response.cajero_nombre || null,
         total: parseFloat(response.tiendaventa_totalpagar || response.total_amount || '0'),
@@ -266,64 +205,6 @@ const loadOrderDetail = async () => {
   } finally {
     loading.value = false;
   }
-};
-
-const formatDate = (dateString) => {
-  if (!dateString) return '-';
-  const date = new Date(dateString);
-  return date.toLocaleString('es-PE', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-};
-
-const formatCurrency = (amount) => {
-  if (isNaN(amount) || amount === null || amount === undefined) return 'S/ 0.00';
-  return new Intl.NumberFormat('es-PE', {
-    style: 'currency',
-    currency: 'PEN'
-  }).format(amount);
-};
-
-const getStatusText = (status) => {
-  const statusMap = {
-    0: 'Rechazado',
-    1: 'Aprobado',
-    2: 'Pendiente',
-    9: 'Creado'
-  };
-  return statusMap[status] || 'Desconocido';
-};
-
-const getStatusClass = (status) => {
-  const classMap = {
-    0: 'bg-red-100 text-red-800',
-    1: 'bg-green-100 text-green-800',
-    2: 'bg-yellow-100 text-yellow-800',
-    9: 'bg-gray-100 text-gray-800'
-  };
-  return classMap[status] || 'bg-gray-100 text-gray-800';
-};
-
-const getSourceText = (source) => {
-  const sourceMap = {
-    'pos': 'POS',
-    'web': 'Web',
-    'api': 'API'
-  };
-  return sourceMap[source] || source || 'Web';
-};
-
-const getSourceClass = (source) => {
-  const classMap = {
-    'pos': 'bg-purple-100 text-purple-800',
-    'web': 'bg-blue-100 text-blue-800',
-    'api': 'bg-indigo-100 text-indigo-800'
-  };
-  return classMap[source] || 'bg-blue-100 text-blue-800';
 };
 
 // Función para obtener productos desde diferentes estructuras de datos
@@ -400,9 +281,29 @@ const getTotal = () => {
   return 0;
 };
 
+// Función para obtener información del comprobante electrónico
+const getBillingDocument = () => {
+  if (!order.value?._rawDetail?.billing_info?.['e-billing']) {
+    return null;
+  }
+
+  const eBilling = order.value._rawDetail.billing_info['e-billing'];
+  return {
+    serie: eBilling.serie,
+    correlative: eBilling.correlative,
+    status: eBilling.status,
+    billingDate: eBilling.billing_date,
+    files: {
+      pdf: eBilling.url_pdf,
+      xml: eBilling.url_xml
+    }
+  };
+};
+
 const printTicket = () => {
   const products = getProducts();
   const payments = order.value._rawDetail?.payments || [];
+  const billingDoc = getBillingDocument();
 
   const ticketHTML = `
     <!DOCTYPE html>
@@ -432,9 +333,11 @@ const printTicket = () => {
     <body>
       <div class="center bold">TICKET DE VENTA</div>
       <div class="center">Nro: ${order.value.order_number}</div>
+      ${billingDoc ? `<div class="center">Comprobante: ${billingDoc.serie}-${billingDoc.correlative}</div>` : ''}
       <div class="line"></div>
       <div>Fecha: ${formatDate(order.value.created_at)}</div>
       <div>Cliente: ${order.value.customer?.name || 'Cliente General'}</div>
+      ${order.value.customer?.document_number ? `<div>Doc: ${order.value.customer.document_number}</div>` : ''}
       <div class="line"></div>
       <div class="bold">PRODUCTOS</div>
       <div class="line"></div>
@@ -443,8 +346,8 @@ const printTicket = () => {
           ${item.name}
           <table>
             <tr>
-              <td>${item.quantity} x ${formatCurrency(item.price)}</td>
-              <td class="right">${formatCurrency(item.total)}</td>
+              <td>${item.quantity} x S/ ${item.price.toFixed(2)}</td>
+              <td class="right">S/ ${item.total.toFixed(2)}</td>
             </tr>
           </table>
         </div>
@@ -453,15 +356,15 @@ const printTicket = () => {
       <table>
         <tr>
           <td>Subtotal:</td>
-          <td class="right">${formatCurrency(getSubtotal())}</td>
+          <td class="right">S/ ${getSubtotal().toFixed(2)}</td>
         </tr>
         <tr>
           <td>IGV (18%):</td>
-          <td class="right">${formatCurrency(getTax())}</td>
+          <td class="right">S/ ${getTax().toFixed(2)}</td>
         </tr>
         <tr class="total">
           <td>TOTAL:</td>
-          <td class="right">${formatCurrency(getTotal())}</td>
+          <td class="right">S/ ${getTotal().toFixed(2)}</td>
         </tr>
       </table>
       ${payments.length > 0 ? `
@@ -470,7 +373,7 @@ const printTicket = () => {
         ${payments.map(p => `
           <div class="item-row">
             <span>${p.method_name || p.metodo}</span>
-            <span>${formatCurrency(p.amount || p.monto)}</span>
+            <span>S/ ${parseFloat(p.amount || p.monto || 0).toFixed(2)}</span>
           </div>
         `).join('')}
       ` : ''}
@@ -536,6 +439,18 @@ const canSendEmail = () => {
          order.value.status == 1 &&
          order.value.customer?.email &&
          order.value.customer.email.includes('@');
+};
+
+const formatDate = (dateString) => {
+  if (!dateString) return '-';
+  const date = new Date(dateString);
+  return date.toLocaleString('es-PE', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 };
 
 onMounted(() => {
