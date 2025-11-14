@@ -99,7 +99,7 @@
                       {{ customerFound.name || customerFound.razonSocial || `${customerFound.nombres || ''} ${customerFound.apellidos || ''}`.trim() || 'Cliente' }}
                     </p>
                     <p class="text-xs text-gray-600">
-                      {{ customerFound.document_type === '1' ? 'DNI' : customerFound.document_type === '6' ? 'RUC' : customerFound.tipoDoc }}: {{ customerFound.document_number || customerFound.numDoc }}
+                      {{ customerFound.document_type === '1' ? 'DNI' : customerFound.document_type === '2' || customerFound.document_type === '6' ? 'RUC' : customerFound.tipoDoc }}: {{ customerFound.document_number || customerFound.numDoc }}
                     </p>
                     <p v-if="customerFound.email || customerFound.correoElectronico" class="text-xs text-gray-600">
                       {{ customerFound.email || customerFound.correoElectronico }}
@@ -350,7 +350,8 @@ const searchCustomer = async () => {
 
   try {
     // Step 1: Search in our database first
-    const documentType = tipoDoc.value === 'DNI' ? '1' : '6';
+    // Use MiTienda internal codes: DNI=1, RUC=2
+    const documentType = tipoDoc.value === 'DNI' ? '1' : '2';
     const searchResponse = await customersApi.searchByDocument(numDoc.value, documentType);
 
     if (searchResponse.success && searchResponse.found) {
@@ -421,7 +422,7 @@ const createAndSelectCustomer = async () => {
       email: newCustomer.value.correoElectronico,
       telefono: newCustomer.value.telefono,
       numeroDocumento: numDoc.value,
-      tipoDocumento: tipoDoc.value === 'DNI' ? '1' : '6',
+      tipoDocumento: tipoDoc.value === 'DNI' ? '1' : '2', // MiTienda codes: DNI=1, RUC=2
       direccion: newCustomer.value.direccion,
       departamento: newCustomer.value.departamento,
       provincia: newCustomer.value.provincia,
