@@ -330,6 +330,14 @@ onMounted(async () => {
     const cashierRestored = cashierStore.restoreSession();
     if (cashierRestored) {
       console.log('✅ [APP] Sesión de cajero restaurada:', cashierStore.cashierName);
+
+      // ✅ FIX: Cargar estado del turno después de restaurar cajero
+      // Esto asegura que los botones muestren el estado correcto después de un hard refresh
+      await shiftStore.fetchActiveShift();
+      console.log('🔄 [APP] Estado del turno cargado en inicialización:', {
+        hasActiveShift: shiftStore.hasActiveShift,
+        shiftId: shiftStore.activeShift?.id
+      });
     } else {
       console.log('ℹ️ [APP] No hay sesión de cajero para restaurar');
     }
