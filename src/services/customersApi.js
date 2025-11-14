@@ -150,6 +150,7 @@ export const customersApi = {
 
       // Add razon social for RUC
       if (customerData.razonSocial) {
+        backendData.tiendacliente_razonsocial = customerData.razonSocial;
         backendData.tiendacliente_nombres = customerData.razonSocial;
         backendData.tiendacliente_apellidos = '';
       }
