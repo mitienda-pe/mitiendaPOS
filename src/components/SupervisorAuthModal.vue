@@ -44,11 +44,11 @@
         <!-- PIN Input -->
         <div class="mb-6">
           <label class="block mb-2 text-sm font-medium text-gray-700">
-            Ingrese PIN de 6 dígitos
+            Ingrese PIN de 4 dígitos
           </label>
           <div class="flex gap-2 justify-center mb-2">
             <input
-              v-for="i in 6"
+              v-for="i in 4"
               :key="i"
               :ref="el => pinInputs[i-1] = el"
               v-model="pinDigits[i-1]"
@@ -119,7 +119,8 @@
 
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue';
-import { employeesApi } from '../services/employeesApi';
+import { posEmpleadosApi } from '../services/posEmpleadosApi';
+import { useAuthStore } from '../stores/auth';
 
 const props = defineProps({
   modelValue: {
@@ -146,8 +147,11 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'authorized', 'cancelled']);
 
+// Store
+const authStore = useAuthStore();
+
 // State
-const pinDigits = ref(['', '', '', '', '', '']);
+const pinDigits = ref(['', '', '', '']);
 const pinInputs = ref([]);
 const error = ref('');
 const loading = ref(false);
@@ -197,14 +201,14 @@ const handleInput = (index, event) => {
   }
 
   // Auto-focus siguiente input
-  if (value && index < 5) {
+  if (value && index < 3) {
     nextTick(() => {
       pinInputs.value[index + 1]?.focus();
     });
   }
 
   // Auto-submit si se completó el último dígito
-  if (value && index === 5 && isComplete.value) {
+  if (value && index === 3 && isComplete.value) {
     nextTick(() => {
       authorize();
     });
@@ -223,7 +227,7 @@ const handleKeyDown = (index, event) => {
   if (event.key === 'ArrowLeft' && index > 0) {
     pinInputs.value[index - 1]?.focus();
   }
-  if (event.key === 'ArrowRight' && index < 5) {
+  if (event.key === 'ArrowRight' && index < 3) {
     pinInputs.value[index + 1]?.focus();
   }
 
@@ -242,11 +246,11 @@ const handlePaste = (event) => {
   event.preventDefault();
   const pastedData = event.clipboardData.getData('text').trim();
 
-  // Validar que sean 6 dígitos
-  if (/^\d{6}$/.test(pastedData)) {
+  // Validar que sean 4 dígitos
+  if (/^\d{4}$/.test(pastedData)) {
     pinDigits.value = pastedData.split('');
     nextTick(() => {
-      pinInputs.value[5]?.focus();
+      pinInputs.value[3]?.focus();
       authorize();
     });
   }
@@ -255,30 +259,44 @@ const handlePaste = (event) => {
 const authorize = async () => {
   if (!isComplete.value || loading.value) return;
 
+  // Obtener el store_id (tienda_id) del usuario autenticado
+  const storeId = authStore.selectedStore?.id;
+
+  if (!storeId) {
+    error.value = 'No se ha seleccionado una tienda';
+    console.error('❌ [AUTH] No store selected');
+    return;
+  }
+
   console.log('🔐 [AUTH] Attempting authorization:', {
     pin: pin.value,
-    action: props.action
+    action: props.action,
+    storeId
   });
 
   loading.value = true;
   error.value = '';
 
   try {
-    // Llamar al API real de validación de PIN
-    const response = await employeesApi.validatePin(pin.value);
+    // Llamar al API de validación de PIN de empleados POS
+    // ignoreSchedule = true porque la autorización puede ser necesaria fuera del horario
+    const response = await posEmpleadosApi.validatePin(storeId, pin.value, true);
 
     console.log('🔐 [AUTH] API response:', response);
 
-    // Si error === 0, significa éxito
-    if (response.error === 0 && response.data) {
+    // Si success === true, significa éxito
+    if (response.success && response.data) {
       const employee = response.data;
 
       // Verificar que tenga rol de supervisor o administrador
-      if (['supervisor', 'administrador'].includes(employee.role)) {
+      // El campo es empleado_rol en la respuesta de pos-empleados
+      const role = employee.empleado_rol || employee.role;
+
+      if (['supervisor', 'administrador'].includes(role)) {
         const authData = {
-          employeeId: employee.id,
-          employeeName: employee.name,
-          role: employee.role,
+          employeeId: employee.empleado_id || employee.id,
+          employeeName: employee.empleado_nombres || employee.name,
+          role: role,
           action: props.action,
           timestamp: new Date().toISOString()
         };
@@ -291,8 +309,9 @@ const authorize = async () => {
       } else {
         // Empleado encontrado pero sin permisos de supervisor
         attempts.value++;
-        error.value = `El usuario ${employee.name} no tiene permisos de supervisor`;
-        console.warn('⚠️ [AUTH] Employee found but insufficient permissions:', employee.role);
+        const employeeName = employee.empleado_nombres || employee.name;
+        error.value = `El usuario ${employeeName} no tiene permisos de supervisor`;
+        console.warn('⚠️ [AUTH] Employee found but insufficient permissions:', role);
         resetPin();
       }
     } else {
@@ -335,7 +354,7 @@ const cancel = () => {
 };
 
 const resetPin = () => {
-  pinDigits.value = ['', '', '', '', '', ''];
+  pinDigits.value = ['', '', '', ''];
   nextTick(() => {
     pinInputs.value[0]?.focus();
   });
