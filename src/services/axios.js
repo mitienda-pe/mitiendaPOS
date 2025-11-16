@@ -7,7 +7,7 @@ const apiClient = axios.create({
     Accept: 'application/json'
   },
   withCredentials: true, // Enviar cookies y headers de autenticación
-  timeout: 30000
+  timeout: 60000 // Aumentado de 30s a 60s para órdenes grandes
 });
 
 // Request interceptor - Agregar token a todas las peticiones
