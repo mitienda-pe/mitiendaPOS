@@ -91,6 +91,19 @@
         </div>
       </div>
 
+      <!-- Notificación al ERP -->
+      <div v-if="showErpNotification()" class="mb-4 bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+        <div class="flex">
+          <svg class="h-5 w-5 text-blue-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div>
+            <p class="font-medium text-blue-800 mb-1">Notificación al ERP</p>
+            <p class="text-blue-700 text-sm">{{ order._rawDetail.tiendaventa_mensaje_notif_erp || 'Se intentó notificar al ERP' }}</p>
+          </div>
+        </div>
+      </div>
+
       <!-- Componente de Ticket Reutilizable -->
       <ReceiptTicket
         :order-number="order.order_number"
@@ -105,6 +118,7 @@
         :status="order.status"
         :source="order.source"
         :billing-document="getBillingDocument()"
+        :store-info="getStoreInfo()"
         :show-badges="true"
         :show-reprint="true"
       />
@@ -300,6 +314,24 @@ const getBillingDocument = () => {
   };
 };
 
+// Función para obtener información de la tienda
+const getStoreInfo = () => {
+  // TODO: Esta información debería venir de la API o del store de autenticación
+  // Por ahora retornamos null, pero puedes configurarla manualmente aquí
+  // o cuando tengamos un endpoint que la proporcione
+
+  // Ejemplo de cómo se vería:
+  // return {
+  //   business_name: 'RAZÓN SOCIAL DE LA EMPRESA S.A.C.',
+  //   commercial_name: 'Nombre Comercial - Sucursal Centro',
+  //   ruc: '20123456789',
+  //   address: 'Av. Principal 123, Lima, Perú',
+  //   phone: '(01) 234-5678'
+  // };
+
+  return null;
+};
+
 const printTicket = () => {
   const products = getProducts();
   const payments = order.value._rawDetail?.payments || [];
@@ -439,6 +471,11 @@ const canSendEmail = () => {
          order.value.status == 1 &&
          order.value.customer?.email &&
          order.value.customer.email.includes('@');
+};
+
+const showErpNotification = () => {
+  // Mostrar notificación si se intentó notificar al ERP
+  return order.value?._rawDetail?.tiendaventa_estado_notif_erp == 1;
 };
 
 const formatDate = (dateString) => {

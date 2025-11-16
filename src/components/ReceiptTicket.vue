@@ -3,7 +3,17 @@
     <div class="p-8 font-mono text-sm">
       <!-- Header del Ticket -->
       <div class="text-center mb-4">
-        <div class="font-bold text-lg mb-2">TICKET DE VENTA</div>
+        <div class="font-bold text-lg mb-2">{{ storeInfo?.business_name || 'TICKET DE VENTA' }}</div>
+        <div v-if="storeInfo?.commercial_name" class="text-sm">{{ storeInfo.commercial_name }}</div>
+        <div v-if="storeInfo?.ruc" class="text-sm">RUC: {{ storeInfo.ruc }}</div>
+        <div v-if="storeInfo?.address" class="text-xs">{{ storeInfo.address }}</div>
+        <div v-if="storeInfo?.phone" class="text-xs">Tel: {{ storeInfo.phone }}</div>
+      </div>
+
+      <div class="border-t border-dashed border-gray-400 my-3"></div>
+
+      <!-- Número de orden y comprobante -->
+      <div class="text-center mb-3">
         <div v-if="orderNumber" class="font-semibold">Nro: {{ orderNumber }}</div>
         <div v-if="billingDocument" class="mt-1">
           Comprobante: {{ billingDocument.serie }}-{{ billingDocument.correlative }}
@@ -17,7 +27,13 @@
         <div>Fecha: {{ formatDateSimple(createdAt) }}</div>
         <div>Cliente: {{ customerName || 'Cliente General' }}</div>
         <div v-if="customer?.document_number">
-          Doc: {{ customer.document_number }}
+          {{ getDocumentTypeLabel() }}: {{ customer.document_number }}
+        </div>
+        <div v-if="customer?.email" class="text-xs">
+          Email: {{ customer.email }}
+        </div>
+        <div v-if="customer?.phone" class="text-xs">
+          Tel: {{ customer.phone }}
         </div>
         <div v-if="cajeroName">Cajero: {{ cajeroName }}</div>
       </div>
@@ -176,6 +192,13 @@ const props = defineProps({
     default: null
   },
 
+  // Información de la tienda/sucursal
+  storeInfo: {
+    type: Object,
+    default: null
+    // { business_name, commercial_name, ruc, address, phone }
+  },
+
   // Comprobante electrónico
   billingDocument: {
     type: Object,
@@ -254,6 +277,32 @@ const formatDateSimple = (dateString) => {
     hour: '2-digit',
     minute: '2-digit'
   });
+};
+
+// Helper para tipo de documento basado en el comprobante
+const getDocumentTypeLabel = () => {
+  // Si hay comprobante electrónico, determinar por la serie
+  if (props.billingDocument?.serie) {
+    const serie = props.billingDocument.serie.toString().toUpperCase();
+    // Facturas comienzan con F
+    if (serie.startsWith('F')) {
+      return 'RUC';
+    }
+    // Boletas comienzan con B
+    if (serie.startsWith('B')) {
+      return 'DNI';
+    }
+  }
+
+  // Si no hay comprobante, usar el tipo de documento del cliente
+  if (props.customer?.document_type) {
+    const typeStr = props.customer.document_type.toString().toLowerCase();
+    if (typeStr === '6' || typeStr === 'ruc') return 'RUC';
+    if (typeStr === '1' || typeStr === 'dni') return 'DNI';
+  }
+
+  // Por defecto DNI
+  return 'DNI';
 };
 
 // Status helpers
