@@ -71,6 +71,10 @@ const existingSaleForMerge = ref(null);
 // Stock validation error data
 const stockValidationErrors = ref([]);
 
+// 🔥 OPTIMIZATION: Store inventory_numbers from stock validation
+// to reuse in order creation (avoids ~10s duplicate NetSuite call)
+const validatedInventoryNumbers = ref(null);
+
 // Tipo de comprobante seleccionado al inicio de la venta
 const billingDocumentType = ref('boleta'); // 'boleta' o 'factura'
 
@@ -481,6 +485,17 @@ const processPayment = async () => {
 
     console.log('✅ [POS] Stock validation passed');
 
+    // 🔥 OPTIMIZATION: Save inventory_numbers from validation response
+    // These will be reused in createOrder() to avoid duplicate NetSuite API call (~10s saved)
+    if (response.inventory_numbers) {
+      validatedInventoryNumbers.value = response.inventory_numbers;
+      const invCount = Object.keys(response.inventory_numbers).length;
+      console.log(`🚀 [OPTIMIZATION] Saved ${invCount} inventory_numbers from validation for reuse`);
+      if (response.timing) {
+        console.log(`⏱️ [TIMING] Stock validation took ${response.timing.total_ms}ms (${response.timing.avg_per_item_ms}ms per item)`);
+      }
+    }
+
     // Ocultar overlay de validación
     validatingStock.value = false;
 
@@ -684,6 +699,14 @@ const handlePaymentCompleted = async () => {
       currency: 'PEN',
       notes: '' // Campo para notas adicionales
     };
+
+    // 🔥 OPTIMIZATION: Add validated inventory_numbers if available
+    // This avoids duplicate stock validation in backend (~10s saved)
+    if (validatedInventoryNumbers.value) {
+      orderData.inventory_numbers = validatedInventoryNumbers.value;
+      const invCount = Object.keys(validatedInventoryNumbers.value).length;
+      console.log(`🚀 [OPTIMIZATION] Including ${invCount} inventory_numbers in order payload (skips re-validation)`);
+    }
 
     // Log del payload que se enviará
     console.log('📤 [POS] Enviando orden al API:', JSON.stringify(orderData, null, 2));
@@ -950,6 +973,9 @@ const resetSale = (orderData = null) => {
   searchResults.value = [];
   saleHasUnsavedChanges.value = false;
   billingDocumentType.value = 'boleta'; // Reset to default
+
+  // 🔥 OPTIMIZATION: Clear validated inventory numbers
+  validatedInventoryNumbers.value = null;
 };
 
 const handleBillingSuccess = (billingData) => {
