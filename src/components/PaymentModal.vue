@@ -21,19 +21,19 @@
               <!-- Resumen de la venta -->
               <div class="mb-4 p-3 bg-gray-50 rounded-lg">
                 <div class="flex justify-between mb-2">
-                  <span class="font-medium">Total:</span>
+                  <span class="font-medium">Total original:</span>
                   <span class="font-bold text-lg">{{ formatCurrency(total) }}</span>
                 </div>
-                <!-- Mostrar redondeo si ya se aplicó (hay pago en efectivo) -->
-                <div v-if="roundingApplied !== 0" class="flex justify-between mb-2 text-xs border-t border-dashed border-gray-300 pt-1">
-                  <span>{{ roundingApplied > 0 ? 'Redondeo (+):' : 'Redondeo (-):' }}</span>
-                  <span :class="roundingApplied > 0 ? 'text-red-600' : 'text-green-600'">
-                    {{ formatCurrency(Math.abs(roundingApplied)) }}
+                <!-- Mostrar redondeo SIEMPRE (anticipado o aplicado) -->
+                <div v-if="anticipatedRounding !== 0" class="flex justify-between mb-2 text-xs border-t border-dashed border-gray-300 pt-1">
+                  <span>{{ anticipatedRounding > 0 ? 'Redondeo (+):' : 'Redondeo (-):' }}</span>
+                  <span :class="anticipatedRounding > 0 ? 'text-red-600' : 'text-green-600'">
+                    {{ formatCurrency(Math.abs(anticipatedRounding)) }}
                   </span>
                 </div>
-                <div v-if="roundingApplied !== 0" class="flex justify-between mb-2">
-                  <span class="font-medium text-sm">Total a pagar:</span>
-                  <span class="font-bold text-lg">{{ formatCurrency(total + roundingApplied) }}</span>
+                <div class="flex justify-between mb-2" :class="anticipatedRounding !== 0 ? 'border-t border-gray-300 pt-2' : ''">
+                  <span class="font-medium">Total a pagar:</span>
+                  <span class="font-bold text-lg">{{ formatCurrency(total + anticipatedRounding) }}</span>
                 </div>
                 <div class="flex justify-between mb-2 border-t border-gray-300 pt-2">
                   <span class="font-medium">Saldo pendiente:</span>
@@ -598,6 +598,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
+import { useCartStore } from '../stores/cart';
 import RightToLeftMoneyInput from './RightToLeftMoneyInput.vue';
 import {
   suggestOptimalPayments,
@@ -605,6 +606,8 @@ import {
   calculateChangeBreakdown,
   roundToValidAmount
 } from '../utils/cashDenominations.js';
+
+const cartStore = useCartStore();
 
 const props = defineProps({
   modelValue: {
@@ -863,7 +866,10 @@ const addPayment = () => {
 
   switch (paymentMethod.value) {
     case 'efectivo':
-      // Usar el monto ingresado, limitado al saldo pendiente
+      // 🔧 FIX: El remainingAmount ya incluye el redondeo anticipado
+      // No necesitamos calcular redondeo aquí, solo usarlo
+
+      // Usar el monto ingresado, limitado al saldo pendiente (que ya está redondeado)
       amount = Math.min(cashAmount.value, props.remainingAmount);
 
       // Calcular cambio solo si el monto cubre o excede el saldo
@@ -885,11 +891,11 @@ const addPayment = () => {
         reference = 'Pago exacto';
       }
 
-      // Calcular redondeo aplicado (solo para el primer pago en efectivo)
-      // El redondeo es la diferencia entre el total original y el total redondeado
-      const totalBeforeRounding = props.total;
-      const roundedTotal = roundToValidAmount(totalBeforeRounding);
-      roundingAmount = roundToValidAmount(roundedTotal - totalBeforeRounding);
+      // 🔧 FIX: Usar el redondeo anticipado del cart store (solo para el primer pago)
+      // Si no hay pagos previos, pasar el redondeo para que el cart store lo guarde
+      if (props.payments.length === 0) {
+        roundingAmount = anticipatedRounding.value;
+      }
 
       console.log('💰 [PaymentModal] Calculando pago en efectivo:', {
         montoIngresado: cashAmount.value,
@@ -992,11 +998,17 @@ const totalChange = computed(() => {
   return Math.round(totalChangeAmount * 100) / 100;
 });
 
+// 🔧 FIX: Usar el redondeo anticipado del cart store
+// Esto muestra el redondeo ANTES de agregar el pago, sincronizando con remainingAmount
+const anticipatedRounding = computed(() => {
+  return cartStore.anticipatedRounding || 0;
+});
+
 const roundingApplied = computed(() => {
   // Buscar el redondeo en el primer pago de efectivo
   const payments = displayPayments.value || [];
   const cashPayment = payments.find(p => p.method === 'efectivo');
-  return cashPayment?.roundingAmount || 0;
+  return cashPayment?.roundingAmount || anticipatedRounding.value;
 });
 
 const printTicket = () => {

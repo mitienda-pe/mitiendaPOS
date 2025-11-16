@@ -89,9 +89,24 @@ export const useCartStore = defineStore('cart', {
       return this.subtotal + this.tax;
     },
 
+    // 🔧 FIX: Calcular el redondeo de forma anticipada (no esperar al primer pago)
+    // Esto permite que remainingAmount use el total redondeado desde el inicio
+    anticipatedRounding(state) {
+      // Si ya hay un pago en efectivo, usar el redondeo guardado
+      if (state.roundingAdjustment !== 0) {
+        return state.roundingAdjustment;
+      }
+
+      // Si no hay pagos aún, pre-calcular el redondeo que se aplicará
+      // cuando se haga el primer pago en efectivo
+      const totalBeforeRounding = this.total;
+      const roundedTotal = Math.round(totalBeforeRounding * 10) / 10; // roundToValidAmount
+      return Math.round((roundedTotal - totalBeforeRounding) * 100) / 100;
+    },
+
     // Total con redondeo aplicado (para efectivo)
     totalWithRounding(state) {
-      return this.total + state.roundingAdjustment;
+      return this.total + this.anticipatedRounding;
     },
 
     totalPaid: (state) => {
@@ -99,8 +114,9 @@ export const useCartStore = defineStore('cart', {
     },
 
     remainingAmount(state) {
-      // Usar total con redondeo si aplica
-      const totalToPay = state.roundingAdjustment !== 0 ? this.totalWithRounding : this.total;
+      // 🔧 FIX: SIEMPRE usar el total redondeado (anticipatedRounding)
+      // Esto asegura que la validación de pagos use el monto correcto desde el inicio
+      const totalToPay = this.totalWithRounding;
       return Math.max(0, Math.round((totalToPay - this.totalPaid) * 100) / 100);
     },
 
