@@ -113,12 +113,25 @@ export const useCartStore = defineStore('cart', {
       // Redondear a 2 decimales para evitar problemas de precisión flotante
       const roundedRemaining = Math.round(remaining * 100) / 100;
 
+      console.log('🔍 [CART] remainingAmount calculation:', {
+        total: this.total,
+        appliedRounding: this.appliedRounding,
+        totalWithRounding: this.totalWithRounding,
+        totalPaid: this.totalPaid,
+        rawRemaining: remaining,
+        roundedRemaining: roundedRemaining,
+        paymentsCount: state.payments.length,
+        payments: state.payments.map(p => ({ method: p.method, amount: p.amount, roundingAmount: p.roundingAmount }))
+      });
+
       // 🔧 CRITICAL FIX: Si el saldo es muy pequeño (menor a 0.01), considerarlo como 0
       // Esto evita que queden residuos de 0.01-0.09 después de aplicar redondeos
       if (Math.abs(roundedRemaining) < 0.01) {
+        console.log('✅ [CART] Saldo muy pequeño, considerando como 0');
         return 0;
       }
 
+      console.log(`📊 [CART] Saldo pendiente: S/ ${roundedRemaining.toFixed(2)}`);
       return Math.max(0, roundedRemaining);
     },
 
@@ -324,6 +337,14 @@ export const useCartStore = defineStore('cart', {
      * Agregar pago
      */
     addPayment(payment) {
+      console.log('💳 [CART] addPayment called:', {
+        payment,
+        remainingAmountBefore: this.remainingAmount,
+        totalBefore: this.total,
+        appliedRoundingBefore: this.appliedRounding,
+        paymentsCountBefore: this.payments.length
+      });
+
       if (!this.canAddPayments) {
         throw new Error('No se pueden agregar pagos en estado: ' + this.status);
       }
@@ -341,10 +362,20 @@ export const useCartStore = defineStore('cart', {
         timestamp: new Date().toISOString()
       });
 
+      console.log('✅ [CART] Pago agregado. Estado actual:', {
+        paymentsCount: this.payments.length,
+        totalPaid: this.totalPaid,
+        remainingAmount: this.remainingAmount
+      });
+
       // Si es efectivo y es el primer pago, aplicar redondeo
       if (payment.method === 'efectivo' && this.payments.length === 1 && payment.roundingAmount) {
         this.roundingAdjustment = payment.roundingAmount;
-        console.log('💰 [CART] Redondeo aplicado:', this.roundingAdjustment);
+        console.log('💰 [CART] Redondeo aplicado:', {
+          roundingAmount: this.roundingAdjustment,
+          totalOriginal: this.total,
+          totalConRedondeo: this.totalWithRounding
+        });
       }
 
       // Cambiar estado a BLOQUEADO al agregar primer pago
@@ -354,7 +385,10 @@ export const useCartStore = defineStore('cart', {
 
       // Cambiar a PAGADO si se completó el pago
       if (this.isFullyPaid) {
+        console.log('✅ [CART] Pago completo detectado!');
         this.status = 'PAGADO';
+      } else {
+        console.log('⚠️ [CART] Pago parcial. Saldo pendiente:', this.remainingAmount);
       }
 
       this.unsavedChanges = true;

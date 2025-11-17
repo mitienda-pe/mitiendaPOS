@@ -1022,6 +1022,7 @@ const totalChange = computed(() => {
 const roundingToDisplay = computed(() => {
   // 1. Si ya hay redondeo aplicado (pago en efectivo registrado), mostrarlo
   if (cartStore.appliedRounding !== 0) {
+    console.log('🔍 [PaymentModal] Usando redondeo ya aplicado:', cartStore.appliedRounding);
     return cartStore.appliedRounding;
   }
 
@@ -1029,7 +1030,13 @@ const roundingToDisplay = computed(() => {
   if (paymentMethod.value === 'efectivo' && props.payments.length === 0) {
     const totalBeforeRounding = props.total;
     const roundedTotal = Math.round(totalBeforeRounding * 10) / 10; // roundToValidAmount
-    return Math.round((roundedTotal - totalBeforeRounding) * 100) / 100;
+    const rounding = Math.round((roundedTotal - totalBeforeRounding) * 100) / 100;
+    console.log('🔍 [PaymentModal] Calculando redondeo anticipado:', {
+      totalOriginal: totalBeforeRounding,
+      totalRedondeado: roundedTotal,
+      redondeo: rounding
+    });
+    return rounding;
   }
 
   // 3. En cualquier otro caso (tarjeta, QR, etc.), NO mostrar redondeo
@@ -1047,9 +1054,17 @@ const remainingAmountDisplay = computed(() => {
     // Si hay redondeo a mostrar, usar el total redondeado
     const totalToPay = totalToPayDisplay.value;
     const totalPaidAmount = props.payments.reduce((sum, p) => sum + p.amount, 0);
-    return Math.max(0, Math.round((totalToPay - totalPaidAmount) * 100) / 100);
+    const remaining = Math.max(0, Math.round((totalToPay - totalPaidAmount) * 100) / 100);
+    console.log('🔍 [PaymentModal] remainingAmountDisplay con redondeo:', {
+      totalToPay,
+      totalPaidAmount,
+      remaining,
+      roundingToDisplay: roundingToDisplay.value
+    });
+    return remaining;
   }
   // Si no hay redondeo, usar remainingAmount normal
+  console.log('🔍 [PaymentModal] remainingAmountDisplay sin redondeo:', props.remainingAmount);
   return props.remainingAmount;
 });
 
