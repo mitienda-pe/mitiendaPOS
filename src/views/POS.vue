@@ -22,6 +22,7 @@ import BarcodeScanner from '../components/BarcodeScanner.vue';
 import BillingDocumentModal from '../components/BillingDocumentModal.vue';
 import ProcessingOverlay from '../components/ProcessingOverlay.vue';
 import StockValidationErrorModal from '../components/StockValidationErrorModal.vue';
+import QuantityStepperInput from '../components/QuantityStepperInput.vue';
 import { useBillingStore } from '../stores/billing.js';
 
 // Stores
@@ -248,6 +249,28 @@ const decrementQuantity = (item) => {
     cartStore.decrementQuantity(item.id);
   } catch (error) {
     alert(error.message);
+  }
+};
+
+const updateQuantity = (item, newQuantity) => {
+  try {
+    // Si el carrito está bloqueado, requiere autorización
+    if (!cartStore.canEditQuantity) {
+      pendingAction.value = { type: 'update_quantity', data: { item, newQuantity } };
+      showSupervisorAuth.value = true;
+      return;
+    }
+
+    cartStore.updateItemQuantity(item.id, newQuantity);
+  } catch (error) {
+    alert(error.message);
+  }
+};
+
+const handleConfirmRemove = (item) => {
+  // Mostrar confirmación personalizada
+  if (confirm(`¿Desea eliminar "${item.nombre}" del carrito?`)) {
+    removeItem(item);
   }
 };
 
@@ -1211,6 +1234,11 @@ const onSupervisorAuthorized = (authData) => {
         cartStore.decrementQuantity(data.id, authData);
         break;
 
+      case 'update_quantity':
+        console.log('✏️ [POS] Updating quantity with authorization');
+        cartStore.updateItemQuantity(data.item.id, data.newQuantity, authData);
+        break;
+
       case 'remove_item':
         // Quitar producto requiere supervisor
         console.log('🗑️ [POS] Removing item with supervisor authorization');
@@ -1333,24 +1361,15 @@ const getPaymentMethodName = (method) => {
                     {{ formatCurrency(item.precio) }}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex items-center">
-                      <button @click="decrementQuantity(item)" class="p-1 rounded-full hover:bg-gray-200"
-                        :disabled="item.quantity <= 1">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none"
-                          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                      </button>
-                      <span class="mx-2 text-sm">{{ item.quantity }}</span>
-                      <button @click="incrementQuantity(item)" class="p-1 rounded-full hover:bg-gray-200"
-                        :disabled="!item.unlimited_stock && item.quantity >= item.stock">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none"
-                          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <line x1="12" y1="5" x2="12" y2="19"></line>
-                          <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                      </button>
-                    </div>
+                    <QuantityStepperInput
+                      v-model="item.quantity"
+                      :min="1"
+                      :max="item.unlimited_stock ? 9999 : item.stock"
+                      :disabled="false"
+                      :confirm-on-zero="true"
+                      @update:modelValue="(newQuantity) => updateQuantity(item, newQuantity)"
+                      @confirm-remove="handleConfirmRemove(item)"
+                    />
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {{ formatCurrency(calculateSubtotal(item)) }}
