@@ -129,14 +129,14 @@
             <p class="text-xs text-emerald-600 mt-1">Ventas en caja</p>
           </div>
 
-          <!-- Cash Movements -->
+          <!-- Average Ticket -->
           <div class="bg-amber-50 rounded-lg p-4 border border-amber-200">
-            <p class="text-xs font-medium text-amber-700 mb-1">📊 Movimientos</p>
-            <p class="text-2xl font-bold" :class="summary.totalMovimientos >= 0 ? 'text-green-900' : 'text-red-900'">
-              {{ summary.totalMovimientos >= 0 ? '+' : '' }}S/ {{ summary.totalMovimientos.toFixed(2) }}
+            <p class="text-xs font-medium text-amber-700 mb-1">📊 Ticket Promedio</p>
+            <p class="text-2xl font-bold text-amber-900">
+              S/ {{ summary.ticketPromedio.toFixed(2) }}
             </p>
             <p class="text-xs text-amber-600 mt-1">
-              {{ summary.numeroMovimientos }} operaciones
+              Por operación
             </p>
           </div>
 
@@ -293,8 +293,7 @@ const summary = ref({
   numeroVentas: 0,
   totalVentasEfectivo: 0, // Solo ventas en efectivo
   totalVentasOtros: 0, // Ventas con otros métodos
-  totalMovimientos: 0,
-  numeroMovimientos: 0,
+  ticketPromedio: 0, // Ticket promedio (totalVentas / numeroVentas)
   efectivoEsperado: 0
 });
 
@@ -370,18 +369,28 @@ const calculateSummary = () => {
     (shift.total_plin || 0) +
     (shift.total_transferencia || 0);
 
-  // Calculate movements SOLO para mostrar en UI (NO para cálculos de efectivo)
-  // Estos valores son informativos, NO se usan en el cálculo del efectivo esperado
-  const entradas = movements.value
-    .filter(m => m.tipo === 'entrada' && (!m.metodo_pago || m.metodo_pago.toLowerCase() === 'efectivo'))
-    .reduce((sum, m) => sum + parseFloat(m.monto), 0);
+  // Calcular ticket promedio
+  summary.value.ticketPromedio = summary.value.numeroVentas > 0
+    ? summary.value.totalVentas / summary.value.numeroVentas
+    : 0;
 
-  const salidas = movements.value
-    .filter(m => m.tipo === 'salida')
-    .reduce((sum, m) => sum + parseFloat(m.monto), 0);
-
-  summary.value.totalMovimientos = entradas - salidas;
-  summary.value.numeroMovimientos = movements.value.filter(m => m.tipo !== 'venta').length;
+  // 📝 MEJORAS FUTURAS:
+  // 1. Agregar UI para registrar entradas/salidas manuales de efectivo
+  //    - Permitir al cajero sacar efectivo a mitad de turno (tipo: 'salida')
+  //    - Permitir agregar efectivo de cambio del banco (tipo: 'entrada')
+  //    - Ver cashMovementsApi.registerIncome() y .registerWithdrawal()
+  //
+  // 2. Registrar redondeos como movimientos separados
+  //    - Actualmente el redondeo solo se menciona en payment.reference
+  //    - Podría ser un movimiento tipo 'ajuste' para trazabilidad
+  //
+  // 3. Registrar cambio entregado por separado
+  //    - Actualmente el cambio solo se extrae del campo 'referencia' con regex
+  //    - Ver cart.js totalChange() getter
+  //
+  // 4. Score card de "Cambio Entregado"
+  //    - Extraer cambio de movements.referencia con regex: /Cambio: S\/\s*([\d.]+)/
+  //    - Mostrar total de cambio entregado en el turno
 
   // FIX: Confiar 100% en el backend para el cálculo del efectivo esperado
   // El backend ya calcula correctamente: inicial + total_efectivo (que incluye ventas + entradas - salidas)
