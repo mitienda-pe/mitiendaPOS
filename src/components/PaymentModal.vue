@@ -873,10 +873,20 @@ const addPayment = () => {
       // 🔧 FIX: Usar remainingAmountDisplay que incluye redondeo para efectivo
       const amountDue = remainingAmountDisplay.value;
 
-      // Usar el monto ingresado, limitado al saldo pendiente (que ya está redondeado)
-      amount = Math.min(cashAmount.value, amountDue);
+      // 🔧 CRITICAL FIX: Para pagos en efectivo con redondeos pequeños (0.01-0.09),
+      // el monto del pago debe cubrir EXACTAMENTE el saldo pendiente redondeado
+      // para que no quede ningún residuo
 
-      // Calcular cambio solo si el monto cubre o excede el saldo
+      // Si el usuario entrega exactamente el monto debido (o menos), registrar exactamente el monto debido
+      if (cashAmount.value <= amountDue) {
+        // Pago parcial o exacto: registrar el monto debido completo si el usuario dio suficiente
+        amount = amountDue;
+      } else {
+        // Pago con cambio: registrar el monto debido
+        amount = amountDue;
+      }
+
+      // Calcular cambio solo si el monto entregado excede el saldo
       const changeValue = cashAmount.value - amountDue;
 
       if (changeValue > 0) {
@@ -890,6 +900,9 @@ const addPayment = () => {
           reference += ` (${breakdown})`;
         }
       } else if (changeValue < 0) {
+        // Pago parcial: el usuario no entregó suficiente
+        // En este caso, registrar solo lo que entregó
+        amount = cashAmount.value;
         reference = `Pago parcial: S/ ${cashAmount.value.toFixed(2)}`;
       } else {
         reference = 'Pago exacto';
@@ -906,7 +919,8 @@ const addPayment = () => {
         saldoPendiente: amountDue,
         montoAPagar: amount,
         cambio: changeValue,
-        redondeo: roundingAmount
+        redondeo: roundingAmount,
+        esPagoCompleto: changeValue >= 0
       });
       break;
 

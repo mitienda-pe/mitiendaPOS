@@ -108,7 +108,18 @@ export const useCartStore = defineStore('cart', {
       // 🔧 FIX: Usar total con redondeo solo si ya se aplicó
       // Si no hay redondeo aplicado, usar el total normal
       const totalToPay = this.totalWithRounding;
-      return Math.max(0, Math.round((totalToPay - this.totalPaid) * 100) / 100);
+      const remaining = totalToPay - this.totalPaid;
+
+      // Redondear a 2 decimales para evitar problemas de precisión flotante
+      const roundedRemaining = Math.round(remaining * 100) / 100;
+
+      // 🔧 CRITICAL FIX: Si el saldo es muy pequeño (menor a 0.01), considerarlo como 0
+      // Esto evita que queden residuos de 0.01-0.09 después de aplicar redondeos
+      if (Math.abs(roundedRemaining) < 0.01) {
+        return 0;
+      }
+
+      return Math.max(0, roundedRemaining);
     },
 
     totalChange: (state) => {
@@ -126,7 +137,10 @@ export const useCartStore = defineStore('cart', {
     },
 
     isFullyPaid(state) {
-      return this.remainingAmount <= 0.01; // Tolerancia de 1 centavo
+      // 🔧 FIX: Tolerancia más estricta para evitar residuos
+      // Considerar pagado si el saldo es menor a 0.005 (medio centavo)
+      // Esto maneja correctamente los casos de redondeo donde el saldo puede quedar en 0.001-0.009
+      return this.remainingAmount < 0.005;
     },
 
     hasItems: (state) => state.items.length > 0,

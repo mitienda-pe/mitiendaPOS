@@ -93,31 +93,68 @@ export function suggestOptimalPayments(amountDue) {
     optimal: true
   });
 
-  // 2. 🔧 FIX: Sugerir redondeos a enteros cercanos PRIMERO
-  // Para 12.90 → sugerir 13, 15, 20 (antes que 50, 100)
+  // 2. 🔧 FIX: Priorizar billetes/monedas REALES sobre combinaciones
+  // Para 1.03 → sugerir 2, 5, 10 (billetes/monedas reales) ANTES que 15 (combinación)
   const practicalSuggestions = [];
 
-  // Redondeos a enteros cercanos (muy prácticos)
+  // PRIMERO: Denominaciones únicas que cubran el monto (billetes/monedas reales)
+  // 🔧 FIX: Priorizar las denominaciones MÁS PRÁCTICAS (cercanas al monto)
+  // Para S/ 1.00 debe sugerir: 1, 2, 5, 10, 20 (en ese orden)
+  const maxSuggestion = 100; // Límite fijo en 100 (billete más grande común)
+  const singleDenoms = DENOMINATIONS.all.filter(d => d >= rounded && d <= maxSuggestion);
+
+  // 🔧 CRITICAL FIX: Ordenar por cercanía al monto (más cercano = más práctico)
+  // Para S/ 1.00: [1, 2, 5, 10, 20, 50, 100] en lugar de [100, 50, 20, 10, 5, 2, 1]
+  const sortedByCloseness = singleDenoms.sort((a, b) => {
+    const diffA = a - rounded;
+    const diffB = b - rounded;
+    return diffA - diffB; // Ascendente por diferencia
+  });
+
+  // Agregar denominaciones únicas reales (MÁXIMA PRIORIDAD)
+  // Limitar a las 5 más cercanas y prácticas
+  sortedByCloseness.slice(0, 5).forEach((denom, index) => {
+    const change = roundToValidAmount(denom - rounded);
+    const changeBreakdown = calculateChangeBreakdown(change);
+
+    practicalSuggestions.push({
+      amount: denom,
+      change: change,
+      description: `Con ${formatDenomination(denom)}`,
+      priority: 2 + index, // Alta prioridad: 2, 3, 4, 5, 6
+      optimal: changeBreakdown.breakdown.length <= 2,
+      changeBreakdown: changeBreakdown
+    });
+  });
+
+  // SEGUNDO: Redondeos a enteros cercanos (solo si NO son denominaciones existentes)
+  // 🔧 FIX: Estos tienen MUCHA MENOR prioridad que billetes reales
   const nearbyIntegers = [];
-  const ceilingInt = Math.ceil(rounded); // 13 para 12.90
+  const ceilingInt = Math.ceil(rounded); // 2 para 1.03
 
   // Sugerir el entero superior inmediato si está muy cerca (máximo +5)
   if (ceilingInt > rounded && ceilingInt - rounded <= 5) {
-    nearbyIntegers.push({
-      amount: ceilingInt,
-      description: `S/ ${ceilingInt.toFixed(2)}`,
-      priority: 2
-    });
+    // Solo agregar si NO es una denominación existente (ya agregada arriba)
+    if (!DENOMINATIONS.all.includes(ceilingInt)) {
+      nearbyIntegers.push({
+        amount: ceilingInt,
+        description: `S/ ${ceilingInt.toFixed(2)}`,
+        priority: 10 // Prioridad baja
+      });
+    }
   }
 
   // Sugerir siguiente múltiplo de 5 si está cerca (máximo +10)
   const nextRound5 = Math.ceil(rounded / 5) * 5;
   if (nextRound5 > rounded && nextRound5 - rounded <= 10 && nextRound5 !== ceilingInt) {
-    nearbyIntegers.push({
-      amount: nextRound5,
-      description: `S/ ${nextRound5.toFixed(2)}`,
-      priority: 3
-    });
+    // Solo agregar si NO es una denominación existente
+    if (!DENOMINATIONS.all.includes(nextRound5)) {
+      nearbyIntegers.push({
+        amount: nextRound5,
+        description: `S/ ${nextRound5.toFixed(2)}`,
+        priority: 11 // Prioridad baja
+      });
+    }
   }
 
   nearbyIntegers.forEach((suggestion) => {
@@ -134,41 +171,9 @@ export function suggestOptimalPayments(amountDue) {
     });
   });
 
-  // Encontrar denominaciones únicas que cubran el monto (límite razonable)
-  const maxSuggestion = Math.min(rounded * 3, 100); // No sugerir más de 100 o 3x el monto
-  const singleDenoms = DENOMINATIONS.all.filter(d => d >= rounded && d <= maxSuggestion);
-
-  // Agregar denominaciones únicas más cercanas (máximo 2)
-  singleDenoms.slice(0, 2).forEach((denom, index) => {
-    const change = roundToValidAmount(denom - rounded);
-    const changeBreakdown = calculateChangeBreakdown(change);
-
-    practicalSuggestions.push({
-      amount: denom,
-      change: change,
-      description: `Con ${formatDenomination(denom)}`,
-      priority: 4 + index, // Menor prioridad que redondeos a enteros
-      optimal: changeBreakdown.breakdown.length <= 2,
-      changeBreakdown: changeBreakdown
-    });
-  });
-
-  // Agregar combinaciones simples de 2 denominaciones (solo si son prácticas)
-  // Ej: 10+5=15 (solo si 15 no es un billete/moneda ni un redondeo ya sugerido)
-  const practicalCombos = generatePracticalCombinations(rounded);
-  practicalCombos.forEach((combo, index) => {
-    const change = roundToValidAmount(combo.amount - rounded);
-    const changeBreakdown = calculateChangeBreakdown(change);
-
-    practicalSuggestions.push({
-      amount: combo.amount,
-      change: change,
-      description: combo.description,
-      priority: 6 + index, // Menor prioridad que billetes/monedas
-      optimal: changeBreakdown.breakdown.length <= 2,
-      changeBreakdown: changeBreakdown
-    });
-  });
+  // TERCERO: Combinaciones simples de 2 denominaciones (MENOR PRIORIDAD)
+  // 🔧 FIX: ELIMINAR COMPLETAMENTE las combinaciones - solo confunden
+  // NO sugerir cosas como 15 (10+5) cuando existen billetes reales de 10 y 20
 
   // Agregar todas las sugerencias prácticas a la lista principal
   suggestions.push(...practicalSuggestions);
