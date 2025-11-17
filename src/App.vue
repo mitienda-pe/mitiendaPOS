@@ -243,6 +243,14 @@ const handleCloseShift = () => {
 const onShiftOpened = async (data) => {
   showOpenShiftModal.value = false;
 
+  // Guardar información de sucursal y caja en el cashier store
+  cashierStore.setSucursal({
+    id: data.sucursalId,
+    nombre: data.sucursalNombre,
+    tiendadireccion_nombresucursal: data.sucursalNombre
+  });
+  cashierStore.setCajaNumero(data.cajaNumero);
+
   // Guardar datos para crear turno
   pendingShiftData.value = {
     montoInicial: data.montoInicial,

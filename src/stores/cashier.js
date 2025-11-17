@@ -181,6 +181,18 @@ export const useCashierStore = defineStore('cashier', {
       const session = JSON.parse(localStorage.getItem('cashier_session') || '{}');
       session.sucursal = sucursalData;
       localStorage.setItem('cashier_session', JSON.stringify(session));
+    },
+
+    /**
+     * Actualizar número de caja
+     */
+    setCajaNumero(cajaNumero) {
+      this.cajaNumero = cajaNumero;
+
+      // Actualizar en localStorage
+      const session = JSON.parse(localStorage.getItem('cashier_session') || '{}');
+      session.cajaNumero = cajaNumero;
+      localStorage.setItem('cashier_session', JSON.stringify(session));
     }
   },
 });
