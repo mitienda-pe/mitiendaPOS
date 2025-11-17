@@ -24,21 +24,21 @@
                   <span class="font-medium">Total original:</span>
                   <span class="font-bold text-lg">{{ formatCurrency(total) }}</span>
                 </div>
-                <!-- Mostrar redondeo SIEMPRE (anticipado o aplicado) -->
-                <div v-if="anticipatedRounding !== 0" class="flex justify-between mb-2 text-xs border-t border-dashed border-gray-300 pt-1">
-                  <span>{{ anticipatedRounding > 0 ? 'Redondeo (+):' : 'Redondeo (-):' }}</span>
-                  <span :class="anticipatedRounding > 0 ? 'text-red-600' : 'text-green-600'">
-                    {{ formatCurrency(Math.abs(anticipatedRounding)) }}
+                <!-- 🔧 FIX: Mostrar redondeo SOLO si hay pago en efectivo aplicado O si el método seleccionado es efectivo -->
+                <div v-if="roundingToDisplay !== 0" class="flex justify-between mb-2 text-xs border-t border-dashed border-gray-300 pt-1">
+                  <span>{{ roundingToDisplay > 0 ? 'Redondeo (+):' : 'Redondeo (-):' }}</span>
+                  <span :class="roundingToDisplay > 0 ? 'text-red-600' : 'text-green-600'">
+                    {{ formatCurrency(Math.abs(roundingToDisplay)) }}
                   </span>
                 </div>
-                <div class="flex justify-between mb-2" :class="anticipatedRounding !== 0 ? 'border-t border-gray-300 pt-2' : ''">
+                <div class="flex justify-between mb-2" :class="roundingToDisplay !== 0 ? 'border-t border-gray-300 pt-2' : ''">
                   <span class="font-medium">Total a pagar:</span>
-                  <span class="font-bold text-lg">{{ formatCurrency(total + anticipatedRounding) }}</span>
+                  <span class="font-bold text-lg">{{ formatCurrency(totalToPayDisplay) }}</span>
                 </div>
                 <div class="flex justify-between mb-2 border-t border-gray-300 pt-2">
                   <span class="font-medium">Saldo pendiente:</span>
                   <span class="font-bold text-lg" :class="remainingAmount === 0 ? 'text-green-600' : 'text-red-600'">
-                    {{ formatCurrency(remainingAmount) }}
+                    {{ formatCurrency(remainingAmountDisplay) }}
                   </span>
                 </div>
                 <div v-if="customer" class="text-sm text-gray-600">
@@ -787,9 +787,10 @@ const selectPaymentMethod = (method) => {
   cashValidation.value = null;
   changeBreakdownDisplay.value = null;
 
-  // Si es efectivo, generar sugerencias de pago
+  // Si es efectivo, generar sugerencias de pago usando el saldo con redondeo
   if (method === 'efectivo') {
-    paymentSuggestions.value = suggestOptimalPayments(props.remainingAmount);
+    // 🔧 FIX: Usar remainingAmountDisplay que incluye redondeo para efectivo
+    paymentSuggestions.value = suggestOptimalPayments(remainingAmountDisplay.value);
     console.log('💡 [PaymentModal] Sugerencias de pago generadas:', paymentSuggestions.value);
   } else {
     paymentSuggestions.value = [];
@@ -800,15 +801,18 @@ const calculateChange = () => {
   // NO redondear cashAmount mientras el usuario escribe
   // Solo usar el valor ingresado tal cual
 
+  // 🔧 FIX: Usar remainingAmountDisplay que incluye el redondeo si es efectivo
+  const amountDue = remainingAmountDisplay.value;
+
   // El monto del pago es el total restante (lo que se debe cobrar)
-  paymentAmount.value = props.remainingAmount;
+  paymentAmount.value = amountDue;
 
   // El cambio es lo que sobra del efectivo entregado
-  const rawChange = cashAmount.value - props.remainingAmount;
+  const rawChange = cashAmount.value - amountDue;
   change.value = Math.max(0, roundToValidAmount(rawChange));
 
   // Validar el pago en efectivo
-  cashValidation.value = validateCashPayment(cashAmount.value, props.remainingAmount);
+  cashValidation.value = validateCashPayment(cashAmount.value, amountDue);
 
   // Calcular desglose del vuelto
   if (change.value > 0) {
@@ -866,14 +870,14 @@ const addPayment = () => {
 
   switch (paymentMethod.value) {
     case 'efectivo':
-      // 🔧 FIX: El remainingAmount ya incluye el redondeo anticipado
-      // No necesitamos calcular redondeo aquí, solo usarlo
+      // 🔧 FIX: Usar remainingAmountDisplay que incluye redondeo para efectivo
+      const amountDue = remainingAmountDisplay.value;
 
       // Usar el monto ingresado, limitado al saldo pendiente (que ya está redondeado)
-      amount = Math.min(cashAmount.value, props.remainingAmount);
+      amount = Math.min(cashAmount.value, amountDue);
 
       // Calcular cambio solo si el monto cubre o excede el saldo
-      const changeValue = cashAmount.value - props.remainingAmount;
+      const changeValue = cashAmount.value - amountDue;
 
       if (changeValue > 0) {
         reference = `Cambio: ${formatCurrency(changeValue)}`;
@@ -891,15 +895,15 @@ const addPayment = () => {
         reference = 'Pago exacto';
       }
 
-      // 🔧 FIX: Usar el redondeo anticipado del cart store (solo para el primer pago)
-      // Si no hay pagos previos, pasar el redondeo para que el cart store lo guarde
-      if (props.payments.length === 0) {
-        roundingAmount = anticipatedRounding.value;
+      // 🔧 FIX: Solo calcular y pasar redondeo si es el primer pago
+      // El redondeo se calcula aquí si no hay pagos previos
+      if (props.payments.length === 0 && roundingToDisplay.value !== 0) {
+        roundingAmount = roundingToDisplay.value;
       }
 
       console.log('💰 [PaymentModal] Calculando pago en efectivo:', {
         montoIngresado: cashAmount.value,
-        saldoPendiente: props.remainingAmount,
+        saldoPendiente: amountDue,
         montoAPagar: amount,
         cambio: changeValue,
         redondeo: roundingAmount
@@ -998,17 +1002,48 @@ const totalChange = computed(() => {
   return Math.round(totalChangeAmount * 100) / 100;
 });
 
-// 🔧 FIX: Usar el redondeo anticipado del cart store
-// Esto muestra el redondeo ANTES de agregar el pago, sincronizando con remainingAmount
-const anticipatedRounding = computed(() => {
-  return cartStore.anticipatedRounding || 0;
+// 🔧 FIX: Calcular redondeo SOLO para efectivo
+// Si ya hay un pago en efectivo registrado, usar ese redondeo
+// Si el método seleccionado es efectivo y es el primer pago, calcular redondeo anticipado
+const roundingToDisplay = computed(() => {
+  // 1. Si ya hay redondeo aplicado (pago en efectivo registrado), mostrarlo
+  if (cartStore.appliedRounding !== 0) {
+    return cartStore.appliedRounding;
+  }
+
+  // 2. Si el método seleccionado es efectivo Y no hay pagos previos, calcular redondeo anticipado
+  if (paymentMethod.value === 'efectivo' && props.payments.length === 0) {
+    const totalBeforeRounding = props.total;
+    const roundedTotal = Math.round(totalBeforeRounding * 10) / 10; // roundToValidAmount
+    return Math.round((roundedTotal - totalBeforeRounding) * 100) / 100;
+  }
+
+  // 3. En cualquier otro caso (tarjeta, QR, etc.), NO mostrar redondeo
+  return 0;
+});
+
+// Total a pagar considerando redondeo (solo si aplica)
+const totalToPayDisplay = computed(() => {
+  return props.total + roundingToDisplay.value;
+});
+
+// Saldo pendiente considerando redondeo (solo si aplica)
+const remainingAmountDisplay = computed(() => {
+  if (roundingToDisplay.value !== 0) {
+    // Si hay redondeo a mostrar, usar el total redondeado
+    const totalToPay = totalToPayDisplay.value;
+    const totalPaidAmount = props.payments.reduce((sum, p) => sum + p.amount, 0);
+    return Math.max(0, Math.round((totalToPay - totalPaidAmount) * 100) / 100);
+  }
+  // Si no hay redondeo, usar remainingAmount normal
+  return props.remainingAmount;
 });
 
 const roundingApplied = computed(() => {
-  // Buscar el redondeo en el primer pago de efectivo
+  // Para el ticket: buscar el redondeo en el primer pago de efectivo
   const payments = displayPayments.value || [];
   const cashPayment = payments.find(p => p.method === 'efectivo');
-  return cashPayment?.roundingAmount || anticipatedRounding.value;
+  return cashPayment?.roundingAmount || cartStore.appliedRounding;
 });
 
 const printTicket = () => {
