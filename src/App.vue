@@ -37,7 +37,7 @@
                       </p>
                       <!-- Sucursal y caja cuando hay turno abierto -->
                       <p v-if="shiftStore.hasActiveShift" class="text-blue-400 text-xs">
-                        📍 {{ sucursalNombre }} • Caja {{ cajaNumero }}
+                        <span v-if="sucursalNombre && sucursalNombre !== 'Sucursal'">📍 {{ sucursalNombre }} • </span>Caja {{ cajaNumero }}
                       </p>
                       <p v-else-if="!cashierStore.isCashierAuthenticated" class="text-gray-500 text-xs italic">Sin cajero autenticado</p>
                     </div>
