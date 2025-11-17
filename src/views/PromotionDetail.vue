@@ -121,6 +121,54 @@
             </div>
           </div>
 
+          <!-- Configuración de Activación -->
+          <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+              <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">Configuración de Activación</h3>
+              <p class="text-sm text-gray-500 mb-4">Define cómo se activa la bonificación</p>
+
+              <div class="flex flex-col gap-3">
+                <div
+                  class="flex items-start gap-3 p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                  :class="{ 'border-blue-500 bg-blue-50': bonFormaGrupos === 0 }"
+                  @click="updateBonFormaGrupos(0)"
+                >
+                  <input
+                    type="radio"
+                    :checked="bonFormaGrupos === 0"
+                    class="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                    @change="updateBonFormaGrupos(0)"
+                  />
+                  <div class="flex-1">
+                    <div class="font-medium text-gray-900">Cualquier producto activador (OR)</div>
+                    <div class="text-sm text-gray-600 mt-1">
+                      La bonificación se activa si el cliente compra <strong>al menos UNO</strong> de los productos activadores listados abajo
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  class="flex items-start gap-3 p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                  :class="{ 'border-blue-500 bg-blue-50': bonFormaGrupos === 1 }"
+                  @click="updateBonFormaGrupos(1)"
+                >
+                  <input
+                    type="radio"
+                    :checked="bonFormaGrupos === 1"
+                    class="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                    @change="updateBonFormaGrupos(1)"
+                  />
+                  <div class="flex-1">
+                    <div class="font-medium text-gray-900">Todos los productos activadores (AND)</div>
+                    <div class="text-sm text-gray-600 mt-1">
+                      La bonificación se activa solo si el cliente compra <strong>TODOS</strong> los productos activadores listados abajo
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Products Card -->
           <div class="bg-white shadow overflow-hidden sm:rounded-lg">
             <div class="px-4 py-5 sm:p-6">
@@ -336,6 +384,7 @@ const error = ref(null);
 const updatingStatus = ref(false);
 const showLinkProductsModal = ref(false);
 const showLinkBonificationsModal = ref(false);
+const bonFormaGrupos = ref(0);
 
 // Computed: Check if promotion is in valid period (use backend value if available)
 const isInValidPeriod = computed(() => {
@@ -423,6 +472,9 @@ async function fetchPromotion() {
       if (response.data.productos_bonificacion) {
         bonifications.value = response.data.productos_bonificacion;
       }
+
+      // Initialize bonFormaGrupos
+      bonFormaGrupos.value = response.data.tiendapromocion_bon_formagrupos ?? 0;
     }
   } catch (err) {
     console.error('Error fetching promotion:', err);
@@ -456,6 +508,29 @@ async function toggleStatus() {
     alert('Error al cambiar el estado de la bonificación');
   } finally {
     updatingStatus.value = false;
+  }
+}
+
+// Update bonFormaGrupos
+async function updateBonFormaGrupos(value) {
+  if (!promotion.value) return;
+  if (bonFormaGrupos.value === value) return;
+
+  try {
+    const response = await promotionsApi.updatePromotion(promotion.value.tiendapromocion_id, {
+      tiendapromocion_bon_formagrupos: value
+    });
+
+    if (response.status === 'success') {
+      bonFormaGrupos.value = value;
+      const message = value === 0
+        ? 'La bonificación se activará con cualquier producto activador'
+        : 'La bonificación se activará solo con todos los productos activadores';
+      alert(message);
+    }
+  } catch (error) {
+    console.error('Error updating bonFormaGrupos:', error);
+    alert('Error al actualizar la configuración');
   }
 }
 
