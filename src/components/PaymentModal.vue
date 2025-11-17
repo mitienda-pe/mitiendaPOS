@@ -945,7 +945,10 @@ const addPayment = () => {
     method: paymentMethod.value,
     amount,
     reference,
-    roundingAmount
+    roundingAmount,
+    roundingAmountType: typeof roundingAmount,
+    isEfectivo: paymentMethod.value === 'efectivo',
+    isDifferentFromZero: roundingAmount !== 0
   });
 
   // Emitir el evento con los datos del pago
@@ -957,10 +960,20 @@ const addPayment = () => {
   };
 
   // Agregar redondeo solo si es efectivo y hay redondeo
+  console.log('🔍 [PaymentModal] Verificando si agregar roundingAmount:', {
+    method: paymentMethod.value,
+    roundingAmount,
+    shouldAdd: paymentMethod.value === 'efectivo' && roundingAmount !== 0
+  });
+
   if (paymentMethod.value === 'efectivo' && roundingAmount !== 0) {
     paymentData.roundingAmount = roundingAmount;
+    console.log('✅ [PaymentModal] roundingAmount agregado al paymentData');
+  } else {
+    console.log('❌ [PaymentModal] roundingAmount NO agregado');
   }
 
+  console.log('📤 [PaymentModal] Emitiendo payment-added con:', paymentData);
   emit('payment-added', paymentData);
 
   // Siempre cerrar el modal después de agregar el pago
