@@ -351,13 +351,23 @@ export const useCartStore = defineStore('cart', {
 
       // 🔧 CRITICAL FIX: Si es efectivo y es el primer pago, aplicar redondeo ANTES de agregar el pago
       // Esto asegura que remainingAmount se calcule correctamente desde el inicio
-      if (payment.method === 'efectivo' && this.payments.length === 0 && payment.roundingAmount) {
+      console.log('🔍 [CART] Verificando condición de redondeo:', {
+        method: payment.method,
+        paymentsLength: this.payments.length,
+        roundingAmount: payment.roundingAmount,
+        hasRoundingAmount: !!payment.roundingAmount,
+        roundingAmountType: typeof payment.roundingAmount
+      });
+
+      if (payment.method === 'efectivo' && this.payments.length === 0 && payment.roundingAmount !== undefined && payment.roundingAmount !== 0) {
         this.roundingAdjustment = payment.roundingAmount;
         console.log('💰 [CART] Redondeo aplicado ANTES de agregar pago:', {
           roundingAmount: this.roundingAdjustment,
           totalOriginal: this.total,
           totalConRedondeo: this.totalWithRounding
         });
+      } else {
+        console.log('⚠️ [CART] Condición de redondeo NO cumplida');
       }
 
       // Validar que el monto no exceda el restante
