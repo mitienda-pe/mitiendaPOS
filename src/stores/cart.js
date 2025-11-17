@@ -349,6 +349,17 @@ export const useCartStore = defineStore('cart', {
         throw new Error('No se pueden agregar pagos en estado: ' + this.status);
       }
 
+      // 🔧 CRITICAL FIX: Si es efectivo y es el primer pago, aplicar redondeo ANTES de agregar el pago
+      // Esto asegura que remainingAmount se calcule correctamente desde el inicio
+      if (payment.method === 'efectivo' && this.payments.length === 0 && payment.roundingAmount) {
+        this.roundingAdjustment = payment.roundingAmount;
+        console.log('💰 [CART] Redondeo aplicado ANTES de agregar pago:', {
+          roundingAmount: this.roundingAdjustment,
+          totalOriginal: this.total,
+          totalConRedondeo: this.totalWithRounding
+        });
+      }
+
       // Validar que el monto no exceda el restante
       if (payment.amount > this.remainingAmount) {
         // Permitir si es efectivo (para dar cambio)
@@ -365,18 +376,10 @@ export const useCartStore = defineStore('cart', {
       console.log('✅ [CART] Pago agregado. Estado actual:', {
         paymentsCount: this.payments.length,
         totalPaid: this.totalPaid,
-        remainingAmount: this.remainingAmount
+        remainingAmount: this.remainingAmount,
+        totalWithRounding: this.totalWithRounding,
+        appliedRounding: this.appliedRounding
       });
-
-      // Si es efectivo y es el primer pago, aplicar redondeo
-      if (payment.method === 'efectivo' && this.payments.length === 1 && payment.roundingAmount) {
-        this.roundingAdjustment = payment.roundingAmount;
-        console.log('💰 [CART] Redondeo aplicado:', {
-          roundingAmount: this.roundingAdjustment,
-          totalOriginal: this.total,
-          totalConRedondeo: this.totalWithRounding
-        });
-      }
 
       // Cambiar estado a BLOQUEADO al agregar primer pago
       if (this.payments.length === 1 && this.status === 'ABIERTO') {
