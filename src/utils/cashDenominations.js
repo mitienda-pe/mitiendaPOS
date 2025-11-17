@@ -93,79 +93,48 @@ export function suggestOptimalPayments(amountDue) {
     optimal: true
   });
 
-  // 2. 🔧 FIX: Redondeos a enteros cercanos PRIMERO (antes de billetes grandes)
-  // Para montos como 17.90, sugerir 18, 19, 20
-  const nearbyIntegers = [];
-  const ceilingInt = Math.ceil(rounded); // 18 para 17.90
+  // 2. 🔧 FIX: Sugerir solo combinaciones con denominaciones REALES
+  // Usar solo billetes y monedas que existen: 200, 100, 50, 20, 10, 5, 2, 1, 0.50, 0.20, 0.10
+  const practicalSuggestions = [];
 
-  // Sugerir redondeo al entero superior inmediato
-  if (ceilingInt > rounded && ceilingInt <= rounded + 5) {
-    nearbyIntegers.push(ceilingInt);
-  }
+  // Encontrar denominaciones únicas que cubran el monto (límite razonable)
+  const maxSuggestion = Math.min(rounded * 3, 100); // No sugerir más de 100 o 3x el monto
+  const singleDenoms = DENOMINATIONS.all.filter(d => d >= rounded && d <= maxSuggestion);
 
-  // Sugerir siguiente entero "redondo" (múltiplo de 5)
-  const nextRound5 = Math.ceil(rounded / 5) * 5;
-  if (nextRound5 > rounded && nextRound5 <= rounded + 10 && !nearbyIntegers.includes(nextRound5)) {
-    nearbyIntegers.push(nextRound5);
-  }
-
-  // Sugerir siguiente múltiplo de 10
-  const nextRound10 = Math.ceil(rounded / 10) * 10;
-  if (nextRound10 > rounded && nextRound10 <= rounded + 15 && !nearbyIntegers.includes(nextRound10)) {
-    nearbyIntegers.push(nextRound10);
-  }
-
-  nearbyIntegers.forEach((amount, index) => {
-    const change = roundToValidAmount(amount - rounded);
+  // Agregar denominaciones únicas más cercanas (máximo 2)
+  singleDenoms.slice(0, 2).forEach((denom, index) => {
+    const change = roundToValidAmount(denom - rounded);
     const changeBreakdown = calculateChangeBreakdown(change);
 
-    suggestions.push({
-      amount: amount,
+    practicalSuggestions.push({
+      amount: denom,
       change: change,
-      description: `S/ ${amount.toFixed(2)}`,
-      priority: 2 + index, // Alta prioridad
+      description: `Con ${formatDenomination(denom)}`,
+      priority: 2 + index,
       optimal: changeBreakdown.breakdown.length <= 2,
       changeBreakdown: changeBreakdown
     });
   });
 
-  // 3. Billetes/monedas comunes que cubran el monto (solo los más cercanos)
-  // Filtrar solo denominaciones hasta 2x el monto para evitar sugerencias muy altas
-  const maxSuggestion = rounded * 2;
-  const coveringDenoms = DENOMINATIONS.all.filter(d => d >= rounded && d <= maxSuggestion);
-
-  if (coveringDenoms.length > 0) {
-    // Solo las 2 denominaciones más pequeñas que cubran
-    coveringDenoms.slice(0, 2).forEach((denom, index) => {
-      const change = roundToValidAmount(denom - rounded);
-      const changeBreakdown = calculateChangeBreakdown(change);
-
-      suggestions.push({
-        amount: denom,
-        change: change,
-        description: `Con ${formatDenomination(denom)}`,
-        priority: 6 + index, // Menor prioridad que redondeos
-        optimal: changeBreakdown.breakdown.length <= 2,
-        changeBreakdown: changeBreakdown
-      });
-    });
-  }
-
-  // 4. Combinaciones de 2 billetes/monedas comunes (solo cercanas)
-  const commonCombos = generateCommonCombinations(rounded);
-  commonCombos.slice(0, 2).forEach((combo, index) => {
+  // Agregar combinaciones simples de 2 denominaciones (solo si son prácticas)
+  // Ej: 10+5=15, 10+10=20, pero NO 25 si ya se sugirió 20
+  const practicalCombos = generatePracticalCombinations(rounded);
+  practicalCombos.forEach((combo, index) => {
     const change = roundToValidAmount(combo.amount - rounded);
     const changeBreakdown = calculateChangeBreakdown(change);
 
-    suggestions.push({
+    practicalSuggestions.push({
       amount: combo.amount,
       change: change,
       description: combo.description,
-      priority: 8 + index,
-      optimal: changeBreakdown.breakdown.length <= 1,
+      priority: 4 + index,
+      optimal: changeBreakdown.breakdown.length <= 2,
       changeBreakdown: changeBreakdown
     });
   });
+
+  // Agregar todas las sugerencias prácticas a la lista principal
+  suggestions.push(...practicalSuggestions);
 
   // Ordenar por prioridad y eliminar duplicados
   const unique = Array.from(
@@ -178,26 +147,45 @@ export function suggestOptimalPayments(amountDue) {
 }
 
 /**
- * Genera combinaciones comunes de billetes/monedas
- * Por ejemplo: 20+10, 50+10, 100+20, etc.
+ * Genera combinaciones PRÁCTICAS de billetes/monedas
+ * Solo sugiere combinaciones que:
+ * 1. Usan denominaciones reales (no inventa billetes de 30, 25, etc.)
+ * 2. Son útiles (no sugiere 20+5 si 20 ya cubre el monto)
+ * 3. Están cerca del monto a pagar
  */
-function generateCommonCombinations(amountDue) {
+function generatePracticalCombinations(amountDue) {
   const combos = [];
-  const commonPairs = [
-    [20, 10], [20, 5], [20, 2], [20, 1],
-    [50, 10], [50, 5], [50, 2],
-    [100, 20], [100, 10], [100, 5],
-    [10, 5], [10, 2], [10, 1],
-    [5, 2], [5, 1]
+
+  // Solo combinaciones útiles y comunes
+  // Priorizar combinaciones que la gente realmente usa
+  const usefulPairs = [
+    [10, 5],   // 15 - muy común
+    [10, 10],  // 20 - muy común (pero 20 ya existe como billete)
+    [20, 10],  // 30 - NO útil si no existe billete de 30
+    [20, 5],   // 25 - NO útil si 20 ya cubre
+    [50, 10],  // 60 - útil
+    [50, 20],  // 70 - útil
   ];
 
-  commonPairs.forEach(([denom1, denom2]) => {
+  usefulPairs.forEach(([denom1, denom2]) => {
     const total = denom1 + denom2;
-    if (total > amountDue && total <= amountDue + 30) {
-      combos.push({
-        amount: total,
-        description: `Con ${formatDenomination(denom1)} + ${formatDenomination(denom2)}`
-      });
+
+    // Solo sugerir si:
+    // 1. Cubre el monto
+    // 2. No está demasiado lejos (máximo +20 del monto)
+    // 3. No es una denominación que ya existe (ej: 10+10=20, pero ya existe billete de 20)
+    if (total > amountDue && total <= amountDue + 20) {
+      // Verificar que no sea una denominación existente
+      const isDenomination = DENOMINATIONS.all.includes(total);
+
+      // Solo agregar si NO es una denominación existente
+      // (porque las denominaciones ya se sugieren en singleDenoms)
+      if (!isDenomination) {
+        combos.push({
+          amount: total,
+          description: `${formatDenomination(denom1)} + ${formatDenomination(denom2)}`
+        });
+      }
     }
   });
 
