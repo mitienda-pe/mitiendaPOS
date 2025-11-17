@@ -71,11 +71,11 @@ export function calculateChangeBreakdown(change) {
 /**
  * Sugiere montos óptimos de pago para minimizar el vuelto
  *
- * Estrategias:
+ * Estrategias (priorizadas):
  * 1. Pago exacto (sin vuelto)
- * 2. Redondeo al siguiente múltiplo de 0.10
- * 3. Siguiente billete/moneda más grande que cubra el monto
- * 4. Combinaciones que den vuelto fácil de entregar
+ * 2. Redondeos cercanos a enteros (ej: 17.90 → 18, 20)
+ * 3. Billetes/monedas comunes cercanos al monto
+ * 4. Combinaciones simples de 2 piezas
  *
  * @param {number} amountDue - Monto a pagar
  * @returns {Array} - Lista de montos sugeridos con descripción
@@ -93,13 +93,50 @@ export function suggestOptimalPayments(amountDue) {
     optimal: true
   });
 
-  // 2. Encontrar denominaciones simples que cubran el monto
-  // Buscar la denominación más pequeña que sea mayor o igual al monto
-  const coveringDenoms = DENOMINATIONS.all.filter(d => d >= rounded);
+  // 2. 🔧 FIX: Redondeos a enteros cercanos PRIMERO (antes de billetes grandes)
+  // Para montos como 17.90, sugerir 18, 19, 20
+  const nearbyIntegers = [];
+  const ceilingInt = Math.ceil(rounded); // 18 para 17.90
+
+  // Sugerir redondeo al entero superior inmediato
+  if (ceilingInt > rounded && ceilingInt <= rounded + 5) {
+    nearbyIntegers.push(ceilingInt);
+  }
+
+  // Sugerir siguiente entero "redondo" (múltiplo de 5)
+  const nextRound5 = Math.ceil(rounded / 5) * 5;
+  if (nextRound5 > rounded && nextRound5 <= rounded + 10 && !nearbyIntegers.includes(nextRound5)) {
+    nearbyIntegers.push(nextRound5);
+  }
+
+  // Sugerir siguiente múltiplo de 10
+  const nextRound10 = Math.ceil(rounded / 10) * 10;
+  if (nextRound10 > rounded && nextRound10 <= rounded + 15 && !nearbyIntegers.includes(nextRound10)) {
+    nearbyIntegers.push(nextRound10);
+  }
+
+  nearbyIntegers.forEach((amount, index) => {
+    const change = roundToValidAmount(amount - rounded);
+    const changeBreakdown = calculateChangeBreakdown(change);
+
+    suggestions.push({
+      amount: amount,
+      change: change,
+      description: `S/ ${amount.toFixed(2)}`,
+      priority: 2 + index, // Alta prioridad
+      optimal: changeBreakdown.breakdown.length <= 2,
+      changeBreakdown: changeBreakdown
+    });
+  });
+
+  // 3. Billetes/monedas comunes que cubran el monto (solo los más cercanos)
+  // Filtrar solo denominaciones hasta 2x el monto para evitar sugerencias muy altas
+  const maxSuggestion = rounded * 2;
+  const coveringDenoms = DENOMINATIONS.all.filter(d => d >= rounded && d <= maxSuggestion);
 
   if (coveringDenoms.length > 0) {
-    // Agregar las primeras 3 denominaciones que cubran el monto
-    coveringDenoms.slice(0, 3).forEach((denom, index) => {
+    // Solo las 2 denominaciones más pequeñas que cubran
+    coveringDenoms.slice(0, 2).forEach((denom, index) => {
       const change = roundToValidAmount(denom - rounded);
       const changeBreakdown = calculateChangeBreakdown(change);
 
@@ -107,16 +144,16 @@ export function suggestOptimalPayments(amountDue) {
         amount: denom,
         change: change,
         description: `Con ${formatDenomination(denom)}`,
-        priority: 2 + index,
-        optimal: changeBreakdown.breakdown.length <= 2, // Óptimo si el vuelto usa 2 piezas o menos
+        priority: 6 + index, // Menor prioridad que redondeos
+        optimal: changeBreakdown.breakdown.length <= 2,
         changeBreakdown: changeBreakdown
       });
     });
   }
 
-  // 3. Combinaciones de 2 billetes/monedas comunes
+  // 4. Combinaciones de 2 billetes/monedas comunes (solo cercanas)
   const commonCombos = generateCommonCombinations(rounded);
-  commonCombos.forEach((combo, index) => {
+  commonCombos.slice(0, 2).forEach((combo, index) => {
     const change = roundToValidAmount(combo.amount - rounded);
     const changeBreakdown = calculateChangeBreakdown(change);
 
@@ -124,29 +161,10 @@ export function suggestOptimalPayments(amountDue) {
       amount: combo.amount,
       change: change,
       description: combo.description,
-      priority: 5 + index,
+      priority: 8 + index,
       optimal: changeBreakdown.breakdown.length <= 1,
       changeBreakdown: changeBreakdown
     });
-  });
-
-  // 4. Redondeos a múltiplos de 5, 10, 20, 50
-  const roundingTargets = [5, 10, 20, 50, 100];
-  roundingTargets.forEach(target => {
-    const roundedUp = Math.ceil(rounded / target) * target;
-    if (roundedUp > rounded && roundedUp <= rounded + 50) { // No sugerir montos muy altos
-      const change = roundToValidAmount(roundedUp - rounded);
-      const changeBreakdown = calculateChangeBreakdown(change);
-
-      suggestions.push({
-        amount: roundedUp,
-        change: change,
-        description: `Redondeo a S/ ${roundedUp}`,
-        priority: 10,
-        optimal: changeBreakdown.breakdown.length <= 2,
-        changeBreakdown: changeBreakdown
-      });
-    }
   });
 
   // Ordenar por prioridad y eliminar duplicados
