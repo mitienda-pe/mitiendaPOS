@@ -34,9 +34,12 @@
                       <!-- Cajero activo en POS -->
                       <p v-if="cashierStore.isCashierAuthenticated" class="text-green-400 text-xs">
                         🧑‍💼 {{ cashierStore.cashierName }}
-                        <span v-if="shiftStore.hasActiveShift && cashierStore.workLocation" class="text-gray-400">• {{ cashierStore.workLocation }}</span>
                       </p>
-                      <p v-else class="text-gray-500 text-xs italic">Sin cajero autenticado</p>
+                      <!-- Sucursal y caja cuando hay turno abierto -->
+                      <p v-if="shiftStore.hasActiveShift" class="text-blue-400 text-xs">
+                        📍 {{ sucursalNombre }} • Caja {{ cajaNumero }}
+                      </p>
+                      <p v-else-if="!cashierStore.isCashierAuthenticated" class="text-gray-500 text-xs italic">Sin cajero autenticado</p>
                     </div>
                     <!-- Open/Close Shift Button (only if cashier is authenticated) -->
                     <button
@@ -168,6 +171,39 @@ const lockScreenInfo = computed(() => {
 
 // Computed para ocultar botón "Menú Principal" cuando ya estás en el menú
 const showMenuButton = computed(() => route.path !== '/menu');
+
+// Computed para mostrar sucursal y caja del turno activo
+const sucursalNombre = computed(() => {
+  if (!shiftStore.activeShift) return 'Sucursal';
+
+  // Intentar obtener el nombre de la sucursal desde diferentes fuentes
+  if (cashierStore.sucursal?.nombre) {
+    return cashierStore.sucursal.nombre;
+  }
+  if (cashierStore.sucursal?.tiendadireccion_nombresucursal) {
+    return cashierStore.sucursal.tiendadireccion_nombresucursal;
+  }
+  if (shiftStore.activeShift.sucursal_nombre) {
+    return shiftStore.activeShift.sucursal_nombre;
+  }
+  return 'Sucursal';
+});
+
+const cajaNumero = computed(() => {
+  if (!shiftStore.activeShift) return 1;
+
+  // El campo caja_numero puede venir como "Caja 1" o simplemente "1"
+  const cajaNum = shiftStore.activeShift.caja_numero;
+  if (!cajaNum) return 1;
+
+  // Si es string tipo "Caja 1", extraer el número
+  if (typeof cajaNum === 'string') {
+    const match = cajaNum.match(/\d+/);
+    return match ? parseInt(match[0]) : 1;
+  }
+
+  return cajaNum;
+});
 
 // Bloqueo manual
 const handleLock = () => {
