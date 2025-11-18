@@ -577,11 +577,13 @@ const handlePaymentAdded = (paymentData) => {
 
   try {
     console.log('💳 [POS] Adding payment - shift active:', shiftStore.activeShift?.id);
+    console.log('📦 [POS] paymentData received:', paymentData);
     cartStore.addPayment({
       method: paymentData.method,
       methodName: getPaymentMethodName(paymentData.method),
       amount: paymentData.amount,
-      reference: paymentData.reference
+      reference: paymentData.reference,
+      roundingAmount: paymentData.roundingAmount // 🔧 FIX: Pass roundingAmount through
     });
 
     // Auto-finalizar si el pago completa el total y el modal se cerró
