@@ -46,9 +46,22 @@
                     </span>
                   </div>
 
+                  <!-- Mostrar redondeo si existe -->
+                  <div v-if="roundingAmount && roundingAmount !== 0" class="flex justify-between items-center border-b pb-2">
+                    <span class="text-sm font-medium text-gray-600">Subtotal:</span>
+                    <span class="text-base font-semibold text-gray-900">{{ formatCurrency(totalBeforeRounding) }}</span>
+                  </div>
+
+                  <div v-if="roundingAmount && roundingAmount !== 0" class="flex justify-between items-center border-b pb-2">
+                    <span class="text-sm font-medium text-gray-600">Redondeo:</span>
+                    <span class="text-base font-semibold" :class="roundingAmount < 0 ? 'text-red-600' : 'text-green-600'">
+                      {{ formatCurrency(roundingAmount) }}
+                    </span>
+                  </div>
+
                   <div class="flex justify-between items-center pt-2">
                     <span class="text-sm font-medium text-gray-600">Total:</span>
-                    <span class="text-2xl font-bold text-green-600">{{ formatCurrency(total) }}</span>
+                    <span class="text-2xl font-bold text-green-600">{{ formatCurrency(totalAfterRoundingDisplay) }}</span>
                   </div>
                 </div>
 
@@ -112,6 +125,8 @@ const props = defineProps({
   subtotal: Number,
   tax: Number,
   total: Number,
+  roundingAmount: Number, // Monto del redondeo aplicado
+  totalAfterRounding: Number, // Total después del redondeo
   payments: Array,
   orderId: [Number, String],
   orderNumber: String,
@@ -125,6 +140,21 @@ const store = computed(() => authStore.selectedStore);
 const totalPaid = computed(() => {
   if (!props.payments) return 0;
   return props.payments.reduce((sum, payment) => sum + payment.amount, 0);
+});
+
+// Calcular valores con redondeo
+const totalBeforeRounding = computed(() => props.total);
+const totalAfterRoundingDisplay = computed(() => {
+  // Si se pasó explícitamente totalAfterRounding, usarlo
+  if (props.totalAfterRounding !== undefined && props.totalAfterRounding !== null) {
+    return props.totalAfterRounding;
+  }
+  // Si hay redondeo, calcularlo
+  if (props.roundingAmount !== undefined && props.roundingAmount !== null && props.roundingAmount !== 0) {
+    return props.total + props.roundingAmount;
+  }
+  // Si no hay redondeo, usar total normal
+  return props.total;
 });
 
 const closeModal = () => {

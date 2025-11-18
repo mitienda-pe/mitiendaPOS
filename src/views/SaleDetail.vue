@@ -114,6 +114,8 @@
         :subtotal="getSubtotal()"
         :tax="getTax()"
         :total="getTotal()"
+        :rounding-amount="getRoundingAmount()"
+        :total-after-rounding="getTotalAfterRounding()"
         :cajero-name="order.cajero_nombre"
         :status="order.status"
         :source="order.source"
@@ -293,6 +295,36 @@ const getTotal = () => {
   }
 
   return 0;
+};
+
+// Función para obtener el monto de redondeo
+const getRoundingAmount = () => {
+  if (!order.value) return 0;
+
+  // Buscar el redondeo en _rawDetail
+  if (order.value._rawDetail?.rounding_amount !== undefined && order.value._rawDetail?.rounding_amount !== null) {
+    return parseFloat(order.value._rawDetail.rounding_amount);
+  }
+
+  return 0;
+};
+
+// Función para obtener el total después del redondeo
+const getTotalAfterRounding = () => {
+  if (!order.value) return 0;
+
+  // Buscar el total después de redondeo en _rawDetail
+  if (order.value._rawDetail?.total_after_rounding !== undefined && order.value._rawDetail?.total_after_rounding !== null) {
+    return parseFloat(order.value._rawDetail.total_after_rounding);
+  }
+
+  // Si no existe, calcularlo
+  const roundingAmount = getRoundingAmount();
+  if (roundingAmount !== 0) {
+    return getTotal() + roundingAmount;
+  }
+
+  return getTotal();
 };
 
 // Función para obtener información del comprobante electrónico

@@ -75,6 +75,20 @@
           <span>TOTAL:</span>
           <span>S/ {{ total.toFixed(2) }}</span>
         </div>
+
+        <!-- Redondeo (solo si aplica) -->
+        <div v-if="roundingAmount !== undefined && roundingAmount !== null && roundingAmount !== 0" class="border-t border-dashed border-gray-400 mt-2 pt-2">
+          <div class="flex justify-between text-sm">
+            <span>{{ roundingAmount > 0 ? 'Redondeo (+):' : 'Redondeo (-):' }}</span>
+            <span :class="roundingAmount > 0 ? 'text-red-600' : 'text-green-600'">
+              S/ {{ Math.abs(roundingAmount).toFixed(2) }}
+            </span>
+          </div>
+          <div class="flex justify-between font-bold text-base mt-2">
+            <span>TOTAL A PAGAR:</span>
+            <span>S/ {{ totalAfterRounding.toFixed(2) }}</span>
+          </div>
+        </div>
       </div>
 
       <!-- Métodos de Pago -->
@@ -173,6 +187,14 @@ const props = defineProps({
     type: Number,
     required: true
   },
+  roundingAmount: {
+    type: Number,
+    default: 0
+  },
+  totalAfterRounding: {
+    type: Number,
+    default: null
+  },
 
   // Información adicional
   cajeroName: {
@@ -235,6 +257,20 @@ const customerName = computed(() => {
   }
 
   return 'Cliente General';
+});
+
+// Computed para total después de redondeo
+const totalAfterRounding = computed(() => {
+  // Si se pasó explícitamente, usarlo
+  if (props.totalAfterRounding !== null && props.totalAfterRounding !== undefined) {
+    return props.totalAfterRounding;
+  }
+  // Si hay redondeo, calcularlo
+  if (props.roundingAmount !== undefined && props.roundingAmount !== null && props.roundingAmount !== 0) {
+    return props.total + props.roundingAmount;
+  }
+  // Si no hay redondeo, usar total normal
+  return props.total;
 });
 
 // Helpers para items (manejar diferentes formatos)
