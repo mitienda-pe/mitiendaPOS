@@ -394,15 +394,15 @@
                     <span>{{ formatCurrency(displayTotal) }}</span>
                   </div>
                   <!-- Redondeo (solo si aplica) -->
-                  <div v-if="roundingApplied !== 0" class="flex justify-between text-xs mt-1 border-t border-dashed border-gray-300 pt-1">
-                    <span>{{ roundingApplied > 0 ? 'Redondeo (+):' : 'Redondeo (-):' }}</span>
-                    <span :class="roundingApplied > 0 ? 'text-red-600' : 'text-green-600'">
-                      {{ formatCurrency(Math.abs(roundingApplied)) }}
+                  <div v-if="displayRoundingAmount !== 0" class="flex justify-between text-xs mt-1 border-t border-dashed border-gray-300 pt-1">
+                    <span>{{ displayRoundingAmount > 0 ? 'Redondeo (+):' : 'Redondeo (-):' }}</span>
+                    <span :class="displayRoundingAmount > 0 ? 'text-red-600' : 'text-green-600'">
+                      {{ formatCurrency(Math.abs(displayRoundingAmount)) }}
                     </span>
                   </div>
-                  <div v-if="roundingApplied !== 0" class="flex justify-between font-bold text-sm border-t border-gray-300 pt-1 mt-1">
+                  <div v-if="displayRoundingAmount !== 0" class="flex justify-between font-bold text-sm border-t border-gray-300 pt-1 mt-1">
                     <span>Total a Pagar:</span>
-                    <span>{{ formatCurrency(displayTotal + roundingApplied) }}</span>
+                    <span>{{ formatCurrency(displayTotalAfterRounding) }}</span>
                   </div>
                   <div class="mt-2 border-t border-gray-300 pt-2">
                     <div class="font-semibold mb-1">Forma de pago:</div>
@@ -699,6 +699,22 @@ const displayTax = computed(() => {
 
 const displayTotal = computed(() => {
   return props.completedSaleData?.total ?? props.total;
+});
+
+const displayRoundingAmount = computed(() => {
+  return props.completedSaleData?.roundingAmount ?? 0;
+});
+
+const displayTotalAfterRounding = computed(() => {
+  if (props.completedSaleData?.totalAfterRounding !== undefined && props.completedSaleData?.totalAfterRounding !== null) {
+    return props.completedSaleData.totalAfterRounding;
+  }
+  // Si hay redondeo, calcularlo
+  const rounding = displayRoundingAmount.value;
+  if (rounding !== 0) {
+    return displayTotal.value + rounding;
+  }
+  return displayTotal.value;
 });
 
 const displayDocumentType = computed(() => {

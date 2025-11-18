@@ -877,6 +877,8 @@ const handlePaymentCompleted = async () => {
           subtotal: parseFloat(orderDetails.subtotal || 0),
           tax: parseFloat(orderDetails.tax || 0),
           total: parseFloat(orderDetails.tiendaventa_totalpagar || orderDetails.total || 0),
+          roundingAmount: cartStore.appliedRounding, // Redondeo aplicado desde el cart store
+          totalAfterRounding: cartStore.totalWithRounding, // Total después del redondeo
           documentType: billingDocumentType.value,
           createdAt: orderDetails.tiendaventa_fecha || new Date().toISOString(),
           cajero: orderDetails.cajero_nombre || authStore.user?.name || '',
@@ -926,6 +928,8 @@ const handlePaymentCompleted = async () => {
           subtotal: subtotal.value,
           tax: tax.value,
           total: total.value,
+          roundingAmount: cartStore.appliedRounding, // Redondeo aplicado desde el cart store
+          totalAfterRounding: cartStore.totalWithRounding, // Total después del redondeo
           documentType: billingDocumentType.value,
           createdAt: new Date().toISOString(),
           cajero: authStore.user?.name || '',
