@@ -720,7 +720,9 @@ const handlePaymentCompleted = async () => {
       subtotal: subtotal.value,
       tax: tax.value,
       tax_rate: 0.18,
-      total: total.value,
+      total: total.value, // Total original (antes de redondeo)
+      rounding_amount: cartStore.appliedRounding, // Redondeo aplicado (puede ser positivo o negativo)
+      total_after_rounding: cartStore.totalWithRounding, // Total final después de redondeo
       currency: 'PEN',
       notes: '' // Campo para notas adicionales
     };
