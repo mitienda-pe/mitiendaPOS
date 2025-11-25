@@ -76,6 +76,10 @@ const stockValidationErrors = ref([]);
 // to reuse in order creation (avoids ~10s duplicate NetSuite call)
 const validatedInventoryNumbers = ref(null);
 
+// 🔥 OPTIMIZATION: Track if stock has been validated for current cart
+// to avoid re-validating when adding multiple payment methods
+const stockValidatedForCurrentCart = ref(false);
+
 // Tipo de comprobante seleccionado al inicio de la venta
 const billingDocumentType = ref('boleta'); // 'boleta' o 'factura'
 
@@ -217,6 +221,10 @@ const addToCart = (product) => {
     }
 
     cartStore.addItem(product);
+
+    // 🔥 OPTIMIZATION: Reset stock validation flag when cart changes
+    // This ensures stock is re-validated if products are added after initial validation
+    stockValidatedForCurrentCart.value = false;
   } catch (error) {
     alert(error.message);
   }
@@ -232,6 +240,9 @@ const incrementQuantity = (item) => {
     }
 
     cartStore.incrementQuantity(item.id);
+
+    // 🔥 OPTIMIZATION: Reset stock validation when quantity changes
+    stockValidatedForCurrentCart.value = false;
   } catch (error) {
     alert(error.message);
   }
@@ -247,6 +258,9 @@ const decrementQuantity = (item) => {
     }
 
     cartStore.decrementQuantity(item.id);
+
+    // 🔥 OPTIMIZATION: Reset stock validation when quantity changes
+    stockValidatedForCurrentCart.value = false;
   } catch (error) {
     alert(error.message);
   }
@@ -262,6 +276,9 @@ const updateQuantity = (item, newQuantity) => {
     }
 
     cartStore.updateItemQuantity(item.id, newQuantity);
+
+    // 🔥 OPTIMIZATION: Reset stock validation when quantity changes
+    stockValidatedForCurrentCart.value = false;
   } catch (error) {
     alert(error.message);
   }
@@ -284,6 +301,9 @@ const removeItem = (item) => {
     }
 
     cartStore.removeItem(item.id);
+
+    // 🔥 OPTIMIZATION: Reset stock validation when item is removed
+    stockValidatedForCurrentCart.value = false;
   } catch (error) {
     alert(error.message);
   }
@@ -464,6 +484,20 @@ const processPayment = async () => {
     return;
   }
 
+  // 🔥 OPTIMIZATION: Skip stock validation if already validated for this cart
+  // This happens when adding multiple payment methods (e.g., cash + card)
+  if (stockValidatedForCurrentCart.value && payments.value.length > 0) {
+    console.log('✨ [OPTIMIZATION] Stock already validated for this cart, skipping re-validation');
+    // Solo mostrar el modal si hay un saldo pendiente
+    if (remainingAmount.value > 0) {
+      showPaymentModal.value = true;
+    } else if (payments.value.length > 0) {
+      // Si ya está pagado completamente, procesar la venta
+      handlePaymentCompleted();
+    }
+    return;
+  }
+
   // Mostrar overlay de "Consultando Stock"
   validatingStock.value = true;
 
@@ -518,6 +552,10 @@ const processPayment = async () => {
         console.log(`⏱️ [TIMING] Stock validation took ${response.timing.total_ms}ms (${response.timing.avg_per_item_ms}ms per item)`);
       }
     }
+
+    // 🔥 OPTIMIZATION: Mark stock as validated for this cart
+    // Subsequent payment additions won't trigger re-validation
+    stockValidatedForCurrentCart.value = true;
 
     // Ocultar overlay de validación
     validatingStock.value = false;
@@ -1007,8 +1045,9 @@ const resetSale = (orderData = null) => {
   saleHasUnsavedChanges.value = false;
   billingDocumentType.value = 'boleta'; // Reset to default
 
-  // 🔥 OPTIMIZATION: Clear validated inventory numbers
+  // 🔥 OPTIMIZATION: Clear validated inventory numbers and stock validation flag
   validatedInventoryNumbers.value = null;
+  stockValidatedForCurrentCart.value = false;
 };
 
 const handleBillingSuccess = (billingData) => {
