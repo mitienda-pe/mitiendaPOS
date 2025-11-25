@@ -1044,27 +1044,60 @@ const addPayment = () => {
       break;
 
     case 'tarjeta':
+      // Métodos exactos deben "absorber" el redondeo si existe
+      // Usar el saldo real del invoice (sin redondeo) más cualquier redondeo aplicado
       amount = Math.min(paymentAmount.value, props.remainingAmount);
+
+      // Si ya hay redondeo aplicado de un pago anterior de efectivo,
+      // la tarjeta debe cubrir el monto exacto compensando el redondeo
+      if (cartStore.appliedRounding !== 0 && props.payments.length > 0) {
+        amount = Math.min(paymentAmount.value, props.remainingAmount - cartStore.appliedRounding);
+        console.log('💳 [PaymentModal] Tarjeta absorbe redondeo:', {
+          remainingAmount: props.remainingAmount,
+          appliedRounding: cartStore.appliedRounding,
+          adjustedAmount: amount
+        });
+      }
       reference = `Auth: ${cardCode.value}`;
       break;
     case 'banco':
       amount = Math.min(paymentAmount.value, props.remainingAmount);
+      if (cartStore.appliedRounding !== 0 && props.payments.length > 0) {
+        amount = Math.min(paymentAmount.value, props.remainingAmount - cartStore.appliedRounding);
+        console.log('🏦 [PaymentModal] Banco absorbe redondeo:', {
+          remainingAmount: props.remainingAmount,
+          appliedRounding: cartStore.appliedRounding,
+          adjustedAmount: amount
+        });
+      }
       reference = `Op: ${bankOperationNumber.value}`;
       break;
     case 'nota_credito':
       amount = Math.min(paymentAmount.value, props.remainingAmount);
+      if (cartStore.appliedRounding !== 0 && props.payments.length > 0) {
+        amount = Math.min(paymentAmount.value, props.remainingAmount - cartStore.appliedRounding);
+      }
       reference = `NC: ${creditNoteNumber.value}`;
       break;
     case 'qr':
       amount = Math.min(paymentAmount.value, props.remainingAmount);
+      if (cartStore.appliedRounding !== 0 && props.payments.length > 0) {
+        amount = Math.min(paymentAmount.value, props.remainingAmount - cartStore.appliedRounding);
+      }
       reference = 'QR';
       break;
     case 'giftcard':
       amount = Math.min(paymentAmount.value, props.remainingAmount);
+      if (cartStore.appliedRounding !== 0 && props.payments.length > 0) {
+        amount = Math.min(paymentAmount.value, props.remainingAmount - cartStore.appliedRounding);
+      }
       reference = `GC: ${giftCardCode.value}`;
       break;
     default:
       amount = Math.min(paymentAmount.value, props.remainingAmount);
+      if (cartStore.appliedRounding !== 0 && props.payments.length > 0) {
+        amount = Math.min(paymentAmount.value, props.remainingAmount - cartStore.appliedRounding);
+      }
       reference = '';
   }
 
