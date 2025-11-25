@@ -77,11 +77,23 @@
                     </svg>
                     Tarjeta
                   </button>
-                  <button @click="selectPaymentMethod('qr')" :class="[
+                  <button @click="selectPaymentMethod('banco')" :class="[
                     'btn flex items-center justify-center py-3 rounded-lg transition-colors duration-200',
-                    paymentMethod === 'qr'
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-purple-100 hover:bg-purple-200 text-purple-800'
+                    paymentMethod === 'banco'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-indigo-100 hover:bg-indigo-200 text-indigo-800'
+                  ]">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="12" y1="1" x2="12" y2="3"></line>
+                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                      <line x1="12" y1="21" x2="12" y2="23"></line>
+                    </svg>
+                    Banco
+                  </button>
+                  <button @click="selectPaymentMethod('qr')" disabled :class="[
+                    'btn flex items-center justify-center py-3 rounded-lg transition-colors duration-200',
+                    'bg-gray-200 text-gray-400 cursor-not-allowed opacity-50'
                   ]">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none"
                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -93,11 +105,9 @@
                     </svg>
                     QR
                   </button>
-                  <button @click="selectPaymentMethod('credito')" :class="[
+                  <button @click="selectPaymentMethod('credito')" disabled :class="[
                     'btn flex items-center justify-center py-3 rounded-lg transition-colors duration-200',
-                    paymentMethod === 'credito'
-                      ? 'bg-yellow-600 text-white'
-                      : 'bg-yellow-100 hover:bg-yellow-200 text-yellow-800'
+                    'bg-gray-200 text-gray-400 cursor-not-allowed opacity-50'
                   ]">
 
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none"
@@ -111,11 +121,9 @@
 
                     Crédito
                   </button>
-                  <button @click="selectPaymentMethod('giftcard')" :class="[
+                  <button @click="selectPaymentMethod('giftcard')" disabled :class="[
                     'btn flex items-center justify-center py-3 rounded-lg transition-colors duration-200',
-                    paymentMethod === 'giftcard'
-                      ? 'bg-pink-600 text-white'
-                      : 'bg-pink-100 hover:bg-pink-200 text-pink-800'
+                    'bg-gray-200 text-gray-400 cursor-not-allowed opacity-50'
                   ]">
 
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none"
@@ -128,11 +136,9 @@
 
                     Gift Card
                   </button>
-                  <button @click="selectPaymentMethod('puntos')" :class="[
+                  <button @click="selectPaymentMethod('puntos')" disabled :class="[
                     'btn flex items-center justify-center py-3 rounded-lg transition-colors duration-200',
-                    paymentMethod === 'puntos'
-                      ? 'bg-orange-600 text-white'
-                      : 'bg-orange-100 hover:bg-orange-200 text-orange-800'
+                    'bg-gray-200 text-gray-400 cursor-not-allowed opacity-50'
                   ]">
 
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none"
@@ -147,11 +153,9 @@
 
                     Puntos
                   </button>
-                  <button @click="selectPaymentMethod('link')" :class="[
+                  <button @click="selectPaymentMethod('link')" disabled :class="[
                     'btn flex items-center justify-center py-3 rounded-lg transition-colors duration-200',
-                    paymentMethod === 'link'
-                      ? 'bg-teal-600 text-white'
-                      : 'bg-teal-100 hover:bg-teal-200 text-teal-800'
+                    'bg-gray-200 text-gray-400 cursor-not-allowed opacity-50'
                   ]">
 
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none"
@@ -299,6 +303,30 @@
                   </p>
                 </div>
 
+                <!-- Banco (Depósito/Transferencia) -->
+                <div v-if="paymentMethod === 'banco'" class="mb-3">
+                  <RightToLeftMoneyInput v-model="paymentAmount" label="Monto transferido"
+                    helpText="Ingrese el monto de la transferencia o depósito" />
+                  <label class="block text-sm font-medium text-gray-700 mb-1 mt-2">
+                    Número de operación <span class="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    v-model="bankOperationNumber"
+                    placeholder="Ej: 000123456789"
+                    required
+                    maxlength="100"
+                    class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    :class="{'border-red-500': paymentMethod === 'banco' && !bankOperationNumber && attemptedSubmit}"
+                  />
+                  <p v-if="paymentMethod === 'banco' && !bankOperationNumber && attemptedSubmit" class="text-xs text-red-600 mt-1">
+                    Este campo es obligatorio para pagos por transferencia/depósito
+                  </p>
+                  <p class="text-xs text-gray-500 mt-1">
+                    Ingrese el número de operación de la transferencia o depósito bancario
+                  </p>
+                </div>
+
                 <!-- QR -->
                 <div v-if="paymentMethod === 'qr'" class="mb-3">
                   <RightToLeftMoneyInput v-model="paymentAmount" label="Monto pagado"
@@ -323,6 +351,30 @@
                   <label class="block text-sm font-medium text-gray-700 mb-1 mt-2">Código de Gift Card</label>
                   <input type="text" v-model="giftCardCode"
                     class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+
+                <!-- Nota de Crédito -->
+                <div v-if="paymentMethod === 'nota_credito'" class="mb-3">
+                  <RightToLeftMoneyInput v-model="paymentAmount" label="Monto de la Nota de Crédito"
+                    helpText="Ingrese el monto a aplicar de la nota de crédito" />
+                  <label class="block text-sm font-medium text-gray-700 mb-1 mt-2">
+                    Serie y Número <span class="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    v-model="creditNoteNumber"
+                    placeholder="Ej: F001-00001234"
+                    required
+                    maxlength="50"
+                    class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    :class="{'border-red-500': paymentMethod === 'nota_credito' && !creditNoteNumber && attemptedSubmit}"
+                  />
+                  <p v-if="paymentMethod === 'nota_credito' && !creditNoteNumber && attemptedSubmit" class="text-xs text-red-600 mt-1">
+                    Este campo es obligatorio para pagos con nota de crédito
+                  </p>
+                  <p class="text-xs text-gray-500 mt-1">
+                    Ingrese la serie y número de la nota de crédito (formato: SERIE-NÚMERO)
+                  </p>
                 </div>
               </div>
 
@@ -679,6 +731,8 @@ const paymentAmount = ref(0);
 const cashAmount = ref(0);
 const change = ref(0);
 const cardCode = ref('');
+const bankOperationNumber = ref('');
+const creditNoteNumber = ref('');
 const giftCardCode = ref('');
 const currentReference = ref('');
 const showTicket = ref(props.showTicket);
@@ -793,6 +847,14 @@ const isPaymentValid = computed(() => {
     return false;
   }
 
+  if (paymentMethod.value === 'banco' && !bankOperationNumber.value) {
+    return false;
+  }
+
+  if (paymentMethod.value === 'nota_credito' && !creditNoteNumber.value) {
+    return false;
+  }
+
   if (paymentMethod.value === 'giftcard' && !giftCardCode.value) {
     return false;
   }
@@ -815,6 +877,8 @@ const selectPaymentMethod = (method) => {
   change.value = 0;
   currentReference.value = '';
   cardCode.value = '';
+  bankOperationNumber.value = '';
+  creditNoteNumber.value = '';
   giftCardCode.value = '';
   attemptedSubmit.value = false;
   cashValidation.value = null;
@@ -887,10 +951,13 @@ const getPaymentMethodName = (method) => {
   const methods = {
     'efectivo': 'Efectivo',
     'tarjeta': 'Tarjeta de crédito/débito',
+    'banco': 'Transferencia/Depósito bancario',
     'qr': 'Pago con QR',
     'credito': 'Crédito',
     'giftcard': 'Gift Card',
-    'puntos': 'Puntos'
+    'puntos': 'Puntos',
+    'link': 'Link de pago',
+    'nota_credito': 'Nota de Crédito'
   };
 
   return methods[method] || '';
@@ -903,6 +970,16 @@ const addPayment = () => {
   // Validar campos obligatorios según método de pago
   if (paymentMethod.value === 'tarjeta' && !cardCode.value) {
     console.warn('⚠️ [PaymentModal] Falta número de autorización para pago con tarjeta');
+    return;
+  }
+
+  if (paymentMethod.value === 'banco' && !bankOperationNumber.value) {
+    console.warn('⚠️ [PaymentModal] Falta número de operación para pago bancario');
+    return;
+  }
+
+  if (paymentMethod.value === 'nota_credito' && !creditNoteNumber.value) {
+    console.warn('⚠️ [PaymentModal] Falta serie y número para nota de crédito');
     return;
   }
 
@@ -970,6 +1047,14 @@ const addPayment = () => {
       amount = Math.min(paymentAmount.value, props.remainingAmount);
       reference = `Auth: ${cardCode.value}`;
       break;
+    case 'banco':
+      amount = Math.min(paymentAmount.value, props.remainingAmount);
+      reference = `Op: ${bankOperationNumber.value}`;
+      break;
+    case 'nota_credito':
+      amount = Math.min(paymentAmount.value, props.remainingAmount);
+      reference = `NC: ${creditNoteNumber.value}`;
+      break;
     case 'qr':
       amount = Math.min(paymentAmount.value, props.remainingAmount);
       reference = 'QR';
@@ -1005,6 +1090,18 @@ const addPayment = () => {
   if (paymentMethod.value === 'tarjeta' && cardCode.value) {
     paymentData.authorization_number = cardCode.value.trim();
     console.log('💳 [PaymentModal] authorization_number agregado:', cardCode.value);
+  }
+
+  // Agregar número de operación si es pago bancario
+  if (paymentMethod.value === 'banco' && bankOperationNumber.value) {
+    paymentData.authorization_number = bankOperationNumber.value.trim();
+    console.log('🏦 [PaymentModal] authorization_number (operación bancaria) agregado:', bankOperationNumber.value);
+  }
+
+  // Agregar serie y número si es nota de crédito
+  if (paymentMethod.value === 'nota_credito' && creditNoteNumber.value) {
+    paymentData.credit_note_number = creditNoteNumber.value.trim();
+    console.log('📄 [PaymentModal] credit_note_number agregado:', creditNoteNumber.value);
   }
 
   // Agregar redondeo solo si es efectivo y hay redondeo
@@ -1045,6 +1142,8 @@ const resetForm = () => {
   cashAmount.value = 0;
   change.value = 0;
   cardCode.value = '';
+  bankOperationNumber.value = '';
+  creditNoteNumber.value = '';
   giftCardCode.value = '';
   currentReference.value = '';
   showTicket.value = false;
