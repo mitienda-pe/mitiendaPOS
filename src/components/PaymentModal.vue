@@ -80,8 +80,8 @@
                   <button @click="selectPaymentMethod('banco')" :class="[
                     'btn flex items-center justify-center py-3 rounded-lg transition-colors duration-200',
                     paymentMethod === 'banco'
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-indigo-100 hover:bg-indigo-200 text-indigo-800'
+                      ? 'bg-cyan-600 text-white'
+                      : 'bg-cyan-100 hover:bg-cyan-200 text-cyan-800'
                   ]">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none"
                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -90,6 +90,24 @@
                       <line x1="12" y1="21" x2="12" y2="23"></line>
                     </svg>
                     Banco
+                  </button>
+                  <button @click="selectPaymentMethod('nota_credito')" :class="[
+                    'btn flex items-center justify-center py-3 rounded-lg transition-colors duration-200',
+                    paymentMethod === 'nota_credito'
+                      ? 'bg-red-600 text-white'
+                      : 'bg-red-100 hover:bg-red-200 text-red-800'
+                  ]">
+
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="16" y1="13" x2="8" y2="13" />
+                      <line x1="16" y1="17" x2="8" y2="17" />
+                      <polyline points="10 9 9 9 8 9" />
+                    </svg>
+
+                    Nota C.
                   </button>
                   <button @click="selectPaymentMethod('qr')" disabled :class="[
                     'btn flex items-center justify-center py-3 rounded-lg transition-colors duration-200',
@@ -165,24 +183,6 @@
                     </svg>
 
                     Link
-                  </button>
-                  <button @click="selectPaymentMethod('nota_credito')" :class="[
-                    'btn flex items-center justify-center py-3 rounded-lg transition-colors duration-200',
-                    paymentMethod === 'nota_credito'
-                      ? 'bg-red-600 text-white'
-                      : 'bg-red-100 hover:bg-red-200 text-red-800'
-                  ]">
-
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none"
-                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                      <polyline points="14 2 14 8 20 8" />
-                      <line x1="16" y1="13" x2="8" y2="13" />
-                      <line x1="16" y1="17" x2="8" y2="17" />
-                      <polyline points="10 9 9 9 8 9" />
-                    </svg>
-
-                    Nota C.
                   </button>
                 </div>
               </div>
