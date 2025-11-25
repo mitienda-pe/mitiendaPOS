@@ -279,9 +279,24 @@
                 <div v-if="paymentMethod === 'tarjeta'" class="mb-3">
                   <RightToLeftMoneyInput v-model="paymentAmount" label="Monto cargado"
                     helpText="Ingrese el monto cargado por la tarjeta" />
-                  <label class="block text-sm font-medium text-gray-700 mb-1 mt-2">Código de autorización</label>
-                  <input type="text" v-model="cardCode"
-                    class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <label class="block text-sm font-medium text-gray-700 mb-1 mt-2">
+                    Número de autorización <span class="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    v-model="cardCode"
+                    placeholder="Ej: 123456"
+                    required
+                    maxlength="100"
+                    class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    :class="{'border-red-500': paymentMethod === 'tarjeta' && !cardCode && attemptedSubmit}"
+                  />
+                  <p v-if="paymentMethod === 'tarjeta' && !cardCode && attemptedSubmit" class="text-xs text-red-600 mt-1">
+                    Este campo es obligatorio para pagos con tarjeta
+                  </p>
+                  <p class="text-xs text-gray-500 mt-1">
+                    Ingrese el número de autorización de la transacción con tarjeta
+                  </p>
                 </div>
 
                 <!-- QR -->
@@ -669,6 +684,7 @@ const currentReference = ref('');
 const showTicket = ref(props.showTicket);
 const showEmailForm = ref(false);
 const emailAddress = ref('');
+const attemptedSubmit = ref(false);
 
 // Estados para sugerencias y validaciones de efectivo
 const paymentSuggestions = ref([]);
@@ -800,6 +816,7 @@ const selectPaymentMethod = (method) => {
   currentReference.value = '';
   cardCode.value = '';
   giftCardCode.value = '';
+  attemptedSubmit.value = false;
   cashValidation.value = null;
   changeBreakdownDisplay.value = null;
 
@@ -880,6 +897,15 @@ const getPaymentMethodName = (method) => {
 };
 
 const addPayment = () => {
+  // Marcar que se intentó enviar el formulario
+  attemptedSubmit.value = true;
+
+  // Validar campos obligatorios según método de pago
+  if (paymentMethod.value === 'tarjeta' && !cardCode.value) {
+    console.warn('⚠️ [PaymentModal] Falta número de autorización para pago con tarjeta');
+    return;
+  }
+
   let reference = '';
   let amount = 0;
   let roundingAmount = 0;
@@ -975,6 +1001,12 @@ const addPayment = () => {
     reference: reference
   };
 
+  // Agregar número de autorización si es pago con tarjeta
+  if (paymentMethod.value === 'tarjeta' && cardCode.value) {
+    paymentData.authorization_number = cardCode.value.trim();
+    console.log('💳 [PaymentModal] authorization_number agregado:', cardCode.value);
+  }
+
   // Agregar redondeo solo si es efectivo y hay redondeo
   console.log('🔍 [PaymentModal] Verificando si agregar roundingAmount:', {
     method: paymentMethod.value,
@@ -1018,6 +1050,7 @@ const resetForm = () => {
   showTicket.value = false;
   showEmailForm.value = false;
   emailAddress.value = '';
+  attemptedSubmit.value = false;
   paymentSuggestions.value = [];
   cashValidation.value = null;
   changeBreakdownDisplay.value = null;

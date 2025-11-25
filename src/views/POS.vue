@@ -715,7 +715,8 @@ const handlePaymentCompleted = async () => {
         method: payment.method,
         method_name: payment.methodName,
         amount: payment.amount,
-        reference: payment.reference || null
+        reference: payment.reference || null,
+        authorization_number: payment.authorization_number || null
       })),
       subtotal: subtotal.value,
       tax: tax.value,
@@ -872,7 +873,8 @@ const handlePaymentCompleted = async () => {
             method: payment.method,
             methodName: payment.methodName,
             amount: payment.amount,
-            reference: payment.reference || ''
+            reference: payment.reference || '',
+            authorization_number: payment.authorization_number || null
           })),
           subtotal: parseFloat(orderDetails.subtotal || 0),
           tax: parseFloat(orderDetails.tax || 0),
