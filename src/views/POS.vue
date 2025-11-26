@@ -753,8 +753,8 @@ const handlePaymentCompleted = async () => {
         method: payment.method,
         method_name: payment.methodName,
         amount: payment.amount,
-        reference: payment.reference || null,
-        authorization_number: payment.authorization_number || null
+        reference: payment.reference || null
+        // authorization_number NO se envía al API legacy - causa error
       })),
       subtotal: subtotal.value,
       tax: tax.value,
