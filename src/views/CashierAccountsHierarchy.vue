@@ -349,9 +349,25 @@ const loadAccounts = async () => {
     // Show accounts with matching tienda_id OR null tienda_id (legacy records)
     // Convert both to numbers for comparison to handle type mismatch (API returns strings, store has numbers)
     const accountsData = response.data || [];
-    allAccounts.value = accountsData.filter(a => {
+    const filtered = accountsData.filter(a => {
       if (a.tienda_id === null) return true; // Legacy records
       return parseInt(a.tienda_id) === currentStoreId.value;
+    });
+
+    // Sort by: Branch → Caja → Payment Method
+    allAccounts.value = filtered.sort((a, b) => {
+      // 1. Sort by branch (nulls first for "Todas")
+      const branchA = a.tiendadireccion_id || 0;
+      const branchB = b.tiendadireccion_id || 0;
+      if (branchA !== branchB) return branchA - branchB;
+
+      // 2. Sort by caja (nulls first for "Todas")
+      const cajaA = a.caja_numero || 0;
+      const cajaB = b.caja_numero || 0;
+      if (cajaA !== cajaB) return cajaA - cajaB;
+
+      // 3. Sort by payment method (alphabetically)
+      return (a.payment_method || '').localeCompare(b.payment_method || '');
     });
   } catch (err) {
     console.error('Error cargando configuraciones:', err);
@@ -395,6 +411,33 @@ const saveAccount = async () => {
   try {
     saving.value = true;
     error.value = null;
+
+    // Validate for duplicates: same branch + caja + payment_method
+    const isDuplicate = allAccounts.value.some(account => {
+      // Skip the account being edited
+      if (showEditModal.value && account.id === editingAccount.value.id) {
+        return false;
+      }
+
+      // Check if all three fields match
+      const sameBranch = (account.tiendadireccion_id || null) === (formData.value.tiendadireccion_id || null);
+      const sameCaja = (account.caja_numero || null) === (formData.value.caja_numero || null);
+      const samePayment = account.payment_method === formData.value.payment_method;
+
+      return sameBranch && sameCaja && samePayment;
+    });
+
+    if (isDuplicate) {
+      const branchName = formData.value.tiendadireccion_id
+        ? branches.value.find(b => b.tiendadireccion_id === formData.value.tiendadireccion_id)?.tiendadireccion_nombresucursal || 'Sucursal'
+        : 'Todas las sucursales';
+      const cajaName = formData.value.caja_numero ? `Caja ${formData.value.caja_numero}` : 'Todas las cajas';
+      const paymentLabel = getPaymentMethodLabel(formData.value.payment_method);
+
+      error.value = `Ya existe una configuración para ${branchName} → ${cajaName} → ${paymentLabel}`;
+      saving.value = false;
+      return;
+    }
 
     if (showEditModal.value) {
       await cashierAccountsApi.update(editingAccount.value.id, formData.value);
