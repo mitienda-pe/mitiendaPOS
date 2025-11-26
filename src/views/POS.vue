@@ -681,7 +681,7 @@ const handlePaymentCompleted = async () => {
     const orderData = {
       source: 'pos', // Identificar que la venta viene del POS
       pasarela_id: 98, // ID especial para ventas del POS
-      tiendadireccion_id: cashierStore.sucursal?.id || null, // Sucursal desde el login del cajero
+      // tiendadireccion_id: cashierStore.sucursal?.id || null, // TEMPORALMENTE DESHABILITADO - causa error en API legacy
       customer: {
         id: selectedCustomer.value ? selectedCustomer.value.id : null,
         email: selectedCustomer.value?.email || selectedCustomer.value?.correoElectronico || selectedCustomer.value?.correo || selectedCustomer.value?.tiendacliente_correo_electronico || selectedCustomer.value?.tiendacliente_correo || '',
