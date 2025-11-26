@@ -214,29 +214,14 @@
             <label class="block text-sm font-medium text-gray-700 mb-1">
               Número de Caja *
             </label>
-            <input
+            <select
               v-model.number="formData.caja_numero"
-              type="number"
-              min="1"
-              max="50"
               required
               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              placeholder="1"
-            />
-          </div>
-
-          <!-- Caja Name (only for Caja level, optional) -->
-          <div v-if="activeTab === 'caja'">
-            <label class="block text-sm font-medium text-gray-700 mb-1">
-              Nombre de Caja (opcional)
-            </label>
-            <input
-              v-model="formData.caja_nombre"
-              type="text"
-              maxlength="100"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              placeholder="Ej: Caja Principal, Caja Express"
-            />
+            >
+              <option value="">Selecciona un número</option>
+              <option v-for="n in availableCashiers" :key="n" :value="n">Caja {{ n }}</option>
+            </select>
           </div>
 
           <!-- Payment Method -->
@@ -258,6 +243,8 @@
               <option value="transferencia">Transferencia</option>
               <option value="qr">QR</option>
               <option value="nota_credito">Nota de Crédito</option>
+              <option value="redondeo_favor">Redondeo a Favor</option>
+              <option value="redondeo_contra">Redondeo en Contra</option>
             </select>
           </div>
 
@@ -360,6 +347,7 @@ const tabs = [
 
 const activeTab = ref('merchant');
 const branches = ref([]);
+const cashiers = ref([]);
 const allAccounts = ref([]);
 const selectedBranchId = ref(null);
 const loading = ref(true);
@@ -384,6 +372,15 @@ const formData = ref({
 
 const editingAccount = ref(null);
 const accountToDelete = ref(null);
+
+const selectedBranch = computed(() => {
+  return branches.value.find(b => b.tiendadireccion_id === selectedBranchId.value);
+});
+
+const availableCashiers = computed(() => {
+  if (!selectedBranch.value) return 0;
+  return selectedBranch.value.tiendadireccion_numero_cajas || 1;
+});
 
 const filteredAccounts = computed(() => {
   if (activeTab.value === 'merchant') {
@@ -441,7 +438,6 @@ const openCreateModal = () => {
     tienda_id: currentStoreId.value,
     tiendadireccion_id: activeTab.value !== 'merchant' ? selectedBranchId.value : null,
     caja_numero: null,
-    caja_nombre: '',
     payment_method: '',
     netsuite_account_id: '',
     is_active: 1
@@ -455,7 +451,6 @@ const editAccount = (account) => {
     tienda_id: account.tienda_id,
     tiendadireccion_id: account.tiendadireccion_id || null,
     caja_numero: account.caja_numero || null,
-    caja_nombre: account.caja_nombre || '',
     payment_method: account.payment_method,
     netsuite_account_id: account.netsuite_account_id,
     is_active: account.is_active
@@ -535,7 +530,9 @@ const getPaymentMethodLabel = (method) => {
     'plin': 'Plin',
     'transferencia': 'Transferencia',
     'qr': 'QR',
-    'nota_credito': 'Nota de Crédito'
+    'nota_credito': 'Nota de Crédito',
+    'redondeo_favor': 'Redondeo a Favor',
+    'redondeo_contra': 'Redondeo en Contra'
   };
   return labels[method] || method;
 };
@@ -549,7 +546,9 @@ const getPaymentMethodBadgeClass = (method) => {
     'plin': 'bg-pink-100 text-pink-800',
     'transferencia': 'bg-indigo-100 text-indigo-800',
     'qr': 'bg-yellow-100 text-yellow-800',
-    'nota_credito': 'bg-orange-100 text-orange-800'
+    'nota_credito': 'bg-orange-100 text-orange-800',
+    'redondeo_favor': 'bg-teal-100 text-teal-800',
+    'redondeo_contra': 'bg-red-100 text-red-800'
   };
   return classes[method] || 'bg-gray-100 text-gray-800';
 };
