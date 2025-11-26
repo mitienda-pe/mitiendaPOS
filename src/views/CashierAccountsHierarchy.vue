@@ -379,7 +379,9 @@ const selectedBranch = computed(() => {
 
 const availableCashiers = computed(() => {
   if (!selectedBranch.value) return 0;
-  return selectedBranch.value.tiendadireccion_numero_cajas || 1;
+  const numCajas = parseInt(selectedBranch.value.tiendadireccion_numero_cajas) || 1;
+  console.log('availableCashiers computed:', numCajas, typeof numCajas);
+  return numCajas;
 });
 
 const filteredAccounts = computed(() => {
