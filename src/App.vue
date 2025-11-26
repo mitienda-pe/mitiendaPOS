@@ -263,7 +263,8 @@ const onShiftOpened = async (data) => {
       data.montoInicial,
       data.notas,
       `Caja ${data.cajaNumero}`,
-      cashierStore.cashier.empleado_id
+      cashierStore.cashier.empleado_id,
+      data.sucursalId // tiendadireccion_id
     );
 
     if (result.success) {
