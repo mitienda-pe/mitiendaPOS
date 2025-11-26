@@ -1027,10 +1027,17 @@ const addPayment = () => {
         reference = 'Pago exacto';
       }
 
-      // 🔧 FIX: Solo calcular y pasar redondeo si es el primer pago
-      // El redondeo se calcula aquí si no hay pagos previos
-      if (props.payments.length === 0 && roundingToDisplay.value !== 0) {
+      // 🔧 CRITICAL FIX: Solo aplicar redondeo si:
+      // 1. Es el primer pago (no hay pagos previos)
+      // 2. El pago cubre el 100% del saldo (changeValue >= 0, es decir, pago completo o con cambio)
+      // 3. Hay redondeo calculado
+      // Si es pago parcial (changeValue < 0), NO aplicar redondeo porque se combinarán métodos
+      const isFullPayment = changeValue >= 0;
+      if (props.payments.length === 0 && roundingToDisplay.value !== 0 && isFullPayment) {
         roundingAmount = roundingToDisplay.value;
+        console.log('✅ [PaymentModal] Aplicando redondeo para pago completo en efectivo');
+      } else if (props.payments.length === 0 && !isFullPayment) {
+        console.log('⚠️ [PaymentModal] NO aplicar redondeo - es pago parcial (se combinarán métodos)');
       }
 
       console.log('💰 [PaymentModal] Calculando pago en efectivo:', {
@@ -1039,6 +1046,7 @@ const addPayment = () => {
         montoAPagar: amount,
         cambio: changeValue,
         redondeo: roundingAmount,
+        isFullPayment,
         esPagoCompleto: changeValue >= 0
       });
       break;
@@ -1214,6 +1222,7 @@ const totalChange = computed(() => {
 // Si ya hay un pago en efectivo registrado, usar ese redondeo
 // Si el método seleccionado es efectivo y es el primer pago, calcular redondeo anticipado
 // 🔧 CRITICAL FIX: Si hay pagos previos y el método actual NO es efectivo, NO mostrar redondeo
+// 🔧 CRITICAL FIX: Si es efectivo pero es pago parcial, NO mostrar redondeo
 const roundingToDisplay = computed(() => {
   // 1. Si ya hay redondeo aplicado Y el método actual NO es efectivo Y hay pagos previos,
   //    NO mostrar redondeo (se eliminará al agregar el pago)
@@ -1229,14 +1238,23 @@ const roundingToDisplay = computed(() => {
   }
 
   // 3. Si el método seleccionado es efectivo Y no hay pagos previos, calcular redondeo anticipado
+  //    PERO SOLO si el monto ingresado cubre el 100% del total (pago completo)
   if (paymentMethod.value === 'efectivo' && props.payments.length === 0) {
+    // Si hay monto ingresado y es menor al total, es pago parcial → NO aplicar redondeo
+    if (cashAmount.value > 0 && cashAmount.value < props.total) {
+      console.log('🔍 [PaymentModal] NO mostrar redondeo - pago parcial en efectivo');
+      return 0;
+    }
+
+    // Si es pago completo (sin monto ingresado o monto >= total), calcular redondeo
     const totalBeforeRounding = props.total;
     const roundedTotal = Math.round(totalBeforeRounding * 10) / 10; // roundToValidAmount
     const rounding = Math.round((roundedTotal - totalBeforeRounding) * 100) / 100;
-    console.log('🔍 [PaymentModal] Calculando redondeo anticipado:', {
+    console.log('🔍 [PaymentModal] Calculando redondeo anticipado para pago completo:', {
       totalOriginal: totalBeforeRounding,
       totalRedondeado: roundedTotal,
-      redondeo: rounding
+      redondeo: rounding,
+      cashAmount: cashAmount.value
     });
     return rounding;
   }
