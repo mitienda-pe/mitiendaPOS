@@ -350,17 +350,13 @@ const loadAccounts = async () => {
     loading.value = true;
     error.value = null;
     const response = await cashierAccountsApi.getAll();
-    console.log('🔍 [DEBUG] currentStoreId:', currentStoreId.value, typeof currentStoreId.value);
-    console.log('🔍 [DEBUG] Full API response:', response);
-    console.log('🔍 [DEBUG] API response.data:', response.data);
     // Show accounts with matching tienda_id OR null tienda_id (legacy records)
+    // Convert both to numbers for comparison to handle type mismatch (API returns strings, store has numbers)
     const accountsData = response.data || [];
     allAccounts.value = accountsData.filter(a => {
-      const matches = a.tienda_id === currentStoreId.value || a.tienda_id === null;
-      console.log(`🔍 [DEBUG] Account ${a.id}: tienda_id=${a.tienda_id} (type: ${typeof a.tienda_id}), matches=${matches}`);
-      return matches;
+      if (a.tienda_id === null) return true; // Legacy records
+      return parseInt(a.tienda_id) === currentStoreId.value;
     });
-    console.log('🔍 [DEBUG] Filtered allAccounts:', allAccounts.value);
   } catch (err) {
     console.error('Error cargando configuraciones:', err);
     error.value = 'Error al cargar las configuraciones de caja';
