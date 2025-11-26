@@ -152,13 +152,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
+import { useAuthStore } from '../stores/auth';
 import { storeSeriesApi } from '../services/storeSeriesApi';
 
-// Get current store ID from localStorage
-const user = JSON.parse(localStorage.getItem('user') || '{}');
-const selectedStore = JSON.parse(localStorage.getItem('selected_store') || '{}');
-const currentStoreId = ref(selectedStore.tienda_id || user.tienda_id);
+// Get auth store
+const authStore = useAuthStore();
+
+// Get current store ID from auth store
+const currentStoreId = computed(() => authStore.selectedStore?.id || null);
 
 // State
 const loading = ref(false);
@@ -184,6 +186,11 @@ const hasChanges = computed(() => {
 
 // Methods
 const loadConfig = async () => {
+  if (!currentStoreId.value) {
+    console.warn('No store selected, skipping series config load');
+    return;
+  }
+
   loading.value = true;
   error.value = null;
   successMessage.value = null;
@@ -191,7 +198,7 @@ const loadConfig = async () => {
   try {
     const response = await storeSeriesApi.getConfig(currentStoreId.value);
 
-    if (response.success) {
+    if (response.error === 0) {
       formData.value = {
         boleta_netsuite_id: response.data.boleta_netsuite_id || '',
         factura_netsuite_id: response.data.factura_netsuite_id || ''
@@ -209,6 +216,11 @@ const loadConfig = async () => {
 };
 
 const saveConfig = async () => {
+  if (!currentStoreId.value) {
+    error.value = 'No hay tienda seleccionada';
+    return;
+  }
+
   saving.value = true;
   error.value = null;
   successMessage.value = null;
@@ -219,7 +231,7 @@ const saveConfig = async () => {
       factura_netsuite_id: formData.value.factura_netsuite_id
     });
 
-    if (response.success) {
+    if (response.error === 0) {
       successMessage.value = 'Configuración guardada exitosamente';
       originalData.value = { ...formData.value };
 
@@ -238,8 +250,10 @@ const saveConfig = async () => {
   }
 };
 
-// Lifecycle
-onMounted(() => {
-  loadConfig();
-});
+// Watch for store changes
+watch(currentStoreId, (newStoreId) => {
+  if (newStoreId) {
+    loadConfig();
+  }
+}, { immediate: true });
 </script>
