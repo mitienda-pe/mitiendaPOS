@@ -590,7 +590,8 @@ const onCashierAuthenticated = async (cashier) => {
       pendingShiftData.value.montoInicial,
       pendingShiftData.value.notas,
       `Caja ${pendingShiftData.value.cajaNumero}`,
-      cashier.empleado_id // ← AQUÍ enviamos el empleado_id
+      cashier.empleado_id, // ← AQUÍ enviamos el empleado_id
+      pendingShiftData.value.sucursalId // ← AQUÍ enviamos el tiendadireccion_id
     );
 
     if (result.success) {

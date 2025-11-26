@@ -41,19 +41,20 @@ export const useShiftStore = defineStore('shift', {
       }
     },
 
-    async openShift(montoInicial, notasApertura = '', cajaNumero = null, empleadoId = null) {
+    async openShift(montoInicial, notasApertura = '', cajaNumero = null, empleadoId = null, tiendadireccionId = null) {
       console.log('📂 [SHIFT STORE] openShift() llamado', {
         montoInicial,
         notasApertura,
         cajaNumero,
-        empleadoId
+        empleadoId,
+        tiendadireccionId
       });
 
       this.loading = true;
       this.error = null;
 
       try {
-        const response = await shiftsApi.openShift(montoInicial, notasApertura, cajaNumero, empleadoId);
+        const response = await shiftsApi.openShift(montoInicial, notasApertura, cajaNumero, empleadoId, tiendadireccionId);
 
         console.log('📡 [SHIFT STORE] Respuesta de openShift:', {
           success: response.success,

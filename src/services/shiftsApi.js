@@ -28,8 +28,9 @@ export const shiftsApi = {
    * @param {string} notasApertura - Opening notes
    * @param {string|null} cajaNumero - Cash register identifier (optional)
    * @param {number|null} empleadoId - POS employee ID (optional)
+   * @param {number|null} tiendadireccionId - Branch/location ID where shift is opened (optional)
    */
-  async openShift(montoInicial, notasApertura = '', cajaNumero = null, empleadoId = null) {
+  async openShift(montoInicial, notasApertura = '', cajaNumero = null, empleadoId = null, tiendadireccionId = null) {
     try {
       const payload = {
         monto_inicial: montoInicial,
@@ -42,6 +43,10 @@ export const shiftsApi = {
 
       if (empleadoId) {
         payload.empleado_id = empleadoId;
+      }
+
+      if (tiendadireccionId) {
+        payload.tiendadireccion_id = tiendadireccionId;
       }
 
       console.log('📤 [SHIFTS API] Enviando petición de apertura:', {
