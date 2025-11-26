@@ -198,7 +198,7 @@ const loadConfig = async () => {
   try {
     const response = await storeSeriesApi.getConfig(currentStoreId.value);
 
-    if (response.error === 0) {
+    if (response.success) {
       formData.value = {
         boleta_netsuite_id: response.data.boleta_netsuite_id || '',
         factura_netsuite_id: response.data.factura_netsuite_id || ''
@@ -231,7 +231,7 @@ const saveConfig = async () => {
       factura_netsuite_id: formData.value.factura_netsuite_id
     });
 
-    if (response.error === 0) {
+    if (response.success) {
       successMessage.value = 'Configuración guardada exitosamente';
       originalData.value = { ...formData.value };
 
