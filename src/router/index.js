@@ -19,7 +19,7 @@ const Cashier = () => import('../views/Cashier.vue');
 const Branches = () => import('../views/Branches.vue');
 const Preferences = () => import('../views/Preferences.vue');
 const Settings = () => import('../views/Settings.vue');
-const CashierAccounts = () => import('../views/CashierAccounts.vue');
+const CashierAccountsHierarchy = () => import('../views/CashierAccountsHierarchy.vue');
 
 const routes = [
   {
@@ -157,7 +157,7 @@ const routes = [
       {
         path: 'cashier-accounts',
         name: 'CashierAccounts',
-        component: CashierAccounts
+        component: CashierAccountsHierarchy
       }
     ]
   },
