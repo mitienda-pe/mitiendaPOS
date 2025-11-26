@@ -120,7 +120,11 @@
         :status="order.status"
         :source="order.source"
         :billing-document="getBillingDocument()"
-        :store-info="getStoreInfo()"
+        :company-info="getCompanyInfo()"
+        :store-name="getStoreName()"
+        :store-address="getStoreAddress()"
+        :store-phone="getStorePhone()"
+        :netsuite-customer-code="getNetsuiteCustomerCode()"
         :show-badges="true"
         :show-reprint="true"
       />
@@ -144,9 +148,12 @@ import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ordersApi } from '../services/ordersApi';
 import ReceiptTicket from '../components/ReceiptTicket.vue';
+import { COMPANY_CONFIG } from '../config/companyConfig';
+import { useAuthStore } from '../stores/auth';
 
 const route = useRoute();
 const router = useRouter();
+const authStore = useAuthStore();
 
 const order = ref(null);
 const loading = ref(false);
@@ -190,9 +197,11 @@ const loadOrderDetail = async () => {
       }
 
       // Obtener información del documento si existe
+      let customerNetsuiteCode = '';
       if (response.customer) {
         customerDocumentNumber = response.customer.document_number || '';
         customerDocumentType = response.customer.document_type || '';
+        customerNetsuiteCode = response.customer.netsuite_code || '';
       }
 
       order.value = {
@@ -203,7 +212,8 @@ const loadOrderDetail = async () => {
           email: customerEmail,
           phone: customerPhone,
           document_number: customerDocumentNumber,
-          document_type: customerDocumentType
+          document_type: customerDocumentType,
+          netsuite_code: customerNetsuiteCode
         },
         cajero_nombre: response.cajero_nombre || null,
         total: parseFloat(response.tiendaventa_totalpagar || response.total_amount || '0'),
@@ -346,21 +356,76 @@ const getBillingDocument = () => {
   };
 };
 
-// Función para obtener información de la tienda
+// Función para obtener información de la empresa (hardcoded)
+const getCompanyInfo = () => {
+  return COMPANY_CONFIG;
+};
+
+// Función para obtener la dirección de la sucursal
+const getStoreAddress = () => {
+  // Intentar obtener desde la respuesta de la orden
+  if (order.value?._rawDetail?.store_address) {
+    return order.value._rawDetail.store_address;
+  }
+
+  // Intentar obtener desde authStore
+  if (authStore.selectedStore?.address) {
+    return authStore.selectedStore.address;
+  }
+
+  // TODO: Si no está disponible en la API, deberá agregarse
+  // Por ahora retornar null
+  return null;
+};
+
+// Función para obtener el teléfono de la sucursal
+const getStorePhone = () => {
+  // Intentar obtener desde la respuesta de la orden
+  if (order.value?._rawDetail?.store_phone) {
+    return order.value._rawDetail.store_phone;
+  }
+
+  // Intentar obtener desde authStore
+  if (authStore.selectedStore?.phone) {
+    return authStore.selectedStore.phone;
+  }
+
+  // TODO: Si no está disponible, deberá agregarse al API
+  return null;
+};
+
+// Función para obtener el nombre de la tienda/sucursal
+const getStoreName = () => {
+  // Intentar obtener desde authStore
+  if (authStore.selectedStore?.name) {
+    return authStore.selectedStore.name;
+  }
+
+  // Intentar obtener desde la respuesta de la orden
+  if (order.value?._rawDetail?.store_name) {
+    return order.value._rawDetail.store_name;
+  }
+
+  return 'LIMA'; // Default
+};
+
+// Función para obtener código NetSuite del cliente
+const getNetsuiteCustomerCode = () => {
+  // Prioridad 1: Desde el objeto customer mapeado
+  if (order.value?.customer?.netsuite_code) {
+    return order.value.customer.netsuite_code;
+  }
+
+  // Prioridad 2: Desde _rawDetail (respuesta completa del API)
+  if (order.value?._rawDetail?.customer?.netsuite_code) {
+    return order.value._rawDetail.customer.netsuite_code;
+  }
+
+  return null;
+};
+
+// Función para obtener información de la tienda (DEPRECATED - mantener por compatibilidad)
 const getStoreInfo = () => {
-  // TODO: Esta información debería venir de la API o del store de autenticación
-  // Por ahora retornamos null, pero puedes configurarla manualmente aquí
-  // o cuando tengamos un endpoint que la proporcione
-
-  // Ejemplo de cómo se vería:
-  // return {
-  //   business_name: 'RAZÓN SOCIAL DE LA EMPRESA S.A.C.',
-  //   commercial_name: 'Nombre Comercial - Sucursal Centro',
-  //   ruc: '20123456789',
-  //   address: 'Av. Principal 123, Lima, Perú',
-  //   phone: '(01) 234-5678'
-  // };
-
   return null;
 };
 
@@ -368,6 +433,18 @@ const printTicket = () => {
   const products = getProducts();
   const payments = order.value._rawDetail?.payments || [];
   const billingDoc = getBillingDocument();
+  const companyInfo = getCompanyInfo();
+  const storeName = getStoreName();
+  const storeAddress = getStoreAddress();
+  const storePhone = getStorePhone();
+
+  // Determinar tipo de documento
+  let docType = 'COMPROBANTE ELECTRÓNICO';
+  if (billingDoc?.serie) {
+    const serie = billingDoc.serie.toString().toUpperCase();
+    if (serie.startsWith('F')) docType = 'FACTURA ELECTRÓNICA';
+    else if (serie.startsWith('B')) docType = 'BOLETA ELECTRÓNICA';
+  }
 
   const ticketHTML = `
     <!DOCTYPE html>
@@ -379,7 +456,7 @@ const printTicket = () => {
         @page { size: 80mm auto; margin: 0; }
         body {
           font-family: 'Courier New', monospace;
-          font-size: 12px;
+          font-size: 11px;
           margin: 0;
           padding: 10px;
           width: 80mm;
@@ -388,21 +465,40 @@ const printTicket = () => {
         .bold { font-weight: bold; }
         .line { border-top: 1px dashed #000; margin: 5px 0; }
         .item-row { display: flex; justify-content: space-between; margin: 2px 0; }
-        .total { font-size: 14px; font-weight: bold; margin-top: 10px; }
+        .total { font-size: 13px; font-weight: bold; margin-top: 10px; }
         table { width: 100%; border-collapse: collapse; }
         td { padding: 2px 0; }
         .right { text-align: right; }
+        .small { font-size: 9px; }
+        img { max-width: 60px; height: auto; }
       </style>
     </head>
     <body>
-      <div class="center bold">TICKET DE VENTA</div>
-      <div class="center">Nro: ${order.value.order_number}</div>
-      ${billingDoc ? `<div class="center">Comprobante: ${billingDoc.serie}-${billingDoc.correlative}</div>` : ''}
+      <!-- Header -->
+      ${companyInfo.logoUrl ? `<div class="center"><img src="${companyInfo.logoUrl}" alt="Logo" /></div>` : ''}
+      <div class="center bold">${companyInfo.legalName || 'TICKET DE VENTA'}</div>
+      ${storeAddress ? `<div class="center small">${storeAddress}</div>` : ''}
+      ${companyInfo.ruc ? `<div class="center small">RUC: ${companyInfo.ruc}</div>` : ''}
+      ${storeName ? `<div class="center small">TIENDA ${storeName.toUpperCase()}</div>` : ''}
+      ${storePhone ? `<div class="center small">TLF.: ${storePhone}</div>` : ''}
       <div class="line"></div>
+
+      <!-- Información del Documento -->
+      ${billingDoc ? `
+        <div class="center bold">${docType}</div>
+        <div class="center bold">${billingDoc.serie}-${billingDoc.correlative}</div>
+      ` : `
+        <div class="center bold">Nro: ${order.value.order_number}</div>
+      `}
+      <div class="line"></div>
+
+      <!-- Información General -->
       <div>Fecha: ${formatDate(order.value.created_at)}</div>
       <div>Cliente: ${order.value.customer?.name || 'Cliente General'}</div>
       ${order.value.customer?.document_number ? `<div>Doc: ${order.value.customer.document_number}</div>` : ''}
       <div class="line"></div>
+
+      <!-- Productos -->
       <div class="bold">PRODUCTOS</div>
       <div class="line"></div>
       ${products.map(item => `
@@ -417,9 +513,11 @@ const printTicket = () => {
         </div>
       `).join('')}
       <div class="line"></div>
+
+      <!-- Totales -->
       <table>
         <tr>
-          <td>Subtotal:</td>
+          <td>OPERACIONES GRAVADAS:</td>
           <td class="right">S/ ${getSubtotal().toFixed(2)}</td>
         </tr>
         <tr>
@@ -427,10 +525,12 @@ const printTicket = () => {
           <td class="right">S/ ${getTax().toFixed(2)}</td>
         </tr>
         <tr class="total">
-          <td>TOTAL:</td>
+          <td>TOTAL GENERAL S/:</td>
           <td class="right">S/ ${getTotal().toFixed(2)}</td>
         </tr>
       </table>
+
+      <!-- Pagos -->
       ${payments.length > 0 ? `
         <div class="line"></div>
         <div class="bold">PAGOS</div>
@@ -442,8 +542,36 @@ const printTicket = () => {
         `).join('')}
       ` : ''}
       <div class="line"></div>
-      <div class="center">¡Gracias por su compra!</div>
-      <div class="center" style="margin-top: 10px; font-size: 10px;">REIMPRESIÓN</div>
+
+      <!-- Footer Legal -->
+      ${companyInfo.sunat ? `
+        <div class="center small" style="margin-bottom: 5px;">
+          ${companyInfo.sunat.authorizationText}
+        </div>
+        <div class="center small" style="margin-bottom: 10px;">
+          ${companyInfo.sunat.representationText}
+        </div>
+      ` : ''}
+
+      <!-- QR Code (si hay comprobante electrónico) -->
+      ${billingDoc?.files?.pdf ? `
+        <div class="center" style="margin: 10px 0;">
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(billingDoc.files.pdf)}" alt="QR Comprobante" style="width: 120px; height: 120px; border: 1px solid #ccc; padding: 4px;" />
+        </div>
+      ` : ''}
+
+      <!-- Website después del QR -->
+      ${companyInfo.website ? `
+        <div class="center small" style="margin-bottom: 10px;">
+          Para más productos visita<br />
+          <span class="bold">${companyInfo.website}</span>
+        </div>
+      ` : ''}
+
+      <div class="center bold">¡Gracias por su compra!</div>
+      <div class="center small">${formatDate(order.value.created_at)}</div>
+      ${order.value.cajero_nombre ? `<div class="center small">Cajero: ${order.value.cajero_nombre}</div>` : ''}
+      <div class="center small bold" style="margin-top: 10px;">REIMPRESIÓN</div>
     </body>
     </html>
   `;

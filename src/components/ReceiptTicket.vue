@@ -3,20 +3,37 @@
     <div class="p-8 font-mono text-sm">
       <!-- Header del Ticket -->
       <div class="text-center mb-4">
-        <div class="font-bold text-lg mb-2">{{ storeInfo?.business_name || 'TICKET DE VENTA' }}</div>
-        <div v-if="storeInfo?.commercial_name" class="text-sm">{{ storeInfo.commercial_name }}</div>
-        <div v-if="storeInfo?.ruc" class="text-sm">RUC: {{ storeInfo.ruc }}</div>
-        <div v-if="storeInfo?.address" class="text-xs">{{ storeInfo.address }}</div>
-        <div v-if="storeInfo?.phone" class="text-xs">Tel: {{ storeInfo.phone }}</div>
+        <!-- Logo de la empresa -->
+        <div v-if="companyInfo?.logoUrl" class="mb-3 flex justify-center">
+          <img :src="companyInfo.logoUrl" :alt="companyInfo.legalName" class="h-16 object-contain" />
+        </div>
+
+        <!-- Información de la empresa -->
+        <div class="font-bold text-base mb-1">{{ companyInfo?.legalName || 'TICKET DE VENTA' }}</div>
+        <div v-if="storeAddress" class="text-xs mb-1">{{ storeAddress }}</div>
+        <div v-if="companyInfo?.ruc" class="text-xs mb-1">RUC: {{ companyInfo.ruc }}</div>
+        <div v-if="storeName" class="text-xs mb-1">TIENDA {{ storeName.toUpperCase() }}</div>
+        <div v-if="storePhone" class="text-xs">TLF.: {{ storePhone }}</div>
       </div>
 
       <div class="border-t border-dashed border-gray-400 my-3"></div>
 
-      <!-- Número de orden y comprobante -->
+      <!-- Información del documento -->
       <div class="text-center mb-3">
-        <div v-if="orderNumber" class="font-semibold">Nro: {{ orderNumber }}</div>
-        <div v-if="billingDocument" class="mt-1">
-          Comprobante: {{ billingDocument.serie }}-{{ billingDocument.correlative }}
+        <!-- Tipo de documento (BOLETA/FACTURA ELECTRÓNICA) -->
+        <div v-if="billingDocument" class="font-bold text-sm mb-1">
+          {{ getDocumentTypeName() }}
+        </div>
+        <div v-if="billingDocument" class="font-semibold">
+          {{ billingDocument.serie }}-{{ billingDocument.correlative }}
+        </div>
+        <div v-else-if="orderNumber" class="font-semibold">
+          Nro: {{ orderNumber }}
+        </div>
+
+        <!-- Código NetSuite del cliente (si existe) -->
+        <div v-if="netsuiteCustomerCode" class="text-xs mt-1">
+          Cliente NetSuite: {{ netsuiteCustomerCode }}
         </div>
       </div>
 
@@ -64,7 +81,7 @@
       <!-- Totales -->
       <div class="mb-3">
         <div class="flex justify-between">
-          <span>Subtotal:</span>
+          <span>OPERACIONES GRAVADAS:</span>
           <span>S/ {{ subtotal.toFixed(2) }}</span>
         </div>
         <div class="flex justify-between">
@@ -72,7 +89,7 @@
           <span>S/ {{ tax.toFixed(2) }}</span>
         </div>
         <div class="flex justify-between font-bold text-base mt-2">
-          <span>TOTAL:</span>
+          <span>TOTAL GENERAL S/:</span>
           <span>S/ {{ total.toFixed(2) }}</span>
         </div>
 
@@ -103,28 +120,42 @@
 
       <div class="border-t border-dashed border-gray-400 my-3"></div>
 
-      <!-- Footer -->
+      <!-- Footer con textos legales SUNAT -->
       <div class="text-center mt-4">
-        <div>¡Gracias por su compra!</div>
-        <div v-if="showReprint" class="text-xs mt-2">REIMPRESIÓN</div>
-      </div>
+        <!-- Textos legales -->
+        <div v-if="companyInfo?.sunat" class="text-xs mb-3">
+          <div class="mb-1">{{ companyInfo.sunat.authorizationText }}</div>
+          <div class="mb-1">{{ companyInfo.sunat.representationText }}</div>
+        </div>
 
-      <!-- QR Code para Comprobante Electrónico -->
-      <div v-if="billingDocument?.files?.pdf" class="text-center mt-4">
-        <div class="text-xs mb-2">
-          Comprobante Electrónico
-          <div class="font-semibold">
-            {{ billingDocument.serie }}-{{ billingDocument.correlative }}
+        <!-- QR Code para Comprobante Electrónico -->
+        <div v-if="billingDocument?.files?.pdf" class="mb-3">
+          <div class="flex justify-center">
+            <img
+              :src="`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(billingDocument.files.pdf)}`"
+              :alt="`QR Comprobante ${billingDocument.serie}-${billingDocument.correlative}`"
+              class="w-32 h-32 border border-gray-300 p-1"
+            />
           </div>
         </div>
-        <div class="flex justify-center">
-          <img
-            :src="`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(billingDocument.files.pdf)}`"
-            :alt="`QR Comprobante ${billingDocument.serie}-${billingDocument.correlative}`"
-            class="w-32 h-32 border border-gray-300 p-1"
-          />
+
+        <!-- Website después del QR -->
+        <div v-if="companyInfo.website" class="text-xs mb-3">
+          Para más productos visita<br />
+          <span class="font-semibold">{{ companyInfo.website }}</span>
         </div>
-        <div class="text-xs mt-2 text-gray-600">Escanea para ver el PDF</div>
+
+        <div class="font-semibold mb-2">¡Gracias por su compra!</div>
+
+        <!-- Fecha y hora de emisión -->
+        <div class="text-xs mb-1">{{ formatDateSimple(createdAt) }}</div>
+
+        <!-- Cajero -->
+        <div v-if="cajeroName" class="text-xs">
+          Cajero: {{ cajeroName }}
+        </div>
+
+        <div v-if="showReprint" class="text-xs mt-2 font-bold">REIMPRESIÓN</div>
       </div>
 
       <!-- Badges de estado (solo si showBadges está activo) -->
@@ -214,11 +245,36 @@ const props = defineProps({
     default: null
   },
 
-  // Información de la tienda/sucursal
+  // Información de la tienda/sucursal (DEPRECATED - usar companyInfo y storeAddress)
   storeInfo: {
     type: Object,
     default: null
     // { business_name, commercial_name, ruc, address, phone }
+  },
+
+  // Información de la empresa (hardcoded o desde config)
+  companyInfo: {
+    type: Object,
+    default: () => ({})
+    // { legalName, commercialName, ruc, logoUrl, website, sunat: { authorizationText, representationText } }
+  },
+
+  // Dirección de la sucursal (dinámico)
+  storeAddress: {
+    type: String,
+    default: null
+  },
+
+  // Teléfono de la sucursal (dinámico)
+  storePhone: {
+    type: String,
+    default: null
+  },
+
+  // Código NetSuite del cliente (opcional)
+  netsuiteCustomerCode: {
+    type: String,
+    default: null
   },
 
   // Comprobante electrónico
@@ -315,7 +371,24 @@ const formatDateSimple = (dateString) => {
   });
 };
 
-// Helper para tipo de documento basado en el comprobante
+// Helper para obtener el nombre del tipo de documento (BOLETA/FACTURA)
+const getDocumentTypeName = () => {
+  if (!props.billingDocument?.serie) return 'COMPROBANTE ELECTRÓNICO';
+
+  const serie = props.billingDocument.serie.toString().toUpperCase();
+
+  if (serie.startsWith('F')) {
+    return 'FACTURA ELECTRÓNICA';
+  }
+
+  if (serie.startsWith('B')) {
+    return 'BOLETA ELECTRÓNICA';
+  }
+
+  return 'COMPROBANTE ELECTRÓNICO';
+};
+
+// Helper para tipo de documento del cliente (DNI/RUC)
 const getDocumentTypeLabel = () => {
   // Si hay comprobante electrónico, determinar por la serie
   if (props.billingDocument?.serie) {
