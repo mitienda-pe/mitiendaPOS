@@ -42,6 +42,18 @@
             </svg>
             Usuarios
           </router-link>
+
+          <router-link
+            to="/settings/cashier-accounts"
+            class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+            active-class="bg-blue-50 text-blue-700 font-medium"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+            </svg>
+            Cuentas por Caja
+          </router-link>
         </nav>
       </div>
 
