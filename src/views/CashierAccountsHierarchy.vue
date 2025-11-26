@@ -378,10 +378,12 @@ const selectedBranch = computed(() => {
 });
 
 const availableCashiers = computed(() => {
-  if (!selectedBranch.value) return 0;
+  if (!selectedBranch.value) return [];
   const numCajas = parseInt(selectedBranch.value.tiendadireccion_numero_cajas) || 1;
-  console.log('availableCashiers computed:', numCajas, typeof numCajas);
-  return numCajas;
+  // Create array [1, 2, 3, ...] based on numCajas
+  const cajasArray = Array.from({ length: numCajas }, (_, i) => i + 1);
+  console.log('availableCashiers computed:', numCajas, cajasArray);
+  return cajasArray;
 });
 
 const filteredAccounts = computed(() => {
