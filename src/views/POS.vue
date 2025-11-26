@@ -766,13 +766,14 @@ const handlePaymentCompleted = async () => {
       notes: '' // Campo para notas adicionales
     };
 
-    // 🔥 OPTIMIZATION: Add validated inventory_numbers if available
-    // This avoids duplicate stock validation in backend (~10s saved)
-    if (validatedInventoryNumbers.value) {
-      orderData.inventory_numbers = validatedInventoryNumbers.value;
-      const invCount = Object.keys(validatedInventoryNumbers.value).length;
-      console.log(`🚀 [OPTIMIZATION] Including ${invCount} inventory_numbers in order payload (skips re-validation)`);
-    }
+    // 🔥 OPTIMIZATION DISABLED: inventory_numbers causes error in legacy API
+    // The legacy API doesn't recognize this field and throws 'subtract_array()' error
+    // TODO: Re-enable when migrating to new order creation endpoint (CI4)
+    // if (validatedInventoryNumbers.value) {
+    //   orderData.inventory_numbers = validatedInventoryNumbers.value;
+    //   const invCount = Object.keys(validatedInventoryNumbers.value).length;
+    //   console.log(`🚀 [OPTIMIZATION] Including ${invCount} inventory_numbers in order payload (skips re-validation)`);
+    // }
 
     // Log del payload que se enviará
     console.log('📤 [POS] Enviando orden al API:', JSON.stringify(orderData, null, 2));
