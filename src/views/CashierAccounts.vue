@@ -217,6 +217,7 @@
               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             >
               <option value="">Selecciona un método</option>
+              <option value="efectivo">Efectivo</option>
               <option value="tarjeta">Tarjeta</option>
               <option value="banco">Banco</option>
               <option value="yape">Yape</option>
@@ -461,6 +462,7 @@ const closeModal = () => {
 
 const getPaymentMethodLabel = (method) => {
   const labels = {
+    'efectivo': 'Efectivo',
     'tarjeta': 'Tarjeta',
     'banco': 'Banco',
     'yape': 'Yape',
@@ -474,6 +476,7 @@ const getPaymentMethodLabel = (method) => {
 
 const getPaymentMethodBadgeClass = (method) => {
   const classes = {
+    'efectivo': 'bg-emerald-100 text-emerald-800',
     'tarjeta': 'bg-blue-100 text-blue-800',
     'banco': 'bg-green-100 text-green-800',
     'yape': 'bg-purple-100 text-purple-800',
