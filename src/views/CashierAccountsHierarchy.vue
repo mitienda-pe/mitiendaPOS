@@ -220,7 +220,7 @@
               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             >
               <option value="">Selecciona un número</option>
-              <option v-for="n in availableCashiers" :key="n" :value="n">Caja {{ n }}</option>
+              <option v-for="n in availableCashiers" :key="n" :value="n">{{ n }}</option>
             </select>
           </div>
 
