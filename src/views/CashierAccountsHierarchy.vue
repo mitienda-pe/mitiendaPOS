@@ -48,74 +48,70 @@
         </div>
 
         <div v-else class="bg-white shadow rounded-lg overflow-hidden">
-          <div class="px-6 py-4 border-b border-gray-200">
-            <p class="text-sm text-gray-600">
-              {{ allAccounts.length }} {{ allAccounts.length === 1 ? 'configuración' : 'configuraciones' }}
-            </p>
-          </div>
-
-          <div class="divide-y divide-gray-200">
-            <div
-              v-for="account in allAccounts"
-              :key="account.id"
-              class="px-6 py-4 hover:bg-gray-50 transition-colors"
-            >
-              <div class="flex items-start justify-between">
-                <div class="flex-1">
-                  <div class="flex items-center gap-2 mb-2">
-                    <span
-                      :class="[
-                        'px-2 py-1 text-xs font-medium rounded',
-                        getLevelBadgeClass(account)
-                      ]"
-                    >
-                      {{ getLevelLabel(account) }}
-                    </span>
-                    <span
-                      :class="[
-                        'px-2 py-1 text-xs font-medium rounded',
-                        getPaymentMethodBadgeClass(account.payment_method)
-                      ]"
-                    >
-                      {{ getPaymentMethodLabel(account.payment_method) }}
-                    </span>
-                  </div>
-
-                  <div class="space-y-1">
-                    <p class="text-sm">
-                      <span class="font-medium text-gray-700">Sucursal:</span>
-                      <span class="text-gray-600 ml-1">{{ getAccountLocation(account) }}</span>
-                    </p>
-                    <p class="text-sm">
-                      <span class="font-medium text-gray-700">Cuenta NetSuite:</span>
-                      <span class="text-gray-900 ml-1 font-mono">{{ account.netsuite_account_id }}</span>
-                    </p>
-                  </div>
-                </div>
-
-                <div class="flex items-center gap-2 ml-4">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Sucursal
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Caja
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Método de Pago
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  ID Cuenta NetSuite
+                </th>
+                <th scope="col" class="relative px-6 py-3">
+                  <span class="sr-only">Acciones</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr
+                v-for="account in allAccounts"
+                :key="account.id"
+                class="hover:bg-gray-50 transition-colors"
+              >
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {{ getBranchName(account) }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {{ getCajaName(account) }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span
+                    :class="[
+                      'px-2 py-1 text-xs font-medium rounded',
+                      getPaymentMethodBadgeClass(account.payment_method)
+                    ]"
+                  >
+                    {{ getPaymentMethodLabel(account.payment_method) }}
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">
+                  {{ account.netsuite_account_id }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
                     @click="editAccount(account)"
-                    class="p-2 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                    class="text-indigo-600 hover:text-indigo-900 mr-3"
                     title="Editar"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                    </svg>
+                    Editar
                   </button>
                   <button
                     @click="confirmDelete(account)"
-                    class="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                    class="text-red-600 hover:text-red-900"
                     title="Eliminar"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                    </svg>
+                    Eliminar
                   </button>
-                </div>
-              </div>
-            </div>
-          </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -446,24 +442,16 @@ const closeModal = () => {
   editingAccount.value = null;
 };
 
-const getLevelLabel = (account) => {
-  if (account.caja_numero) return '📱 Caja ' + account.caja_numero;
-  if (account.tiendadireccion_id) return '🏢 Branch';
-  return '🏪 Global';
-};
-
-const getLevelBadgeClass = (account) => {
-  if (account.caja_numero) return 'bg-purple-100 text-purple-800';
-  if (account.tiendadireccion_id) return 'bg-blue-100 text-blue-800';
-  return 'bg-green-100 text-green-800';
-};
-
-const getAccountLocation = (account) => {
-  if (!account.tiendadireccion_id) return 'Todas las sucursales';
+const getBranchName = (account) => {
+  if (!account.tiendadireccion_id) return 'Todas';
   const branch = branches.value.find(b => b.tiendadireccion_id === account.tiendadireccion_id);
-  const branchName = branch?.tiendadireccion_nombresucursal || `Branch #${account.tiendadireccion_id}`;
-  if (account.caja_numero) return `${branchName} - Caja ${account.caja_numero}`;
-  return branchName;
+  return branch?.tiendadireccion_nombresucursal || `Branch #${account.tiendadireccion_id}`;
+};
+
+const getCajaName = (account) => {
+  if (!account.tiendadireccion_id) return 'Todas';
+  if (!account.caja_numero) return 'Todas';
+  return `Caja ${account.caja_numero}`;
 };
 
 const getPaymentMethodLabel = (method) => {
