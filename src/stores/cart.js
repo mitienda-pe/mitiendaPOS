@@ -349,6 +349,17 @@ export const useCartStore = defineStore('cart', {
         throw new Error('No se pueden agregar pagos en estado: ' + this.status);
       }
 
+      // 🔧 CRITICAL FIX: Si hay redondeo aplicado y se agrega un método que NO es efectivo,
+      // ELIMINAR el redondeo porque los otros métodos permiten pagos exactos con centavos
+      if (this.roundingAdjustment !== 0 && payment.method !== 'efectivo' && this.payments.length > 0) {
+        console.log('🔧 [CART] Removiendo redondeo porque se está agregando método no-efectivo:', {
+          oldRounding: this.roundingAdjustment,
+          paymentMethod: payment.method,
+          paymentsCount: this.payments.length
+        });
+        this.roundingAdjustment = 0;
+      }
+
       // 🔧 CRITICAL FIX: Si es efectivo y es el primer pago, aplicar redondeo ANTES de agregar el pago
       // Esto asegura que remainingAmount se calcule correctamente desde el inicio
       console.log('🔍 [CART] Verificando condición de redondeo:', {

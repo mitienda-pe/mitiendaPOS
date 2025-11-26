@@ -1213,14 +1213,22 @@ const totalChange = computed(() => {
 // 🔧 FIX: Calcular redondeo SOLO para efectivo
 // Si ya hay un pago en efectivo registrado, usar ese redondeo
 // Si el método seleccionado es efectivo y es el primer pago, calcular redondeo anticipado
+// 🔧 CRITICAL FIX: Si hay pagos previos y el método actual NO es efectivo, NO mostrar redondeo
 const roundingToDisplay = computed(() => {
-  // 1. Si ya hay redondeo aplicado (pago en efectivo registrado), mostrarlo
+  // 1. Si ya hay redondeo aplicado Y el método actual NO es efectivo Y hay pagos previos,
+  //    NO mostrar redondeo (se eliminará al agregar el pago)
+  if (cartStore.appliedRounding !== 0 && paymentMethod.value !== 'efectivo' && props.payments.length > 0) {
+    console.log('🔍 [PaymentModal] Redondeo será eliminado al agregar método no-efectivo');
+    return 0;
+  }
+
+  // 2. Si ya hay redondeo aplicado (pago en efectivo registrado), mostrarlo
   if (cartStore.appliedRounding !== 0) {
     console.log('🔍 [PaymentModal] Usando redondeo ya aplicado:', cartStore.appliedRounding);
     return cartStore.appliedRounding;
   }
 
-  // 2. Si el método seleccionado es efectivo Y no hay pagos previos, calcular redondeo anticipado
+  // 3. Si el método seleccionado es efectivo Y no hay pagos previos, calcular redondeo anticipado
   if (paymentMethod.value === 'efectivo' && props.payments.length === 0) {
     const totalBeforeRounding = props.total;
     const roundedTotal = Math.round(totalBeforeRounding * 10) / 10; // roundToValidAmount
@@ -1233,7 +1241,7 @@ const roundingToDisplay = computed(() => {
     return rounding;
   }
 
-  // 3. En cualquier otro caso (tarjeta, QR, etc.), NO mostrar redondeo
+  // 4. En cualquier otro caso (tarjeta, QR, etc.), NO mostrar redondeo
   return 0;
 });
 
