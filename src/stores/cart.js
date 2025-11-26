@@ -349,17 +349,6 @@ export const useCartStore = defineStore('cart', {
         throw new Error('No se pueden agregar pagos en estado: ' + this.status);
       }
 
-      // 🔧 CRITICAL FIX: Si hay redondeo aplicado y se agrega un método que NO es efectivo,
-      // ELIMINAR el redondeo porque los otros métodos permiten pagos exactos con centavos
-      if (this.roundingAdjustment !== 0 && payment.method !== 'efectivo' && this.payments.length > 0) {
-        console.log('🔧 [CART] Removiendo redondeo porque se está agregando método no-efectivo:', {
-          oldRounding: this.roundingAdjustment,
-          paymentMethod: payment.method,
-          paymentsCount: this.payments.length
-        });
-        this.roundingAdjustment = 0;
-      }
-
       // 🔧 CRITICAL FIX: Si es efectivo y es el primer pago, aplicar redondeo ANTES de agregar el pago
       // Esto asegura que remainingAmount se calcule correctamente desde el inicio
       console.log('🔍 [CART] Verificando condición de redondeo:', {
@@ -381,12 +370,44 @@ export const useCartStore = defineStore('cart', {
         console.log('⚠️ [CART] Condición de redondeo NO cumplida');
       }
 
+      // 🔧 CRITICAL FIX: Calcular el saldo pendiente correcto ANTES de validar
+      // Si vamos a eliminar el redondeo (método no-efectivo + hay pagos previos),
+      // usar el saldo SIN redondeo para la validación
+      let remainingForValidation = this.remainingAmount;
+      const willRemoveRounding = this.roundingAdjustment !== 0 && payment.method !== 'efectivo' && this.payments.length > 0;
+
+      if (willRemoveRounding) {
+        // Calcular el saldo sin el redondeo aplicado
+        remainingForValidation = this.total - this.totalPaid;
+        console.log('🔧 [CART] Validando con saldo sin redondeo:', {
+          remainingWithRounding: this.remainingAmount,
+          remainingWithoutRounding: remainingForValidation,
+          paymentAmount: payment.amount
+        });
+      }
+
       // Validar que el monto no exceda el restante
-      if (payment.amount > this.remainingAmount) {
+      if (payment.amount > remainingForValidation) {
         // Permitir si es efectivo (para dar cambio)
         if (payment.method !== 'efectivo') {
+          console.error('❌ [CART] Payment amount exceeds remaining:', {
+            paymentAmount: payment.amount,
+            remaining: remainingForValidation
+          });
           throw new Error('El monto del pago excede el total restante');
         }
+      }
+
+      // 🔧 CRITICAL FIX: Si hay redondeo aplicado y se agrega un método que NO es efectivo,
+      // ELIMINAR el redondeo porque los otros métodos permiten pagos exactos con centavos
+      // IMPORTANTE: Hacer esto DESPUÉS de la validación
+      if (willRemoveRounding) {
+        console.log('🔧 [CART] Removiendo redondeo porque se está agregando método no-efectivo:', {
+          oldRounding: this.roundingAdjustment,
+          paymentMethod: payment.method,
+          paymentsCount: this.payments.length
+        });
+        this.roundingAdjustment = 0;
       }
 
       this.payments.push({
