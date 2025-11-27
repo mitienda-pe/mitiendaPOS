@@ -413,130 +413,30 @@
         <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Columna izquierda: Ticket -->
-            <div>
-              <!-- Ticket -->
-              <div id="ticket-print-area" class="mb-4 p-4 border rounded-lg bg-gray-50 font-mono text-sm">
-                <div class="text-center mb-3">
-                  <div class="font-bold text-lg">COMPROBANTE DE VENTA</div>
-                  <div class="font-semibold mt-2">N° {{ displayOrderNumber }}</div>
-                  <div>Fecha: {{ displayOrderDate }}</div>
-                  <div v-if="displayCajero" class="text-xs mt-1">Atendido por: {{ displayCajero }}</div>
-                </div>
-
-                <div v-if="displayCustomer && (displayCustomer.name || displayCustomer.nombres || displayCustomer.document_number)" class="mb-3 border-t border-b border-gray-300 py-2">
-                  <div><strong>Cliente:</strong> {{ displayCustomer.name || displayCustomer.razonSocial || `${displayCustomer.nombres || ''} ${displayCustomer.apellidos || ''}`.trim() || 'Cliente General' }}</div>
-                  <div v-if="displayCustomer.document_number">
-                    <strong>{{ (displayCustomer.document_type || 'dni').toUpperCase() }}:</strong> {{ displayCustomer.document_number }}
-                  </div>
-                  <div v-if="displayCustomer.email" class="text-xs">Email: {{ displayCustomer.email }}</div>
-                  <div v-if="displayCustomer.phone" class="text-xs">Tel: {{ displayCustomer.phone }}</div>
-                </div>
-
-                <div class="mb-3">
-                  <div class="border-b border-gray-300 pb-1 mb-1 font-bold flex">
-                    <span class="w-1/2">Producto</span>
-                    <span class="w-1/6 text-right">Cant.</span>
-                    <span class="w-1/6 text-right">P.Unit</span>
-                    <span class="w-1/6 text-right">Total</span>
-                  </div>
-                  <div v-for="(item, index) in displayItems" :key="index" class="flex text-xs py-1">
-                    <span class="w-1/2 truncate">{{ item.nombre }}</span>
-                    <span class="w-1/6 text-right">{{ item.quantity }}</span>
-                    <span class="w-1/6 text-right">{{ formatCurrency(item.precio) }}</span>
-                    <span class="w-1/6 text-right">{{ formatCurrency(item.precio * item.quantity) }}</span>
-                  </div>
-                </div>
-
-                <div class="border-t border-gray-300 pt-1">
-                  <div class="flex justify-between">
-                    <span>Subtotal:</span>
-                    <span>{{ formatCurrency(displaySubtotal) }}</span>
-                  </div>
-                  <div class="flex justify-between">
-                    <span>IGV (18%):</span>
-                    <span>{{ formatCurrency(displayTax) }}</span>
-                  </div>
-                  <div class="flex justify-between font-bold">
-                    <span>Total:</span>
-                    <span>{{ formatCurrency(displayTotal) }}</span>
-                  </div>
-                  <!-- Redondeo (solo si aplica) -->
-                  <div v-if="displayRoundingAmount !== 0" class="flex justify-between text-xs mt-1 border-t border-dashed border-gray-300 pt-1">
-                    <span>{{ displayRoundingAmount > 0 ? 'Redondeo (+):' : 'Redondeo (-):' }}</span>
-                    <span :class="displayRoundingAmount > 0 ? 'text-red-600' : 'text-green-600'">
-                      {{ formatCurrency(Math.abs(displayRoundingAmount)) }}
-                    </span>
-                  </div>
-                  <div v-if="displayRoundingAmount !== 0" class="flex justify-between font-bold text-sm border-t border-gray-300 pt-1 mt-1">
-                    <span>Total a Pagar:</span>
-                    <span>{{ formatCurrency(displayTotalAfterRounding) }}</span>
-                  </div>
-                  <div class="mt-2 border-t border-gray-300 pt-2">
-                    <div class="font-semibold mb-1">Forma de pago:</div>
-                    <div v-for="(payment, index) in displayPayments" :key="index" class="mb-2">
-                      <div class="flex justify-between">
-                        <span class="font-medium">{{ getPaymentMethodName(payment.method) }}:</span>
-                        <span class="font-bold">{{ formatCurrency(payment.amount) }}</span>
-                      </div>
-
-                      <!-- Detalles para pago en efectivo -->
-                      <div v-if="payment.method === 'efectivo'" class="text-black mt-1 space-y-0.5">
-                        <!-- Mostrar monto entregado si hay cambio -->
-                        <div v-if="payment.reference && payment.reference.includes('Cambio:')">
-                          <div class="flex justify-between">
-                            <span>Monto entregado:</span>
-                            <span>{{ formatCurrency(payment.amount + parseChangeFromReference(payment.reference)) }}</span>
-                          </div>
-                          <div class="flex justify-between">
-                            <span>Cambio:</span>
-                            <span>{{ formatCurrency(parseChangeFromReference(payment.reference)) }}</span>
-                          </div>
-                        </div>
-                        <!-- Pago parcial -->
-                        <div v-else-if="payment.reference && payment.reference.includes('Pago parcial')">
-                          <span>{{ payment.reference }}</span>
-                        </div>
-                        <!-- Pago exacto -->
-                        <div v-else-if="payment.reference === 'Pago exacto'">
-                          <span>Pago exacto</span>
-                        </div>
-                      </div>
-
-                      <!-- Referencia para otros métodos -->
-                      <div v-if="payment.method !== 'efectivo' && payment.reference" class="text-xs text-gray-600 ml-4">
-                        {{ payment.reference }}
-                      </div>
-                    </div>
-
-                    <!-- Total pagado -->
-                    <div class="mt-2 pt-2 border-t border-gray-300">
-                      <div class="flex justify-between font-bold">
-                        <span>Total pagado:</span>
-                        <span>{{ formatCurrency(totalPaid) }}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="text-center mt-3 text-xs">
-                  <div>¡Gracias por su compra!</div>
-                  <div>Visite nuestra página web: www.ejemplo.com</div>
-                </div>
-
-                <!-- QR Code para impresión (oculto en pantalla) -->
-                <div v-if="displayBillingDocument?.files?.pdf" class="qr-print-only text-center mt-3" style="display: none;">
-                  <div class="text-xs mb-1">
-                    Comprobante Electrónico
-                    <span v-if="displayBillingDocument?.serie">
-                      {{ displayBillingDocument.serie }}-{{ displayBillingDocument.correlative }}
-                    </span>
-                  </div>
-                  <img :src="`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(displayBillingDocument.files.pdf)}`"
-                       alt="QR Comprobante"
-                       style="width: 100px; height: 100px; margin: 0 auto;" />
-                  <div class="text-xs mt-1">Escanea para ver el PDF</div>
-                </div>
-              </div>
+            <div id="ticket-print-area">
+              <ReceiptTicket
+                :order-number="displayOrderNumber"
+                :created-at="props.completedSaleData?.createdAt || new Date().toISOString()"
+                :customer="displayCustomer"
+                :items="displayItems"
+                :payments="displayPayments"
+                :subtotal="displaySubtotal"
+                :tax="displayTax"
+                :total="displayTotal"
+                :rounding-amount="displayRoundingAmount"
+                :total-after-rounding="displayTotalAfterRounding"
+                :cajero-name="displayCajero"
+                :status="props.completedSaleData?.status"
+                :source="props.completedSaleData?.source || 'pos'"
+                :billing-document="displayBillingDocument"
+                :company-info="getCompanyInfo()"
+                :store-name="getStoreName()"
+                :store-address="getStoreAddress()"
+                :store-phone="getStorePhone()"
+                :netsuite-customer-code="getNetsuiteCustomerCode()"
+                :show-badges="false"
+                :show-reprint="false"
+              />
             </div>
 
             <!-- Columna derecha: Botones de acción -->
@@ -666,7 +566,10 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { useCartStore } from '../stores/cart';
+import { useAuthStore } from '../stores/auth';
 import RightToLeftMoneyInput from './RightToLeftMoneyInput.vue';
+import ReceiptTicket from './ReceiptTicket.vue';
+import { COMPANY_CONFIG } from '../config/companyConfig';
 import {
   suggestOptimalPayments,
   validateCashPayment,
@@ -675,6 +578,7 @@ import {
 } from '../utils/cashDenominations.js';
 
 const cartStore = useCartStore();
+const authStore = useAuthStore();
 
 const props = defineProps({
   modelValue: {
@@ -1295,6 +1199,67 @@ const roundingApplied = computed(() => {
   return cashPayment?.roundingAmount || cartStore.appliedRounding;
 });
 
+// Funciones helper para el ticket (similares a SaleDetail.vue)
+const getCompanyInfo = () => {
+  return COMPANY_CONFIG;
+};
+
+const getStoreAddress = () => {
+  // Intentar obtener desde la respuesta de la orden
+  if (props.completedSaleData?.store_address) {
+    return props.completedSaleData.store_address;
+  }
+
+  // Intentar obtener desde authStore
+  if (authStore.selectedStore?.address) {
+    return authStore.selectedStore.address;
+  }
+
+  return null;
+};
+
+const getStorePhone = () => {
+  // Intentar obtener desde la respuesta de la orden
+  if (props.completedSaleData?.store_phone) {
+    return props.completedSaleData.store_phone;
+  }
+
+  // Intentar obtener desde authStore
+  if (authStore.selectedStore?.phone) {
+    return authStore.selectedStore.phone;
+  }
+
+  return null;
+};
+
+const getStoreName = () => {
+  // Intentar obtener desde authStore
+  if (authStore.selectedStore?.name) {
+    return authStore.selectedStore.name;
+  }
+
+  // Intentar obtener desde la respuesta de la orden
+  if (props.completedSaleData?.store_name) {
+    return props.completedSaleData.store_name;
+  }
+
+  return 'LIMA'; // Default
+};
+
+const getNetsuiteCustomerCode = () => {
+  // Prioridad 1: Desde displayCustomer
+  if (displayCustomer.value?.netsuite_code) {
+    return displayCustomer.value.netsuite_code;
+  }
+
+  // Prioridad 2: Desde completedSaleData
+  if (props.completedSaleData?.customer?.netsuite_code) {
+    return props.completedSaleData.customer.netsuite_code;
+  }
+
+  return null;
+};
+
 const printTicket = () => {
   // Si hay un PDF del comprobante electrónico, abrirlo en nueva pestaña
   if (displayBillingDocument.value?.files?.pdf) {
@@ -1308,7 +1273,7 @@ const printTicket = () => {
 };
 
 const printTicketDirect = () => {
-  // Imprimir solo el contenido del ticket
+  // Imprimir solo el contenido del ticket (usando el componente ReceiptTicket)
   console.log('🖨️ [PaymentModal] Printing ticket directly');
 
   const ticketElement = document.getElementById('ticket-print-area');
@@ -1324,84 +1289,44 @@ const printTicketDirect = () => {
     return;
   }
 
+  // Obtener todos los estilos de Tailwind CSS del documento principal
+  const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+    .map(style => {
+      if (style.tagName === 'LINK') {
+        return `<link rel="stylesheet" href="${style.href}">`;
+      }
+      return `<style>${style.innerHTML}</style>`;
+    })
+    .join('\n');
+
   printWindow.document.write(`
     <!DOCTYPE html>
     <html>
     <head>
-      <title>Ticket de Venta</title>
+      <meta charset="UTF-8">
+      <title>Ticket de Venta #${displayOrderNumber.value}</title>
+      ${styles}
       <style>
+        @page {
+          size: 80mm auto;
+          margin: 0;
+        }
         @media print {
-          @page {
-            margin: 0.5cm;
-            size: 80mm auto;
-          }
           body {
             margin: 0;
-            padding: 0;
+            padding: 10px;
+            width: 80mm;
+          }
+          /* Ocultar elementos innecesarios en impresión */
+          .no-print {
+            display: none !important;
           }
         }
         body {
           font-family: 'Courier New', monospace;
-          font-size: 12px;
-          line-height: 1.4;
           margin: 0;
           padding: 10px;
           max-width: 80mm;
-        }
-        .text-center {
-          text-align: center;
-        }
-        .font-bold {
-          font-weight: bold;
-        }
-        .text-lg {
-          font-size: 16px;
-        }
-        .text-xs {
-          font-size: 10px;
-        }
-        .text-sm {
-          font-size: 11px;
-        }
-        .mb-1 { margin-bottom: 0.25rem; }
-        .mb-2 { margin-bottom: 0.5rem; }
-        .mb-3 { margin-bottom: 0.75rem; }
-        .mt-1 { margin-top: 0.25rem; }
-        .mt-2 { margin-top: 0.5rem; }
-        .mt-3 { margin-top: 0.75rem; }
-        .pb-1 { padding-bottom: 0.25rem; }
-        .pt-1 { padding-top: 0.25rem; }
-        .pt-2 { padding-top: 0.5rem; }
-        .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
-        .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
-        .border-t { border-top: 1px solid #ccc; }
-        .border-b { border-bottom: 1px solid #ccc; }
-        .border-dashed { border-style: dashed; }
-        .flex {
-          display: flex;
-        }
-        .justify-between {
-          justify-content: space-between;
-        }
-        .text-right {
-          text-align: right;
-        }
-        .truncate {
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-        .w-1-2 { width: 50%; }
-        .w-1-6 { width: 16.666%; }
-        .space-y-0-5 > * + * {
-          margin-top: 0.125rem;
-        }
-        /* Mostrar QR code solo en impresión */
-        .qr-print-only {
-          display: block !important;
-        }
-        .qr-print-only img {
-          display: block !important;
         }
       </style>
     </head>
@@ -1414,11 +1339,13 @@ const printTicketDirect = () => {
   printWindow.document.close();
   printWindow.focus();
 
-  // Esperar a que se cargue el contenido antes de imprimir
+  // Esperar a que se carguen los estilos antes de imprimir
   setTimeout(() => {
     printWindow.print();
-    printWindow.close();
-  }, 250);
+    setTimeout(() => {
+      printWindow.close();
+    }, 500);
+  }, 500);
 };
 
 const finalizeSale = () => {
