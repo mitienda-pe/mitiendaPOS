@@ -912,6 +912,10 @@ const addPayment = () => {
       // Calcular cambio solo si el monto entregado excede el saldo
       const changeValue = cashAmount.value - amountDue;
 
+      // 🔧 CRITICAL FIX: Verificar si el usuario está pagando el total redondeado
+      const totalRedondeadoPreliminar = Math.round(props.total * 10) / 10;
+      const esPagoAlTotalRedondeadoPreliminar = Math.abs(cashAmount.value - totalRedondeadoPreliminar) < 0.01;
+
       if (changeValue > 0) {
         reference = `Cambio: ${formatCurrency(changeValue)}`;
 
@@ -922,26 +926,49 @@ const addPayment = () => {
             .join(', ');
           reference += ` (${breakdown})`;
         }
-      } else if (changeValue < 0) {
-        // Pago parcial: el usuario no entregó suficiente
+      } else if (changeValue < 0 && !esPagoAlTotalRedondeadoPreliminar) {
+        // Pago parcial: el usuario no entregó suficiente Y no coincide con el total redondeado
         // En este caso, registrar solo lo que entregó
         amount = cashAmount.value;
         reference = `Pago parcial: S/ ${cashAmount.value.toFixed(2)}`;
       } else {
+        // Pago exacto (changeValue === 0) o pago al total redondeado
         reference = 'Pago exacto';
+        // Si es pago al total redondeado, el monto debe ser el que ingresó el usuario
+        if (esPagoAlTotalRedondeadoPreliminar) {
+          amount = cashAmount.value;
+        }
       }
 
       // 🔧 CRITICAL FIX: Solo aplicar redondeo si:
       // 1. Es el primer pago (no hay pagos previos)
-      // 2. El pago cubre el 100% del saldo (changeValue >= 0, es decir, pago completo o con cambio)
+      // 2. El pago cubre el 100% del saldo O el monto coincide con el total redondeado
       // 3. Hay redondeo calculado
-      // Si es pago parcial (changeValue < 0), NO aplicar redondeo porque se combinarán métodos
-      const isFullPayment = changeValue >= 0;
+
+      // Calcular el total redondeado esperado
+      const totalRedondeado = Math.round(props.total * 10) / 10;
+      const esPagoAlTotalRedondeado = Math.abs(cashAmount.value - totalRedondeado) < 0.01;
+
+      // Es pago completo si:
+      // - changeValue >= 0 (cubre el total original), O
+      // - El monto coincide con el total redondeado (ej: 38.30 para total de 38.33)
+      const isFullPayment = changeValue >= 0 || esPagoAlTotalRedondeado;
+
       if (props.payments.length === 0 && roundingToDisplay.value !== 0 && isFullPayment) {
         roundingAmount = roundingToDisplay.value;
-        console.log('✅ [PaymentModal] Aplicando redondeo para pago completo en efectivo');
+        console.log('✅ [PaymentModal] Aplicando redondeo para pago completo en efectivo', {
+          cashAmount: cashAmount.value,
+          totalOriginal: props.total,
+          totalRedondeado,
+          esPagoAlTotalRedondeado,
+          changeValue
+        });
       } else if (props.payments.length === 0 && !isFullPayment) {
-        console.log('⚠️ [PaymentModal] NO aplicar redondeo - es pago parcial (se combinarán métodos)');
+        console.log('⚠️ [PaymentModal] NO aplicar redondeo - es pago parcial (se combinarán métodos)', {
+          cashAmount: cashAmount.value,
+          totalRedondeado,
+          diferencia: cashAmount.value - totalRedondeado
+        });
       }
 
       console.log('💰 [PaymentModal] Calculando pago en efectivo:', {
