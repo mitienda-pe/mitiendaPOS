@@ -1181,21 +1181,32 @@ const roundingToDisplay = computed(() => {
   // 3. Si el método seleccionado es efectivo Y no hay pagos previos, calcular redondeo anticipado
   //    PERO SOLO si el monto ingresado cubre el 100% del total (pago completo)
   if (paymentMethod.value === 'efectivo' && props.payments.length === 0) {
-    // Si hay monto ingresado y es menor al total, es pago parcial → NO aplicar redondeo
-    if (cashAmount.value > 0 && cashAmount.value < props.total) {
-      console.log('🔍 [PaymentModal] NO mostrar redondeo - pago parcial en efectivo');
+    // Calcular el total redondeado esperado
+    const totalBeforeRounding = props.total;
+    const roundedTotal = Math.round(totalBeforeRounding * 10) / 10;
+    const rounding = Math.round((roundedTotal - totalBeforeRounding) * 100) / 100;
+
+    // Verificar si el pago coincide con el total redondeado
+    const pagoCoincideConTotalRedondeado = Math.abs(cashAmount.value - roundedTotal) < 0.01;
+
+    // Si hay monto ingresado y es menor al total Y NO coincide con el total redondeado → pago parcial
+    if (cashAmount.value > 0 && cashAmount.value < props.total && !pagoCoincideConTotalRedondeado) {
+      console.log('🔍 [PaymentModal] NO mostrar redondeo - pago parcial en efectivo', {
+        cashAmount: cashAmount.value,
+        total: props.total,
+        roundedTotal,
+        pagoCoincideConTotalRedondeado
+      });
       return 0;
     }
 
-    // Si es pago completo (sin monto ingresado o monto >= total), calcular redondeo
-    const totalBeforeRounding = props.total;
-    const roundedTotal = Math.round(totalBeforeRounding * 10) / 10; // roundToValidAmount
-    const rounding = Math.round((roundedTotal - totalBeforeRounding) * 100) / 100;
+    // Si es pago completo (monto >= total O coincide con total redondeado), calcular redondeo
     console.log('🔍 [PaymentModal] Calculando redondeo anticipado para pago completo:', {
       totalOriginal: totalBeforeRounding,
       totalRedondeado: roundedTotal,
       redondeo: rounding,
-      cashAmount: cashAmount.value
+      cashAmount: cashAmount.value,
+      pagoCoincideConTotalRedondeado
     });
     return rounding;
   }
