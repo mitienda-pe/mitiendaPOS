@@ -942,17 +942,24 @@ const addPayment = () => {
 
       // 🔧 CRITICAL FIX: Solo aplicar redondeo si:
       // 1. Es el primer pago (no hay pagos previos)
-      // 2. El pago cubre el 100% del saldo O el monto coincide con el total redondeado
+      // 2. El pago + redondeo en contra cubre el 100% del total
       // 3. Hay redondeo calculado
+      //
+      // IMPORTANTE: El redondeo EN CONTRA (negativo) actúa como un pago adicional del cliente
+      // Ejemplo: Total S/ 38.33, Redondeo -S/ 0.03 → Cliente paga S/ 38.30 + S/ 0.03 = S/ 38.33
 
       // Calcular el total redondeado esperado
       const totalRedondeado = Math.round(props.total * 10) / 10;
-      const esPagoAlTotalRedondeado = Math.abs(cashAmount.value - totalRedondeado) < 0.01;
+      const redondeoCalculado = Math.round((totalRedondeado - props.total) * 100) / 100;
+
+      // Verificar si el pago + redondeo en contra cubre el total
+      const pagoMasRedondeo = cashAmount.value + Math.abs(Math.min(0, redondeoCalculado));
+      const cubreElTotal = Math.abs(pagoMasRedondeo - props.total) < 0.01;
 
       // Es pago completo si:
-      // - changeValue >= 0 (cubre el total original), O
-      // - El monto coincide con el total redondeado (ej: 38.30 para total de 38.33)
-      const isFullPayment = changeValue >= 0 || esPagoAlTotalRedondeado;
+      // - changeValue >= 0 (cubre el total original con cambio), O
+      // - El pago + redondeo en contra cubre el total (ej: 38.30 + 0.03 = 38.33)
+      const isFullPayment = changeValue >= 0 || cubreElTotal;
 
       if (props.payments.length === 0 && roundingToDisplay.value !== 0 && isFullPayment) {
         roundingAmount = roundingToDisplay.value;
@@ -960,14 +967,17 @@ const addPayment = () => {
           cashAmount: cashAmount.value,
           totalOriginal: props.total,
           totalRedondeado,
-          esPagoAlTotalRedondeado,
+          redondeoCalculado,
+          pagoMasRedondeo,
+          cubreElTotal,
           changeValue
         });
       } else if (props.payments.length === 0 && !isFullPayment) {
         console.log('⚠️ [PaymentModal] NO aplicar redondeo - es pago parcial (se combinarán métodos)', {
           cashAmount: cashAmount.value,
           totalRedondeado,
-          diferencia: cashAmount.value - totalRedondeado
+          pagoMasRedondeo,
+          diferencia: pagoMasRedondeo - props.total
         });
       }
 
