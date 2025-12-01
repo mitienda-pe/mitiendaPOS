@@ -698,9 +698,16 @@ const confirmSendEmail = async () => {
     }
   } catch (err) {
     console.error('Error sending email:', err);
-    emailError.value = err.message || 'No se pudo enviar el email. Verifica que la venta tenga factura emitida.';
-    setTimeout(() => emailError.value = null, 8000);
-    closeEmailModal();
+    // Si el mensaje de error contiene "exitosamente", en realidad fue exitoso
+    if (err.message && err.message.toLowerCase().includes('exitosamente')) {
+      emailSuccess.value = `Factura enviada exitosamente a ${emailInput.value.trim()}`;
+      setTimeout(() => emailSuccess.value = null, 5000);
+      closeEmailModal();
+    } else {
+      emailError.value = err.message || 'No se pudo enviar el email. Verifica que la venta tenga factura emitida.';
+      setTimeout(() => emailError.value = null, 8000);
+      closeEmailModal();
+    }
   } finally {
     sendingEmail.value = false;
   }
