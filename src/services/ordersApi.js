@@ -78,9 +78,10 @@ export const ordersApi = {
   },
 
   // Reenviar email de factura al cliente
-  async resendInvoiceEmail(orderId) {
+  async resendInvoiceEmail(orderId, customEmail = null) {
     try {
-      const response = await apiClient.post(`/orders/${orderId}/resend-invoice-email`);
+      const payload = customEmail ? { email: customEmail } : {};
+      const response = await apiClient.post(`/orders/${orderId}/resend-invoice-email`, payload);
       return response.data;
     } catch (error) {
       console.error('❌ [ordersApi] Error resending invoice email:', error);

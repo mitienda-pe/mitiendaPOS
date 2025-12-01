@@ -44,8 +44,8 @@
 
         <div class="flex gap-3">
           <button
-            v-if="canSendEmail()"
-            @click="sendEmail"
+            v-if="canShowEmailButton()"
+            @click="openEmailModal"
             :disabled="sendingEmail"
             class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -140,6 +140,67 @@
         <pre v-if="showDebug" class="mt-2 bg-gray-800 text-green-400 p-4 rounded-lg overflow-auto max-h-96 text-xs">{{ JSON.stringify(order, null, 2) }}</pre>
       </div>
     </div>
+
+    <!-- Modal para enviar email -->
+    <div v-if="showEmailModal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <!-- Background overlay -->
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" @click="closeEmailModal"></div>
+
+        <!-- Modal panel -->
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+          <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div class="sm:flex sm:items-start">
+              <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-green-100 sm:mx-0 sm:h-10 sm:w-10">
+                <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                  Enviar factura por email
+                </h3>
+                <div class="mt-4">
+                  <label for="email-input" class="block text-sm font-medium text-gray-700 mb-2">
+                    Email del destinatario
+                  </label>
+                  <input
+                    id="email-input"
+                    v-model="emailInput"
+                    type="email"
+                    placeholder="cliente@ejemplo.com"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    @keyup.enter="confirmSendEmail"
+                  />
+                  <p v-if="emailInputError" class="mt-2 text-sm text-red-600">{{ emailInputError }}</p>
+                  <p v-if="order?.customer?.email" class="mt-2 text-sm text-gray-500">
+                    Email registrado: {{ order.customer.email }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+            <button
+              type="button"
+              @click="confirmSendEmail"
+              :disabled="sendingEmail"
+              class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {{ sendingEmail ? 'Enviando...' : 'Enviar' }}
+            </button>
+            <button
+              type="button"
+              @click="closeEmailModal"
+              :disabled="sendingEmail"
+              class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -162,6 +223,9 @@ const showDebug = ref(false);
 const sendingEmail = ref(false);
 const emailSuccess = ref(null);
 const emailError = ref(null);
+const showEmailModal = ref(false);
+const emailInput = ref('');
+const emailInputError = ref(null);
 
 const loadOrderDetail = async () => {
   loading.value = true;
@@ -586,51 +650,65 @@ const printTicket = () => {
   };
 };
 
-const sendEmail = async () => {
-  // Validar que hay email
-  if (!order.value?.customer?.email) {
-    emailError.value = 'Esta venta no tiene un email de cliente asociado';
-    setTimeout(() => emailError.value = null, 5000);
+const openEmailModal = () => {
+  // Pre-cargar el email del cliente si existe
+  emailInput.value = order.value?.customer?.email || '';
+  emailInputError.value = null;
+  showEmailModal.value = true;
+};
+
+const closeEmailModal = () => {
+  if (!sendingEmail.value) {
+    showEmailModal.value = false;
+    emailInput.value = '';
+    emailInputError.value = null;
+  }
+};
+
+const confirmSendEmail = async () => {
+  // Limpiar errores previos
+  emailInputError.value = null;
+  emailSuccess.value = null;
+  emailError.value = null;
+
+  // Validar que se ingresó un email
+  if (!emailInput.value || emailInput.value.trim() === '') {
+    emailInputError.value = 'Por favor ingresa un email';
     return;
   }
 
-  // Validar formato de email
-  if (!order.value.customer.email.includes('@')) {
-    emailError.value = 'El email del cliente no es válido';
-    setTimeout(() => emailError.value = null, 5000);
+  // Validar formato de email básico
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(emailInput.value.trim())) {
+    emailInputError.value = 'El formato del email no es válido';
     return;
   }
 
   try {
     sendingEmail.value = true;
-    emailSuccess.value = null;
-    emailError.value = null;
 
-    const response = await ordersApi.resendInvoiceEmail(order.value.id);
+    const response = await ordersApi.resendInvoiceEmail(order.value.id, emailInput.value.trim());
 
     if (response.error === 0) {
-      emailSuccess.value = `Factura enviada a ${order.value.customer.email}`;
+      emailSuccess.value = `Factura enviada exitosamente a ${emailInput.value.trim()}`;
       setTimeout(() => emailSuccess.value = null, 5000);
+      closeEmailModal();
     } else {
       throw new Error(response.message || 'Error al enviar el email');
     }
   } catch (err) {
     console.error('Error sending email:', err);
     emailError.value = err.message || 'No se pudo enviar el email. Verifica que la venta tenga factura emitida.';
-    setTimeout(() => emailError.value = null, 5000);
+    setTimeout(() => emailError.value = null, 8000);
+    closeEmailModal();
   } finally {
     sendingEmail.value = false;
   }
 };
 
-const canSendEmail = () => {
-  // Puede enviar email si:
-  // - La orden está aprobada (status = 1)
-  // - Tiene email válido
-  return order.value &&
-         order.value.status == 1 &&
-         order.value.customer?.email &&
-         order.value.customer.email.includes('@');
+const canShowEmailButton = () => {
+  // Mostrar botón si la orden está aprobada (status = 1) y tiene factura
+  return order.value && order.value.status == 1;
 };
 
 const showErpNotification = () => {
