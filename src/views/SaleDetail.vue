@@ -695,7 +695,8 @@ const confirmSendEmail = async () => {
 
     const response = await ordersApi.resendInvoiceEmail(order.value.id, emailInput.value.trim());
 
-    if (response.error === 0) {
+    // El axios interceptor ya transformó la respuesta a { success: true/false }
+    if (response.success) {
       emailSuccess.value = `Factura enviada exitosamente a ${emailInput.value.trim()}`;
       setTimeout(() => emailSuccess.value = null, 5000);
       closeEmailModal();
@@ -704,16 +705,8 @@ const confirmSendEmail = async () => {
     }
   } catch (err) {
     console.error('Error sending email:', err);
-    // Si el mensaje de error contiene "exitosamente", en realidad fue exitoso
-    if (err.message && err.message.toLowerCase().includes('exitosamente')) {
-      emailSuccess.value = `Factura enviada exitosamente a ${emailInput.value.trim()}`;
-      setTimeout(() => emailSuccess.value = null, 5000);
-      closeEmailModal();
-    } else {
-      emailError.value = err.message || 'No se pudo enviar el email. Verifica que la venta tenga factura emitida.';
-      setTimeout(() => emailError.value = null, 8000);
-      closeEmailModal();
-    }
+    emailError.value = err.message || 'No se pudo enviar el email. Verifica que la venta tenga factura emitida.';
+    setTimeout(() => emailError.value = null, 8000);
   } finally {
     sendingEmail.value = false;
   }
