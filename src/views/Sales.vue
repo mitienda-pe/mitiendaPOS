@@ -378,24 +378,24 @@ const fetchOrders = async () => {
     console.log('📥 [Sales] Orders API Response:', response);
     console.log('📊 [Sales] Number of orders received:', response.orders?.length || 0);
 
-    // La respuesta puede venir en diferentes formatos
+    // El backend retorna { orders: [...] } con OrderTransformer
     if (response.orders) {
       console.log('✅ [Sales] Using response.orders branch');
       console.log('📋 [Sales] Raw orders before mapping:', response.orders);
-      // Mapear campos de BD a formato esperado
+      // El OrderTransformer del backend ya transformó los datos
       allOrders.value = response.orders.map((order) => ({
-        id: parseInt(order.tiendaventa_id),
-        order_number: order.tiendaventa_codigoreferencia,
+        id: Number(order.id) || 0,
+        order_number: order.code,
         customer: {
-          name: `${order.tiendaventa_nombres || ''} ${order.tiendaventa_apellidos || ''}`.trim() || 'Cliente General',
-          email: order.tiendaventa_correoelectronico,
-          phone: order.tiendaventa_telefono
+          name: `${order.billing_info?.name || ''} ${order.billing_info?.last_name || ''}`.trim() || 'Cliente General',
+          email: order.billing_info?.email,
+          phone: order.billing_info?.phone_number
         },
         cajero_nombre: order.cajero_nombre || null,
-        total: parseFloat(order.tiendaventa_totalpagar || '0'),
-        status: order.tiendaventa_pagado, // 0=rechazado, 1=pagado, 2=pendiente
+        total: parseFloat(order.total_amount || '0'),
+        status: order.status, // Ya viene mapeado por el backend
         source: order.tiendaventa_origen || 'web',
-        created_at: order.tiendaventa_fecha,
+        created_at: order.date_created,
         // Guardar datos raw para modal
         _raw: order
       }));
