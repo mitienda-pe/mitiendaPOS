@@ -81,7 +81,9 @@ export const ordersApi = {
   async resendInvoiceEmail(orderId, customEmail = null) {
     try {
       const payload = customEmail ? { email: customEmail } : {};
+      console.log('🔍 [ordersApi] resendInvoiceEmail called with:', { orderId, customEmail, payload });
       const response = await apiClient.post(`/orders/${orderId}/resend-invoice-email`, payload);
+      console.log('✅ [ordersApi] resendInvoiceEmail response:', response.data);
       return response.data;
     } catch (error) {
       console.error('❌ [ordersApi] Error resending invoice email:', error);
