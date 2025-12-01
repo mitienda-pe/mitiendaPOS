@@ -687,12 +687,6 @@ const confirmSendEmail = async () => {
   try {
     sendingEmail.value = true;
 
-    // DEBUG: Log what we're sending
-    console.log('🔍 [SaleDetail] Sending email request:', {
-      orderId: order.value.id,
-      customEmail: emailInput.value.trim()
-    });
-
     const response = await ordersApi.resendInvoiceEmail(order.value.id, emailInput.value.trim());
 
     // El axios interceptor ya transformó la respuesta a { success: true/false }
