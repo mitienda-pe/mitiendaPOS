@@ -129,14 +129,14 @@
             <p class="text-xs text-emerald-600 mt-1">Ventas en caja</p>
           </div>
 
-          <!-- Average Ticket -->
-          <div class="bg-amber-50 rounded-lg p-4 border border-amber-200">
-            <p class="text-xs font-medium text-amber-700 mb-1">📊 Ticket Promedio</p>
-            <p class="text-2xl font-bold text-amber-900">
-              S/ {{ summary.ticketPromedio.toFixed(2) }}
+          <!-- Card Payments -->
+          <div class="bg-purple-50 rounded-lg p-4 border border-purple-200">
+            <p class="text-xs font-medium text-purple-700 mb-1">💳 Pagos con Tarjeta</p>
+            <p class="text-2xl font-bold text-purple-900">
+              S/ {{ summary.totalVentasTarjeta.toFixed(2) }}
             </p>
-            <p class="text-xs text-amber-600 mt-1">
-              Por operación
+            <p class="text-xs text-purple-600 mt-1">
+              Crédito/Débito
             </p>
           </div>
 
@@ -292,8 +292,8 @@ const summary = ref({
   totalVentas: 0,
   numeroVentas: 0,
   totalVentasEfectivo: 0, // Solo ventas en efectivo
+  totalVentasTarjeta: 0, // Solo ventas con tarjeta
   totalVentasOtros: 0, // Ventas con otros métodos
-  ticketPromedio: 0, // Ticket promedio (totalVentas / numeroVentas)
   efectivoEsperado: 0
 });
 
@@ -362,17 +362,14 @@ const calculateSummary = () => {
   // shift.total_efectivo ya incluye TODO el efectivo del turno
   summary.value.totalVentasEfectivo = shift.total_efectivo || 0;
 
-  // Total de ventas con otros métodos (tarjeta, yape, plin, transferencia)
+  // Total de ventas con tarjeta
+  summary.value.totalVentasTarjeta = shift.total_tarjeta || 0;
+
+  // Total de ventas con otros métodos (yape, plin, transferencia)
   summary.value.totalVentasOtros =
-    (shift.total_tarjeta || 0) +
     (shift.total_yape || 0) +
     (shift.total_plin || 0) +
     (shift.total_transferencia || 0);
-
-  // Calcular ticket promedio
-  summary.value.ticketPromedio = summary.value.numeroVentas > 0
-    ? summary.value.totalVentas / summary.value.numeroVentas
-    : 0;
 
   // 📝 MEJORAS FUTURAS:
   // 1. Agregar UI para registrar entradas/salidas manuales de efectivo
