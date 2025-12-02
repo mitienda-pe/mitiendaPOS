@@ -77,11 +77,9 @@
                     </svg>
                     Tarjeta
                   </button>
-                  <button @click="selectPaymentMethod('banco')" :class="[
+                  <button @click="selectPaymentMethod('banco')" disabled :class="[
                     'btn flex items-center justify-center py-3 rounded-lg transition-colors duration-200',
-                    paymentMethod === 'banco'
-                      ? 'bg-cyan-600 text-white'
-                      : 'bg-cyan-100 hover:bg-cyan-200 text-cyan-800'
+                    'bg-gray-200 text-gray-400 cursor-not-allowed opacity-50'
                   ]">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none"
                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
