@@ -275,6 +275,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { ordersApi } from '../services/ordersApi';
+import { formatCurrency } from '../utils/formatters.js';
 
 // Función para obtener fecha de hoy en formato YYYY-MM-DD
 const getTodayDate = () => {
@@ -445,13 +446,7 @@ const formatDate = (dateString) => {
   });
 };
 
-const formatCurrency = (amount) => {
-  if (isNaN(amount) || amount === null || amount === undefined) return 'S/ 0.00';
-  return new Intl.NumberFormat('es-PE', {
-    style: 'currency',
-    currency: 'PEN'
-  }).format(amount);
-};
+// formatCurrency is now imported from utils/formatters.js
 
 const getStatusText = (status) => {
   const statusMap = {

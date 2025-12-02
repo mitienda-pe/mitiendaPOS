@@ -24,6 +24,7 @@ import ProcessingOverlay from '../components/ProcessingOverlay.vue';
 import StockValidationErrorModal from '../components/StockValidationErrorModal.vue';
 import QuantityStepperInput from '../components/QuantityStepperInput.vue';
 import { useBillingStore } from '../stores/billing.js';
+import { formatCurrency } from '../utils/formatters.js';
 
 // Stores
 const authStore = useAuthStore();
@@ -146,13 +147,7 @@ const remainingAmount = computed(() => cartStore.remainingAmount);
 const totalChange = computed(() => cartStore.totalChange);
 
 // Methods
-const formatCurrency = (amount) => {
-  if (isNaN(amount) || amount === null || amount === undefined) return 'S/ 0.00';
-  return new Intl.NumberFormat('es-PE', {
-    style: 'currency',
-    currency: 'PEN'
-  }).format(amount);
-};
+// formatCurrency is now imported from utils/formatters.js
 
 const calculateSubtotal = (item) => {
   const precio = parseFloat(item.precio) || 0;

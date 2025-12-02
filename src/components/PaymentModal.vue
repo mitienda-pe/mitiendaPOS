@@ -576,6 +576,7 @@ import {
   calculateChangeBreakdown,
   roundToValidAmount
 } from '../utils/cashDenominations.js';
+import { formatCurrency } from '../utils/formatters.js';
 
 const cartStore = useCartStore();
 const authStore = useAuthStore();
@@ -1462,10 +1463,7 @@ const sendByWhatsApp = () => {
   window.open(whatsappUrl, '_blank');
 };
 
-// Formateo de moneda
-const formatCurrency = (amount) => {
-  return `S/ ${amount.toFixed(2)}`;
-};
+// Formateo de moneda (now imported from utils/formatters.js)
 
 // Watcher para mostrar el ticket cuando cambia la propiedad showTicket
 watch(() => props.showTicket, (newValue) => {
