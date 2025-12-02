@@ -197,23 +197,6 @@
             />
           </div>
 
-          <!-- Netsuite ID -->
-          <div class="col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-1">
-              ID NetSuite (opcional)
-            </label>
-            <input
-              v-model="formData.empleado_netsuite_id"
-              type="text"
-              maxlength="50"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              placeholder="ID del empleado en NetSuite"
-            />
-            <p class="text-xs text-gray-500 mt-1">
-              Identificador del empleado en el sistema NetSuite
-            </p>
-          </div>
-
           <!-- PIN -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">
@@ -314,6 +297,23 @@
                 <span class="text-xs text-gray-500">({{ branch.tiendadireccion_numero_cajas }} cajas)</span>
               </label>
             </div>
+          </div>
+
+          <!-- Netsuite ID -->
+          <div class="col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              ID NetSuite (opcional)
+            </label>
+            <input
+              v-model="formData.empleado_netsuite_id"
+              type="text"
+              maxlength="50"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              placeholder="ID del empleado en NetSuite"
+            />
+            <p class="text-xs text-gray-500 mt-1">
+              Identificador del empleado en el sistema NetSuite
+            </p>
           </div>
 
           <!-- Activo -->
