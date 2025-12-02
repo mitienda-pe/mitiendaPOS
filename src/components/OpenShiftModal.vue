@@ -177,6 +177,7 @@ import { DENOMINATIONS } from '../utils/cashDenominations.js';
 import CashBreakdownInput from './CashBreakdownInput.vue';
 import { branchesApi } from '../services/branchesApi';
 import { useAuthStore } from '../stores/auth';
+import { useCashierStore } from '../stores/cashier';
 
 const props = defineProps({
   modelValue: Boolean
@@ -185,6 +186,7 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'opened']);
 
 const authStore = useAuthStore();
+const cashierStore = useCashierStore();
 
 const selectedSucursal = ref('');
 const sucursales = ref([]);
@@ -247,14 +249,36 @@ const isValid = computed(() => {
   return true;
 });
 
-// Cargar sucursales con POS
+// Cargar sucursales con POS (filtradas por las asignadas al cajero)
 const loadSucursales = async () => {
   try {
     const storeId = authStore.selectedStore?.id;
     if (!storeId) return;
 
     const response = await branchesApi.getAll(storeId, true); // con_pos=true
-    sucursales.value = response.data || [];
+    const todasLasSucursales = response.data || [];
+
+    // Filtrar solo las sucursales asignadas al cajero
+    if (cashierStore.cashier?.sucursales_ids) {
+      const sucursalesAsignadas = cashierStore.cashier.sucursales_ids
+        .split(',')
+        .map(id => parseInt(id.trim()));
+
+      sucursales.value = todasLasSucursales.filter(sucursal =>
+        sucursalesAsignadas.includes(sucursal.tiendadireccion_id)
+      );
+
+      console.log('🏪 [OpenShiftModal] Sucursales asignadas al cajero:', {
+        todas: todasLasSucursales.length,
+        asignadas: sucursales.value.length,
+        ids: sucursalesAsignadas
+      });
+    } else {
+      // Si no hay cajero autenticado o no tiene sucursales asignadas, mostrar todas
+      // (esto es un fallback, idealmente siempre debería haber cajero autenticado)
+      sucursales.value = todasLasSucursales;
+      console.warn('⚠️ [OpenShiftModal] No hay cajero autenticado o sin sucursales asignadas, mostrando todas');
+    }
   } catch (err) {
     console.error('Error cargando sucursales:', err);
     error.value = 'Error al cargar sucursales';
