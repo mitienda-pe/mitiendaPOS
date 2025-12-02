@@ -89,11 +89,9 @@
                     </svg>
                     Banco
                   </button>
-                  <button @click="selectPaymentMethod('nota_credito')" :class="[
+                  <button @click="selectPaymentMethod('nota_credito')" disabled :class="[
                     'btn flex items-center justify-center py-3 rounded-lg transition-colors duration-200',
-                    paymentMethod === 'nota_credito'
-                      ? 'bg-red-600 text-white'
-                      : 'bg-red-100 hover:bg-red-200 text-red-800'
+                    'bg-gray-200 text-gray-400 cursor-not-allowed opacity-50'
                   ]">
 
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none"
