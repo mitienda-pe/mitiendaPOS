@@ -677,6 +677,7 @@ const handlePaymentCompleted = async () => {
       source: 'pos', // Identificar que la venta viene del POS
       pasarela_id: 98, // ID especial para ventas del POS
       tiendadireccion_id: shiftStore.activeShift?.tiendadireccion_id || null, // ID de la sucursal desde el turno activo
+      empleado_netsuite_id: cashierStore.cashier?.empleado_netsuite_id || null, // ID del vendedor en NetSuite
       customer: {
         id: selectedCustomer.value ? selectedCustomer.value.id : null,
         email: selectedCustomer.value?.email || selectedCustomer.value?.correoElectronico || selectedCustomer.value?.correo || selectedCustomer.value?.tiendacliente_correo_electronico || selectedCustomer.value?.tiendacliente_correo || '',
