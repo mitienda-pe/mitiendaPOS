@@ -4,10 +4,10 @@
 
 /**
  * Formatear moneda (Soles peruanos)
- * Soporta hasta 8 decimales para máxima precisión en cálculos de IGV
+ * Muestra solo 2 decimales visualmente (los cálculos internos mantienen precisión completa)
  *
  * @param {number} amount - Monto a formatear
- * @returns {string} Monto formateado con símbolo de moneda
+ * @returns {string} Monto formateado con símbolo de moneda (2 decimales)
  */
 export function formatCurrency(amount) {
   if (isNaN(amount) || amount === null || amount === undefined) {
@@ -18,7 +18,7 @@ export function formatCurrency(amount) {
     style: 'currency',
     currency: 'PEN',
     minimumFractionDigits: 2,
-    maximumFractionDigits: 8 // Permite hasta 8 decimales para máxima precisión
+    maximumFractionDigits: 2 // Solo muestra 2 decimales en la UI
   }).format(amount)
 }
 
