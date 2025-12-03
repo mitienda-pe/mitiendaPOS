@@ -258,9 +258,22 @@ const loadSucursales = async () => {
     const response = await branchesApi.getAll(storeId, true); // con_pos=true
     const todasLasSucursales = response.data || [];
 
+    console.log('🔍 [OpenShiftModal] Debug info:', {
+      cashierExists: !!cashierStore.cashier,
+      sucursales_ids: cashierStore.cashier?.sucursales_ids,
+      isArray: Array.isArray(cashierStore.cashier?.sucursales_ids),
+      todasLasSucursales: todasLasSucursales.length
+    });
+
     // Filtrar solo las sucursales asignadas al cajero
     if (cashierStore.cashier?.sucursales_ids && Array.isArray(cashierStore.cashier.sucursales_ids)) {
       const sucursalesAsignadas = cashierStore.cashier.sucursales_ids.map(id => parseInt(id));
+
+      console.log('🔍 [OpenShiftModal] IDs a filtrar:', sucursalesAsignadas);
+      console.log('🔍 [OpenShiftModal] Todas las sucursales:', todasLasSucursales.map(s => ({
+        id: s.tiendadireccion_id,
+        nombre: s.tiendadireccion_nombre
+      })));
 
       if (sucursalesAsignadas.length > 0) {
         sucursales.value = todasLasSucursales.filter(sucursal =>
@@ -270,7 +283,8 @@ const loadSucursales = async () => {
         console.log('🏪 [OpenShiftModal] Sucursales asignadas al cajero:', {
           todas: todasLasSucursales.length,
           asignadas: sucursales.value.length,
-          ids: sucursalesAsignadas
+          ids: sucursalesAsignadas,
+          sucursalesEncontradas: sucursales.value.map(s => s.tiendadireccion_nombre)
         });
       } else {
         sucursales.value = todasLasSucursales;
