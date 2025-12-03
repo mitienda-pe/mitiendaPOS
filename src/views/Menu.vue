@@ -211,7 +211,7 @@
       </router-link>
 
       <!-- 12. Ayuda -->
-      <a href="https://docs.mitienda.pe" target="_blank" class="block">
+      <router-link to="/help" class="block">
         <div
           class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full border-l-4 border-sky-500">
           <div class="flex flex-col items-center justify-center h-full text-center">
@@ -222,10 +222,10 @@
               <line x1="12" y1="17" x2="12.01" y2="17"></line>
             </svg>
             <h2 class="text-xl font-medium text-gray-900 mb-2">Ayuda</h2>
-            <p class="text-gray-600 text-center">Documentación y soporte</p>
+            <p class="text-gray-600 text-center">Manuales de usuario y soporte</p>
           </div>
         </div>
-      </a>
+      </router-link>
 
       <!-- Nota: Botón "Cambiar Tienda" eliminado - Para cambiar de tienda, hacer logout -->
     </div>

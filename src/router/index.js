@@ -20,6 +20,7 @@ const Branches = () => import('../views/Branches.vue');
 const Preferences = () => import('../views/Preferences.vue');
 const Settings = () => import('../views/Settings.vue');
 const CashierAccountsHierarchy = () => import('../views/CashierAccountsHierarchy.vue');
+const Help = () => import('../views/Help.vue');
 
 const routes = [
   {
@@ -160,6 +161,12 @@ const routes = [
         component: CashierAccountsHierarchy
       }
     ]
+  },
+  {
+    path: '/help',
+    name: 'Help',
+    component: Help,
+    meta: { requiresAuth: true, roles: ['cajero', 'supervisor', 'administrador'] }
   },
   {
     path: '/',
