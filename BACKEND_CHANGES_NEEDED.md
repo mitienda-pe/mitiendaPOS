@@ -27,6 +27,8 @@ Cuando el cajero se autentica con su PIN, el backend retorna los datos del emple
 
 Este endpoint es el más importante ya que es el que se usa en el login directo de cajeros.
 
+**IMPORTANTE**: El backend debe consultar el campo `empleado_netsuite_id` de la tabla `posempleados` usando el `empleado_id` que validó con el PIN.
+
 **Respuesta actual:**
 ```json
 {
@@ -74,6 +76,33 @@ Este endpoint es el más importante ya que es el que se usa en el login directo 
 **Código PHP a modificar:**
 ```php
 // En AuthController::cashierLogin()
+
+// 1. Al buscar el empleado, incluir los campos necesarios
+$empleadoModel = new \App\Models\PosEmpleadoModel();
+$empleado = $empleadoModel
+    ->select([
+        'empleado_id',
+        'empleado_nombres',
+        'empleado_apellidos',
+        'empleado_rol',
+        'empleado_pin',
+        'empleado_netsuite_id',  // ← IMPORTANTE: Incluir este campo en la query
+        'empleado_activo'
+    ])
+    ->where('tienda_id', $tienda['tienda_id'])
+    ->where('empleado_pin', $pin)
+    ->where('empleado_activo', 1)
+    ->first();
+
+// 2. Si las sucursales están en una tabla de relación, obtenerlas
+$sucursalesModel = new \App\Models\PosEmpleadoSucursalModel();
+$sucursalesIds = $sucursalesModel
+    ->where('empleado_id', $empleado['empleado_id'])
+    ->findColumn('tiendadireccion_id');
+
+$empleado['sucursales_ids'] = !empty($sucursalesIds) ? implode(',', $sucursalesIds) : null;
+
+// 3. Retornar la respuesta con los campos completos
 return $this->respond([
     'success' => true,
     'data' => [
