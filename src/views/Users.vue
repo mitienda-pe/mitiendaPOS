@@ -538,13 +538,10 @@ const editEmpleado = (empleado) => {
     error: null
   };
 
-  // Parsear sucursales_ids (puede venir como array o string "1,2,3")
-  let sucursalesIds = [];
-  if (Array.isArray(empleado.sucursales_ids)) {
-    sucursalesIds = empleado.sucursales_ids.map(id => parseInt(id));
-  } else if (empleado.sucursales_ids && typeof empleado.sucursales_ids === 'string') {
-    sucursalesIds = empleado.sucursales_ids.split(',').map(id => parseInt(id));
-  }
+  // Parsear sucursales_ids (viene como array del backend)
+  const sucursalesIds = Array.isArray(empleado.sucursales_ids)
+    ? empleado.sucursales_ids.map(id => parseInt(id))
+    : [];
 
   formData.value = {
     tienda_id: empleado.tienda_id,

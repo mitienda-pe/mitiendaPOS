@@ -259,17 +259,8 @@ const loadSucursales = async () => {
     const todasLasSucursales = response.data || [];
 
     // Filtrar solo las sucursales asignadas al cajero
-    if (cashierStore.cashier?.sucursales_ids) {
-      let sucursalesAsignadas = [];
-
-      // El backend puede retornar sucursales_ids como array o como string separado por comas
-      if (Array.isArray(cashierStore.cashier.sucursales_ids)) {
-        sucursalesAsignadas = cashierStore.cashier.sucursales_ids.map(id => parseInt(id));
-      } else if (typeof cashierStore.cashier.sucursales_ids === 'string') {
-        sucursalesAsignadas = cashierStore.cashier.sucursales_ids
-          .split(',')
-          .map(id => parseInt(id.trim()));
-      }
+    if (cashierStore.cashier?.sucursales_ids && Array.isArray(cashierStore.cashier.sucursales_ids)) {
+      const sucursalesAsignadas = cashierStore.cashier.sucursales_ids.map(id => parseInt(id));
 
       if (sucursalesAsignadas.length > 0) {
         sucursales.value = todasLasSucursales.filter(sucursal =>
