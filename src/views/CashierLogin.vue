@@ -144,7 +144,10 @@ const handleLogin = async () => {
 
     console.log('✅ [CASHIER LOGIN] Login exitoso:', {
       empleado: `${empleado.nombres} ${empleado.apellidos}`,
-      tienda: tienda.nombre
+      empleado_id: empleado.id,
+      netsuite_id: empleado.netsuite_id || 'No asignado',
+      tienda: tienda.nombre,
+      tienda_id: tienda.id
     });
 
     // 1. Guardar token y datos en authStore
@@ -172,7 +175,9 @@ const handleLogin = async () => {
       empleado_id: empleado.id,
       empleado_nombres: empleado.nombres,
       empleado_apellidos: empleado.apellidos,
-      empleado_rol: empleado.rol
+      empleado_rol: empleado.rol,
+      empleado_netsuite_id: empleado.netsuite_id || null,
+      sucursales_ids: empleado.sucursales_ids || null
     };
     cashierStore.authenticated = true;
 
