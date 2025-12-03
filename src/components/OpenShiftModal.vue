@@ -260,19 +260,31 @@ const loadSucursales = async () => {
 
     // Filtrar solo las sucursales asignadas al cajero
     if (cashierStore.cashier?.sucursales_ids) {
-      const sucursalesAsignadas = cashierStore.cashier.sucursales_ids
-        .split(',')
-        .map(id => parseInt(id.trim()));
+      let sucursalesAsignadas = [];
 
-      sucursales.value = todasLasSucursales.filter(sucursal =>
-        sucursalesAsignadas.includes(sucursal.tiendadireccion_id)
-      );
+      // El backend puede retornar sucursales_ids como array o como string separado por comas
+      if (Array.isArray(cashierStore.cashier.sucursales_ids)) {
+        sucursalesAsignadas = cashierStore.cashier.sucursales_ids.map(id => parseInt(id));
+      } else if (typeof cashierStore.cashier.sucursales_ids === 'string') {
+        sucursalesAsignadas = cashierStore.cashier.sucursales_ids
+          .split(',')
+          .map(id => parseInt(id.trim()));
+      }
 
-      console.log('🏪 [OpenShiftModal] Sucursales asignadas al cajero:', {
-        todas: todasLasSucursales.length,
-        asignadas: sucursales.value.length,
-        ids: sucursalesAsignadas
-      });
+      if (sucursalesAsignadas.length > 0) {
+        sucursales.value = todasLasSucursales.filter(sucursal =>
+          sucursalesAsignadas.includes(sucursal.tiendadireccion_id)
+        );
+
+        console.log('🏪 [OpenShiftModal] Sucursales asignadas al cajero:', {
+          todas: todasLasSucursales.length,
+          asignadas: sucursales.value.length,
+          ids: sucursalesAsignadas
+        });
+      } else {
+        sucursales.value = todasLasSucursales;
+        console.warn('⚠️ [OpenShiftModal] sucursales_ids está vacío, mostrando todas');
+      }
     } else {
       // Si no hay cajero autenticado o no tiene sucursales asignadas, mostrar todas
       // (esto es un fallback, idealmente siempre debería haber cajero autenticado)
