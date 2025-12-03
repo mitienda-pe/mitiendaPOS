@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { ordersApi } from '../services/ordersApi';
 
 /**
  * Store de Carrito de Compras con Estados
@@ -23,7 +24,10 @@ export const useCartStore = defineStore('cart', {
     roundingAdjustment: 0, // Monto del redondeo aplicado (puede ser positivo o negativo)
 
     // Para autorizaciones pendientes
-    pendingAuthorization: null // { action: 'remove_item', data: {...}, resolve, reject }
+    pendingAuthorization: null, // { action: 'remove_item', data: {...}, resolve, reject }
+
+    // Totales calculados por el backend (método NetSuite)
+    calculatedTotals: null // { subtotal, tax, total, items: [...] }
   }),
 
   getters: {
@@ -67,25 +71,37 @@ export const useCartStore = defineStore('cart', {
     },
 
     // ========== Cálculos financieros ==========
-    // IMPORTANTE: Los precios en BD YA incluyen IGV
-    // Por lo tanto, debemos extraer el IGV del precio, no agregarlo
+    // IMPORTANTE: Los totales son calculados por el backend usando el método de NetSuite
+    // Esto garantiza que los montos coincidan exactamente con lo que se envía a NetSuite
     subtotal: (state) => {
+      // Si hay totales calculados por el backend, usar esos
+      if (state.calculatedTotals) {
+        return state.calculatedTotals.subtotal;
+      }
+      // Fallback: cálculo local (puede tener discrepancias de 0.01)
       return state.items.reduce((sum, item) => {
         const precioConIGV = parseFloat(item.precio) || 0;
         const cantidad = parseInt(item.quantity) || 0;
-        // Extraer el precio sin IGV: precio_con_igv / 1.18
         const precioSinIGV = precioConIGV / 1.18;
         return sum + (precioSinIGV * cantidad);
       }, 0);
     },
 
-    tax(state) {
-      // El IGV es el 18% del subtotal (precio sin IGV)
+    tax() {
+      // Si hay totales calculados por el backend, usar esos
+      if (this.calculatedTotals) {
+        return this.calculatedTotals.tax;
+      }
+      // Fallback: cálculo local
       return this.subtotal * 0.18;
     },
 
-    total(state) {
-      // Total = Subtotal (sin IGV) + IGV
+    total() {
+      // Si hay totales calculados por el backend, usar esos
+      if (this.calculatedTotals) {
+        return this.calculatedTotals.total;
+      }
+      // Fallback: cálculo local
       return this.subtotal + this.tax;
     },
 
@@ -185,6 +201,44 @@ export const useCartStore = defineStore('cart', {
   },
 
   actions: {
+    // ========== Recalcular Totales desde Backend ==========
+
+    /**
+     * Recalcular totales usando el método de NetSuite desde el backend
+     * Esto garantiza que los totales coincidan exactamente con lo que se enviará a NetSuite
+     */
+    async recalculateTotals() {
+      if (this.items.length === 0) {
+        this.calculatedTotals = null;
+        return;
+      }
+
+      try {
+        console.log('🧮 [CART] Recalculating totals from backend...');
+
+        // Mapear items al formato esperado por el backend
+        const itemsForCalculation = this.items.map(item => ({
+          producto_id: item.id,
+          cantidad: item.quantity,
+          tiendaventa_cantidad: item.quantity
+        }));
+
+        const response = await ordersApi.calculateTotal(itemsForCalculation);
+
+        if (response.success) {
+          this.calculatedTotals = response.data;
+          console.log('✅ [CART] Totals calculated:', this.calculatedTotals);
+        } else {
+          console.error('❌ [CART] Backend returned error calculating totals');
+          this.calculatedTotals = null;
+        }
+      } catch (error) {
+        console.error('❌ [CART] Error recalculating totals:', error);
+        // Mantener calculatedTotals como null para usar fallback local
+        this.calculatedTotals = null;
+      }
+    },
+
     // ========== Gestión de Items ==========
 
     /**
@@ -192,7 +246,7 @@ export const useCartStore = defineStore('cart', {
      * @param {Object} product - Producto a agregar
      * @param {Object} authorization - Opcional: datos de autorización si carrito está bloqueado
      */
-    addItem(product, authorization = null) {
+    async addItem(product, authorization = null) {
       console.log('🛒 [CART] addItem called:', {
         product: product.nombre,
         status: this.status,
@@ -232,6 +286,9 @@ export const useCartStore = defineStore('cart', {
 
       this.unsavedChanges = true;
 
+      // Recalcular totales desde el backend
+      await this.recalculateTotals();
+
       // Log de auditoría si hubo autorización
       if (authorization) {
         this._logAudit('ADD_ITEM_BLOCKED', authorization, { productId: product.id });
@@ -241,7 +298,7 @@ export const useCartStore = defineStore('cart', {
     /**
      * Actualizar cantidad de un item
      */
-    updateItemQuantity(productId, newQuantity, authorization = null) {
+    async updateItemQuantity(productId, newQuantity, authorization = null) {
       // Validar permisos
       if (!this.canEditQuantity && !authorization) {
         throw new Error('Requiere PIN del cajero para editar cantidades en carrito bloqueado');
@@ -264,6 +321,9 @@ export const useCartStore = defineStore('cart', {
 
       item.quantity = newQuantity;
       this.unsavedChanges = true;
+
+      // Recalcular totales desde el backend
+      await this.recalculateTotals();
 
       if (authorization) {
         this._logAudit('UPDATE_QUANTITY_BLOCKED', authorization, { productId, newQuantity });
@@ -296,7 +356,7 @@ export const useCartStore = defineStore('cart', {
      * Eliminar item del carrito
      * SIEMPRE requiere PIN supervisor si no está ABIERTO
      */
-    removeItem(productId, supervisorAuth = null) {
+    async removeItem(productId, supervisorAuth = null) {
       console.log('🗑️ [CART] removeItem called:', {
         productId,
         status: this.status,
@@ -320,6 +380,9 @@ export const useCartStore = defineStore('cart', {
       console.log('✅ [CART] Item removed successfully');
       this.items = this.items.filter(i => i.id !== productId);
       this.unsavedChanges = true;
+
+      // Recalcular totales desde el backend
+      await this.recalculateTotals();
 
       if (supervisorAuth) {
         this._logAudit('REMOVE_ITEM', supervisorAuth, { productId });
@@ -531,6 +594,7 @@ export const useCartStore = defineStore('cart', {
       this.unsavedChanges = false;
       this.pendingAuthorization = null;
       this.roundingAdjustment = 0;
+      this.calculatedTotals = null;
     },
 
     /**

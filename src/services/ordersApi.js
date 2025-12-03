@@ -90,5 +90,24 @@ export const ordersApi = {
       }
       throw error;
     }
+  },
+
+  // Calcular total de la orden usando el método de NetSuite
+  // Este endpoint garantiza que los totales coincidan exactamente con lo que NetSuite espera
+  async calculateTotal(items) {
+    try {
+      console.log('🧮 [ordersApi] Calculating total with NetSuite method:', items);
+      const response = await apiClient.post('/orders/calculate-total', { items });
+      console.log('✅ [ordersApi] Total calculated:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ [ordersApi] Error calculating total:', error);
+      console.error('❌ [ordersApi] Error response:', error.response?.data);
+      // Re-throw with better error info
+      if (error.response?.data) {
+        throw new Error(error.response.data.message || JSON.stringify(error.response.data));
+      }
+      throw error;
+    }
   }
 };
