@@ -267,7 +267,8 @@ const loadSucursales = async () => {
 
     // Filtrar solo las sucursales asignadas al cajero
     if (cashierStore.cashier?.sucursales_ids && Array.isArray(cashierStore.cashier.sucursales_ids)) {
-      const sucursalesAsignadas = cashierStore.cashier.sucursales_ids.map(id => parseInt(id));
+      // Normalizar IDs a strings para comparación (el backend puede enviar strings o números)
+      const sucursalesAsignadas = cashierStore.cashier.sucursales_ids.map(id => String(id));
 
       console.log('🔍 [OpenShiftModal] IDs a filtrar:', sucursalesAsignadas);
       console.log('🔍 [OpenShiftModal] Todas las sucursales:', todasLasSucursales.map(s => ({
@@ -277,7 +278,7 @@ const loadSucursales = async () => {
 
       if (sucursalesAsignadas.length > 0) {
         sucursales.value = todasLasSucursales.filter(sucursal =>
-          sucursalesAsignadas.includes(sucursal.tiendadireccion_id)
+          sucursalesAsignadas.includes(String(sucursal.tiendadireccion_id))
         );
 
         console.log('🏪 [OpenShiftModal] Sucursales asignadas al cajero:', {
