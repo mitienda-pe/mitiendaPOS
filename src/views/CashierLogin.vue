@@ -144,7 +144,7 @@ const handleLogin = async () => {
 
     console.log('✅ [CASHIER LOGIN] Login exitoso:', {
       empleado: `${empleado.nombres} ${empleado.apellidos}`,
-      empleado_id: empleado.id,
+      cajero_id: empleado.id,
       netsuite_id: empleado.netsuite_id || 'No asignado',
       tienda: tienda.nombre,
       tienda_id: tienda.id
