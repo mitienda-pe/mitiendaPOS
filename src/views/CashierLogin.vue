@@ -25,7 +25,6 @@
             type="text"
             inputmode="numeric"
             required
-            placeholder="12097"
             class="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-lg"
             :disabled="loading"
             @input="storeId = storeId.replace(/\D/g, '')"
