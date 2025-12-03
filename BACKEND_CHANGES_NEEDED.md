@@ -7,15 +7,97 @@ Cuando el cajero se autentica con su PIN, el backend retorna los datos del emple
 1. `empleado_netsuite_id` - Para incluir en las órdenes
 2. `sucursales_ids` - Para filtrar sucursales disponibles
 
-## Endpoint a Modificar
+## Endpoints a Modificar
 
-**Endpoint**: `POST /api/v1/pos-empleados/validate-pin`
+### 1. `POST /api/v1/auth/cashier-login` (Login directo de cajeros)
+
+**Ubicación probable**: `app/Controllers/Api/V1/AuthController.php`
+
+**Problema**: No retorna `netsuite_id` ni `sucursales_ids` del empleado
+
+### 2. `POST /api/v1/pos-empleados/validate-pin` (Validación de PIN)
 
 **Ubicación probable**: `app/Controllers/Api/V1/PosEmpleadosController.php`
 
+**Problema**: No retorna `empleado_netsuite_id` ni `sucursales_ids`
+
 ## Cambios Requeridos
 
-### 1. Agregar Campo NetSuite ID a la Respuesta
+### ENDPOINT 1: `/api/v1/auth/cashier-login`
+
+Este endpoint es el más importante ya que es el que se usa en el login directo de cajeros.
+
+**Respuesta actual:**
+```json
+{
+  "success": true,
+  "data": {
+    "access_token": "eyJ0eXAi...",
+    "empleado": {
+      "id": "5",
+      "nombres": "Carlos",
+      "apellidos": "Vidal",
+      "rol": "cajero"
+    },
+    "tienda": {
+      "id": "12097",
+      "nombre": "sanjorgeprueba",
+      "ruc": "20603317204"
+    }
+  }
+}
+```
+
+**Respuesta esperada (AGREGAR CAMPOS):**
+```json
+{
+  "success": true,
+  "data": {
+    "access_token": "eyJ0eXAi...",
+    "empleado": {
+      "id": "5",
+      "nombres": "Carlos",
+      "apellidos": "Vidal",
+      "rol": "cajero",
+      "netsuite_id": "890",           // ← AGREGAR ESTE CAMPO
+      "sucursales_ids": "404,405"     // ← AGREGAR ESTE CAMPO (IDs separados por comas)
+    },
+    "tienda": {
+      "id": "12097",
+      "nombre": "sanjorgeprueba",
+      "ruc": "20603317204"
+    }
+  }
+}
+```
+
+**Código PHP a modificar:**
+```php
+// En AuthController::cashierLogin()
+return $this->respond([
+    'success' => true,
+    'data' => [
+        'access_token' => $jwt,
+        'empleado' => [
+            'id' => $empleado['empleado_id'],
+            'nombres' => $empleado['empleado_nombres'],
+            'apellidos' => $empleado['empleado_apellidos'],
+            'rol' => $empleado['empleado_rol'],
+            'netsuite_id' => $empleado['empleado_netsuite_id'] ?? null,  // ← AGREGAR
+            'sucursales_ids' => $empleado['sucursales_ids'] ?? null      // ← AGREGAR
+        ],
+        'tienda' => [
+            'id' => $tienda['tienda_id'],
+            'nombre' => $tienda['tienda_nombre_comercial'],
+            'ruc' => $tienda['tienda_ruc']
+        ]
+    ]
+]);
+```
+
+---
+
+### ENDPOINT 2: `/api/v1/pos-empleados/validate-pin`
 
 El método `validatePin()` debe incluir `empleado_netsuite_id` en la respuesta:
 
