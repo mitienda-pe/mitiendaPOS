@@ -135,6 +135,34 @@ export const exportShiftReportToPdf = (shift, movements, cashier = null) => {
 
   yPosition = doc.lastAutoTable.finalY + 12;
 
+  // === SCORECARDS ===
+  doc.setFontSize(14);
+  doc.setFont(undefined, 'bold');
+  doc.text('Scorecards', 14, yPosition);
+  yPosition += 8;
+
+  const scorecardsData = [
+    ['Pagos Efectivo', `S/ ${(shift.total_efectivo || 0).toFixed(2)}`],
+    ['Pagos con Tarjeta', `S/ ${(shift.total_tarjeta || 0).toFixed(2)}`],
+    ['Esperado en Caja', `S/ ${((shift.monto_inicial || 0) + (shift.total_efectivo || 0)).toFixed(2)}`]
+  ];
+
+  autoTable(doc, {
+    startY: yPosition,
+    head: [['Concepto', 'Monto']],
+    body: scorecardsData,
+    theme: 'striped',
+    headStyles: { fillColor: [234, 179, 8], fontSize: 10, fontStyle: 'bold' },
+    bodyStyles: { fontSize: 9 },
+    columnStyles: {
+      0: { cellWidth: 80, fontStyle: 'bold' },
+      1: { cellWidth: 'auto', halign: 'right', fontStyle: 'bold' }
+    },
+    margin: { left: 14, right: 14 }
+  });
+
+  yPosition = doc.lastAutoTable.finalY + 12;
+
   // === DESGLOSE POR MÉTODO DE PAGO ===
   if (shift.estado === 'cerrado') {
     doc.setFontSize(14);

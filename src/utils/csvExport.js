@@ -153,9 +153,22 @@ export const exportShiftReportToCsv = (shift, movements, cashier = null) => {
     ['Número de Ventas', shift.numero_ventas || 0],
   ];
 
+  // Add scorecards section (available for both open and closed shifts)
+  summaryData.push(
+    [''],
+    ['SCORECARDS'],
+    [''],
+    ['💵 Pagos Efectivo', `S/ ${(shift.total_efectivo || 0).toFixed(2)}`],
+    ['💳 Pagos con Tarjeta', `S/ ${(shift.total_tarjeta || 0).toFixed(2)}`],
+    ['🎯 Esperado en Caja', `S/ ${((shift.monto_inicial || 0) + (shift.total_efectivo || 0)).toFixed(2)}`]
+  );
+
   // Add closed shift data
   if (shift.estado === 'cerrado') {
     summaryData.push(
+      [''],
+      ['CIERRE DE TURNO'],
+      [''],
       ['Monto Esperado', `S/ ${shift.monto_esperado.toFixed(2)}`],
       ['Monto Real', `S/ ${shift.monto_real.toFixed(2)}`],
       ['Diferencia', `S/ ${shift.diferencia.toFixed(2)}`],
