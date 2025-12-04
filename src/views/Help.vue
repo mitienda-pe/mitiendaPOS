@@ -464,6 +464,97 @@
                 </div>
               </div>
             </div>
+
+            <!-- Bloquear y Desbloquear -->
+            <div class="border-t pt-6">
+              <h3 class="text-xl font-semibold text-gray-900 mb-3 flex items-center">
+                <span class="bg-green-100 text-green-800 rounded-full w-8 h-8 flex items-center justify-center mr-3 text-sm font-bold">9</span>
+                Cómo Bloquear y Desbloquear la Aplicación
+              </h3>
+              <div class="ml-11 space-y-3">
+                <p class="text-gray-700">Por seguridad, puedes bloquear la aplicación temporalmente sin cerrar tu turno:</p>
+
+                <h4 class="font-semibold text-gray-900 mt-4">Bloquear la Aplicación</h4>
+                <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                  <li>En cualquier pantalla del sistema, busca el icono de <strong>"Candado"</strong> o <strong>"Bloquear"</strong> en la barra superior</li>
+                  <li>También puedes usar el atajo de teclado <kbd class="px-2 py-1 bg-gray-200 rounded text-sm">Ctrl + L</kbd> (Windows/Linux) o <kbd class="px-2 py-1 bg-gray-200 rounded text-sm">⌘ + L</kbd> (Mac)</li>
+                  <li>La aplicación se bloqueará inmediatamente</li>
+                  <li>Aparecerá una pantalla de bloqueo mostrando tu nombre de usuario</li>
+                </ol>
+
+                <h4 class="font-semibold text-gray-900 mt-4">Desbloquear la Aplicación</h4>
+                <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                  <li>En la pantalla de bloqueo, verás tu nombre de usuario</li>
+                  <li>Ingresa tu <strong>PIN de cajero</strong> (4 dígitos) en el campo correspondiente</li>
+                  <li>Haz clic en <strong>"Desbloquear"</strong> o presiona Enter</li>
+                  <li>Si el PIN es correcto, volverás exactamente donde estabas</li>
+                  <li>Todas las ventas en curso y datos se mantienen intactos</li>
+                </ol>
+
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mt-3">
+                  <p class="text-sm text-yellow-700 mb-2">
+                    <strong>Importante:</strong>
+                  </p>
+                  <ul class="list-disc list-inside text-sm text-yellow-700 ml-4 space-y-1">
+                    <li>Bloquear NO cierra tu turno de caja</li>
+                    <li>Las ventas en curso se mantienen guardadas</li>
+                    <li>Nadie más puede acceder sin tu PIN</li>
+                    <li>Si olvidas tu PIN, contacta a un supervisor o administrador</li>
+                  </ul>
+                </div>
+
+                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mt-3">
+                  <p class="text-sm text-blue-700">
+                    <strong>Cuándo usar el bloqueo:</strong>
+                  </p>
+                  <ul class="list-disc list-inside text-sm text-blue-700 ml-4 mt-2 space-y-1">
+                    <li>Cuando te alejas temporalmente de tu puesto de trabajo</li>
+                    <li>Durante pausas cortas o recesos</li>
+                    <li>Para prevenir acceso no autorizado</li>
+                    <li>Cuando otro empleado necesita usar tu computadora momentáneamente</li>
+                  </ul>
+                </div>
+
+                <div class="bg-red-50 border-l-4 border-red-400 p-4 mt-3">
+                  <p class="text-sm text-red-700 mb-2">
+                    <strong>Diferencia entre Bloquear y Cerrar Turno:</strong>
+                  </p>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+                    <div class="bg-white p-3 rounded">
+                      <p class="font-semibold text-gray-900 mb-1 text-sm">Bloquear</p>
+                      <ul class="list-disc list-inside text-xs text-gray-700 space-y-1">
+                        <li>Pausa temporal</li>
+                        <li>Turno sigue abierto</li>
+                        <li>Ventas se mantienen</li>
+                        <li>Rápido de desbloquear</li>
+                      </ul>
+                    </div>
+                    <div class="bg-white p-3 rounded">
+                      <p class="font-semibold text-gray-900 mb-1 text-sm">Cerrar Turno</p>
+                      <ul class="list-disc list-inside text-xs text-gray-700 space-y-1">
+                        <li>Finaliza jornada</li>
+                        <li>Requiere arqueo de caja</li>
+                        <li>No puedes hacer más ventas</li>
+                        <li>Proceso más largo</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <h4 class="font-semibold text-gray-900 mt-4">Intentos Fallidos de Desbloqueo</h4>
+                <div class="bg-orange-50 border-l-4 border-orange-400 p-4">
+                  <p class="text-sm text-orange-700 mb-2">
+                    Si ingresas un PIN incorrecto:
+                  </p>
+                  <ul class="list-disc list-inside text-sm text-orange-700 ml-4 space-y-1">
+                    <li>El sistema te mostrará un mensaje de error</li>
+                    <li>Después de 3 intentos fallidos, se notificará al supervisor</li>
+                    <li>Después de 5 intentos fallidos, se cerrará la sesión automáticamente por seguridad</li>
+                    <li>Deberás volver a hacer login con tus credenciales completas</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Administrador Section -->
