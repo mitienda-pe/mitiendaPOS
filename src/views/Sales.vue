@@ -377,14 +377,17 @@ const fetchOrders = async () => {
     console.log('📡 [Sales] Fetching orders with filters:', filters);
     const response = await ordersApi.getOrders(filters);
     console.log('📥 [Sales] Orders API Response:', response);
-    console.log('📊 [Sales] Number of orders received:', response.orders?.length || 0);
+
+    // Normalized response: { success, data, meta }
+    const ordersData = response.data || response.orders || [];
+    console.log('📊 [Sales] Number of orders received:', ordersData.length);
 
     // El backend retorna { orders: [...] } con OrderTransformer
-    if (response.orders) {
-      console.log('✅ [Sales] Using response.orders branch');
-      console.log('📋 [Sales] Raw orders before mapping:', response.orders);
+    if (ordersData.length > 0) {
+      console.log('✅ [Sales] Using normalized response.data');
+      console.log('📋 [Sales] Raw orders before mapping:', ordersData);
       // El OrderTransformer del backend ya transformó los datos
-      allOrders.value = response.orders.map((order) => ({
+      allOrders.value = ordersData.map((order) => ({
         id: Number(order.id) || 0,
         order_number: order.code,
         customer: {
