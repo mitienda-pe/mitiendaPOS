@@ -159,11 +159,25 @@
             </svg>
             Movimientos de Hoy
           </h2>
-          <button
-            @click="loadMovements"
-            class="text-sm text-blue-600 hover:text-blue-800 font-medium">
-            🔄 Actualizar
-          </button>
+          <div class="flex gap-2">
+            <button
+              @click="downloadCsvReport"
+              class="inline-flex items-center px-3 py-1 text-sm text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded font-medium"
+              title="Descargar reporte en CSV">
+              📥 Descargar CSV
+            </button>
+            <button
+              @click="downloadPdfReport"
+              class="inline-flex items-center px-3 py-1 text-sm text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded font-medium"
+              title="Descargar reporte en PDF">
+              📄 Descargar PDF
+            </button>
+            <button
+              @click="loadMovements"
+              class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+              🔄 Actualizar
+            </button>
+          </div>
         </div>
 
         <!-- Movements Loading -->
@@ -264,7 +278,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, toRaw } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useCashierStore } from '@/stores/cashier';
 import { useShiftStore } from '@/stores/shift';
 import { useAuthStore } from '@/stores/auth';
@@ -272,6 +286,8 @@ import cashRegisterShiftsApi from '@/services/cashRegisterShiftsApi';
 import OpenShiftModal from '@/components/OpenShiftModal.vue';
 import CloseShiftModal from '@/components/CloseShiftModal.vue';
 import CashierAuthModal from '@/components/CashierAuthModal.vue';
+import { exportShiftReportToCsv } from '@/utils/csvExport';
+import { exportShiftReportToPdf } from '@/utils/pdfExport';
 
 const authStore = useAuthStore();
 const cashierStore = useCashierStore();
@@ -768,6 +784,50 @@ const getMovementSign = (tipo) => {
     return '-';
   }
   return '';
+};
+
+/**
+ * Download CSV report for current shift
+ */
+const downloadCsvReport = () => {
+  if (!shiftStore.hasActiveShift) {
+    alert('No hay un turno activo para exportar');
+    return;
+  }
+
+  try {
+    // Pasar datos del cajero autenticado al CSV
+    exportShiftReportToCsv(
+      shiftStore.activeShift,
+      movements.value,
+      cashierStore.cashier
+    );
+  } catch (err) {
+    console.error('Error downloading CSV:', err);
+    alert('Error al generar el archivo CSV');
+  }
+};
+
+/**
+ * Download PDF report for current shift
+ */
+const downloadPdfReport = () => {
+  if (!shiftStore.hasActiveShift) {
+    alert('No hay un turno activo para exportar');
+    return;
+  }
+
+  try {
+    // Pasar datos del cajero autenticado al PDF
+    exportShiftReportToPdf(
+      shiftStore.activeShift,
+      movements.value,
+      cashierStore.cashier
+    );
+  } catch (err) {
+    console.error('Error downloading PDF:', err);
+    alert('Error al generar el archivo PDF');
+  }
 };
 
 // Lifecycle

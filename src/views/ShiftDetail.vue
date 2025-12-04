@@ -121,11 +121,25 @@
       <div class="bg-white rounded-lg shadow-md p-6">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-semibold text-gray-900">Movimientos del Turno</h2>
-          <button
-            @click="loadMovements"
-            class="text-sm text-blue-600 hover:text-blue-800 font-medium">
-            🔄 Actualizar
-          </button>
+          <div class="flex gap-2">
+            <button
+              @click="downloadCsvReport"
+              class="inline-flex items-center px-3 py-1 text-sm text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded font-medium"
+              title="Descargar reporte en CSV">
+              📥 Descargar CSV
+            </button>
+            <button
+              @click="downloadPdfReport"
+              class="inline-flex items-center px-3 py-1 text-sm text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded font-medium"
+              title="Descargar reporte en PDF">
+              📄 Descargar PDF
+            </button>
+            <button
+              @click="loadMovements"
+              class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+              🔄 Actualizar
+            </button>
+          </div>
         </div>
 
         <!-- Loading Movements -->
@@ -212,8 +226,12 @@
 import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import cashRegisterShiftsApi from '@/services/cashRegisterShiftsApi';
+import { exportShiftReportToCsv } from '@/utils/csvExport';
+import { exportShiftReportToPdf } from '@/utils/pdfExport';
+import { useCashierStore } from '@/stores/cashier';
 
 const route = useRoute();
+const cashierStore = useCashierStore();
 
 const loading = ref(true);
 const error = ref(null);
@@ -378,6 +396,52 @@ const formatTime = (dateString) => {
     hour: '2-digit',
     minute: '2-digit'
   });
+};
+
+/**
+ * Download CSV report for this shift
+ */
+const downloadCsvReport = () => {
+  if (!shift.value) {
+    alert('No hay datos del turno para exportar');
+    return;
+  }
+
+  try {
+    // Pasar datos del cajero si está disponible (para turno activo)
+    // Para turnos históricos, confiará en los datos del shift desde el backend
+    exportShiftReportToCsv(
+      shift.value,
+      movements.value,
+      cashierStore.cashier
+    );
+  } catch (err) {
+    console.error('Error downloading CSV:', err);
+    alert('Error al generar el archivo CSV');
+  }
+};
+
+/**
+ * Download PDF report for this shift
+ */
+const downloadPdfReport = () => {
+  if (!shift.value) {
+    alert('No hay datos del turno para exportar');
+    return;
+  }
+
+  try {
+    // Pasar datos del cajero si está disponible (para turno activo)
+    // Para turnos históricos, confiará en los datos del shift desde el backend
+    exportShiftReportToPdf(
+      shift.value,
+      movements.value,
+      cashierStore.cashier
+    );
+  } catch (err) {
+    console.error('Error downloading PDF:', err);
+    alert('Error al generar el archivo PDF');
+  }
 };
 
 // Lifecycle
