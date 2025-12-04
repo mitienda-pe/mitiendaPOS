@@ -59,7 +59,43 @@ export const ordersApi = {
     if (filters.source) params.append('source', filters.source); // web, pos, api
 
     const response = await apiClient.get(`/orders?${params.toString()}`);
-    return response.data;
+
+    const apiResponse = response.data;
+    // Manejar ambos formatos: nuevo (con pagination) y legacy ({ orders: [...] })
+    const rawData = apiResponse.data || apiResponse.orders || apiResponse;
+    const paginationData = apiResponse.pagination;
+
+    if (Array.isArray(rawData)) {
+      return {
+        success: true,
+        data: rawData, // Ya están normalizados del backend
+        meta: paginationData ? {
+          page: paginationData.page,
+          limit: paginationData.perPage || paginationData.limit || 20,
+          total: paginationData.total,
+          totalPages: paginationData.totalPages,
+          hasMore: paginationData.hasMore
+        } : {
+          page: filters.page || 1,
+          limit: filters.limit || 20,
+          total: rawData.length,
+          totalPages: 1,
+          hasMore: rawData.length >= (filters.limit || 20)
+        }
+      };
+    }
+
+    return {
+      success: false,
+      data: [],
+      meta: {
+        page: 1,
+        limit: 20,
+        total: 0,
+        totalPages: 0,
+        hasMore: false
+      }
+    };
   },
 
   // Obtener detalle de una orden específica
