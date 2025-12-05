@@ -299,23 +299,6 @@
             </div>
           </div>
 
-          <!-- Netsuite ID -->
-          <div class="col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-1">
-              ID NetSuite (opcional)
-            </label>
-            <input
-              v-model="formData.empleado_netsuite_id"
-              type="text"
-              maxlength="50"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              placeholder="ID del empleado en NetSuite"
-            />
-            <p class="text-xs text-gray-500 mt-1">
-              Identificador del empleado en el sistema NetSuite
-            </p>
-          </div>
-
           <!-- Activo -->
           <div class="col-span-2">
             <label class="flex items-center gap-2 cursor-pointer">
@@ -419,7 +402,6 @@ const formData = ref({
   empleado_documento: '',
   empleado_email: '',
   empleado_telefono: '',
-  empleado_netsuite_id: '',
   empleado_pin: '',
   empleado_rol: 'cajero',
   empleado_horario_inicio: null,
@@ -550,7 +532,6 @@ const editEmpleado = (empleado) => {
     empleado_documento: empleado.empleado_documento || '',
     empleado_email: empleado.empleado_email || '',
     empleado_telefono: empleado.empleado_telefono || '',
-    empleado_netsuite_id: empleado.empleado_netsuite_id || '',
     empleado_pin: empleado.empleado_pin,
     empleado_rol: empleado.empleado_rol,
     empleado_horario_inicio: empleado.empleado_horario_inicio || null,
@@ -656,7 +637,6 @@ const closeModal = () => {
     empleado_documento: '',
     empleado_email: '',
     empleado_telefono: '',
-    empleado_netsuite_id: '',
     empleado_pin: '',
     empleado_rol: 'cajero',
     empleado_horario_inicio: null,

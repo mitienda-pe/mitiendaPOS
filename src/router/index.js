@@ -20,6 +20,8 @@ const Branches = () => import('../views/Branches.vue');
 const Preferences = () => import('../views/Preferences.vue');
 const Settings = () => import('../views/Settings.vue');
 const CashierAccountsHierarchy = () => import('../views/CashierAccountsHierarchy.vue');
+const NetsuiteBranches = () => import('../views/NetsuiteBranches.vue');
+const NetsuiteUsers = () => import('../views/NetsuiteUsers.vue');
 const Help = () => import('../views/Help.vue');
 
 const routes = [
@@ -138,12 +140,7 @@ const routes = [
     children: [
       {
         path: '',
-        redirect: '/settings/preferences'
-      },
-      {
-        path: 'preferences',
-        name: 'Preferences',
-        component: Preferences
+        redirect: '/settings/branches'
       },
       {
         path: 'branches',
@@ -156,7 +153,22 @@ const routes = [
         component: () => import('../views/Users.vue')
       },
       {
-        path: 'cashier-accounts',
+        path: 'netsuite/preferences',
+        name: 'Preferences',
+        component: Preferences
+      },
+      {
+        path: 'netsuite/branches',
+        name: 'NetsuiteBranches',
+        component: NetsuiteBranches
+      },
+      {
+        path: 'netsuite/users',
+        name: 'NetsuiteUsers',
+        component: NetsuiteUsers
+      },
+      {
+        path: 'netsuite/cashier-accounts',
         name: 'CashierAccounts',
         component: CashierAccountsHierarchy
       }
