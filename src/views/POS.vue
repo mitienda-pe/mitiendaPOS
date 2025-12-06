@@ -22,6 +22,7 @@ import BarcodeScanner from '../components/BarcodeScanner.vue';
 import BillingDocumentModal from '../components/BillingDocumentModal.vue';
 import ProcessingOverlay from '../components/ProcessingOverlay.vue';
 import StockValidationErrorModal from '../components/StockValidationErrorModal.vue';
+import BonificationWarningModal from '../components/BonificationWarningModal.vue';
 import QuantityStepperInput from '../components/QuantityStepperInput.vue';
 import { useBillingStore } from '../stores/billing.js';
 import { formatCurrency } from '../utils/formatters.js';
@@ -65,6 +66,7 @@ const showMergeSales = ref(false);
 const showBarcodeScanner = ref(false);
 const showBillingModal = ref(false);
 const showStockValidationError = ref(false);
+const showBonificationWarning = ref(false);
 const validatingStock = ref(false);
 
 // Datos para el modal de fusión
@@ -72,6 +74,7 @@ const existingSaleForMerge = ref(null);
 
 // Stock validation error data
 const stockValidationErrors = ref([]);
+const unavailableBonifications = ref([]);
 
 // 🔥 OPTIMIZATION: Store inventory_numbers from stock validation
 // to reuse in order creation (avoids ~10s duplicate NetSuite call)
@@ -565,8 +568,29 @@ const processPayment = async () => {
     const errorData = error.response?.data;
     const unavailableItems = errorData?.unavailable_items || errorData?.messages?.unavailable_items;
 
+    // ✅ NUEVO: Detectar bonificaciones sin stock
+    const hasBonificationIssues = errorData?.has_bonification_issues || false;
+    const unavailableBonifs = errorData?.unavailable_bonifications || [];
+
     if (unavailableItems && Array.isArray(unavailableItems)) {
-      // Show stock validation error modal
+      // ✅ NUEVO: Si SOLO hay problemas con bonificaciones, mostrar modal de advertencia
+      if (hasBonificationIssues && unavailableBonifs.length > 0) {
+        const regularItemsWithIssues = unavailableItems.filter(item => !item.is_bonification);
+
+        // Si NO hay problemas con productos regulares, solo con bonificaciones
+        if (regularItemsWithIssues.length === 0) {
+          console.log('⚠️ [POS] Only bonifications have stock issues, showing warning modal');
+          unavailableBonifications.value = unavailableBonifs;
+          showBonificationWarning.value = true;
+          return;
+        }
+
+        // Si hay problemas TANTO en productos regulares COMO en bonificaciones
+        console.log('⚠️ [POS] Both regular products and bonifications have stock issues');
+        // Mostrar modal de error de stock (incluye productos regulares + bonificaciones)
+      }
+
+      // Show stock validation error modal (productos regulares sin stock)
       // Enriquecer con nombre del producto desde el carrito
       stockValidationErrors.value = unavailableItems.map(item => {
         const cartItem = cartItems.value.find(ci => ci.id === item.product_id || ci.sku === item.sku);
@@ -631,6 +655,32 @@ const handlePaymentAdded = (paymentData) => {
   } catch (error) {
     alert(error.message);
   }
+};
+
+// ✅ NUEVO: Handlers para modal de advertencia de bonificaciones
+const handleBonificationWarningProceed = () => {
+  console.log('✅ [POS] User accepted to proceed without bonifications');
+
+  // Cerrar modal
+  showBonificationWarning.value = false;
+
+  // Continuar con el flujo de pago
+  // La exclusión de bonificaciones ocurrirá automáticamente en el backend
+  // después de que el Legacy API cree la orden
+  if (remainingAmount.value > 0) {
+    showPaymentModal.value = true;
+  } else if (payments.value.length > 0) {
+    handlePaymentCompleted();
+  }
+};
+
+const handleBonificationWarningCancel = () => {
+  console.log('⚠️ [POS] User cancelled sale due to bonification issues');
+
+  // Cerrar modal
+  showBonificationWarning.value = false;
+
+  // No hacer nada más - el usuario puede ajustar el carrito o cancelar la venta
 };
 
 const processingOrder = ref(false);
@@ -1747,5 +1797,13 @@ const getPaymentMethodName = (method) => {
     :is-visible="showStockValidationError"
     :unavailable-items="stockValidationErrors"
     @close="showStockValidationError = false"
+  />
+
+  <!-- Bonification Warning Modal -->
+  <BonificationWarningModal
+    :is-visible="showBonificationWarning"
+    :unavailable-bonifications="unavailableBonifications"
+    @proceed="handleBonificationWarningProceed"
+    @cancel="handleBonificationWarningCancel"
   />
 </template>
