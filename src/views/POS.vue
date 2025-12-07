@@ -569,8 +569,9 @@ const processPayment = async () => {
     const unavailableItems = errorData?.unavailable_items || errorData?.messages?.unavailable_items;
 
     // ✅ NUEVO: Detectar bonificaciones sin stock
-    const hasBonificationIssues = errorData?.has_bonification_issues || false;
-    const unavailableBonifs = errorData?.unavailable_bonifications || [];
+    // IMPORTANTE: CI4 fail() retorna los datos dentro de 'messages'
+    const hasBonificationIssues = errorData?.has_bonification_issues || errorData?.messages?.has_bonification_issues || false;
+    const unavailableBonifs = errorData?.unavailable_bonifications || errorData?.messages?.unavailable_bonifications || [];
 
     if (unavailableItems && Array.isArray(unavailableItems)) {
       // ✅ NUEVO: Si SOLO hay problemas con bonificaciones, mostrar modal de advertencia
