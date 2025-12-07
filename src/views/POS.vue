@@ -658,19 +658,96 @@ const handlePaymentAdded = (paymentData) => {
 };
 
 // ✅ NUEVO: Handlers para modal de advertencia de bonificaciones
-const handleBonificationWarningProceed = () => {
+const handleBonificationWarningProceed = async () => {
   console.log('✅ [POS] User accepted to proceed without bonifications');
 
   // Cerrar modal
   showBonificationWarning.value = false;
 
-  // Continuar con el flujo de pago
-  // La exclusión de bonificaciones ocurrirá automáticamente en el backend
-  // después de que el Legacy API cree la orden
-  if (remainingAmount.value > 0) {
-    showPaymentModal.value = true;
-  } else if (payments.value.length > 0) {
-    handlePaymentCompleted();
+  // 🔥 NUEVO: Reintentar validación de stock SIN bonificaciones
+  // Esto evita el loop infinito enviando skip_bonification_validation: true
+  console.log('🔍 [POS] Retrying stock validation without bonifications...');
+  validatingStock.value = true;
+
+  try {
+    const items = cartItems.value.map(item => ({
+      product_id: item.id,
+      sku: item.sku,
+      quantity: item.quantity
+    }));
+
+    const response = await ordersApi.validateStock({
+      items,
+      skip_bonification_validation: true  // 🔥 NUEVO FLAG: Omitir bonificaciones
+    });
+
+    if (!response.success) {
+      console.error('❌ [POS] Stock validation failed even without bonifications:', response);
+      validatingStock.value = false;
+
+      // Si falla incluso sin bonificaciones, es un problema con productos regulares
+      const unavailableItems = response.unavailable_items || [];
+      if (unavailableItems.length > 0) {
+        stockValidationErrors.value = unavailableItems.map(item => {
+          const cartItem = cartItems.value.find(ci => ci.id === item.product_id || ci.sku === item.sku);
+          return {
+            ...item,
+            product_name: cartItem?.nombre || item.product_name || 'Producto desconocido'
+          };
+        });
+        showStockValidationError.value = true;
+        return;
+      }
+
+      alert('No se puede procesar la venta. Por favor, verifica el stock de los productos.');
+      return;
+    }
+
+    console.log('✅ [POS] Stock validation passed without bonifications');
+
+    // 🔥 OPTIMIZATION: Save inventory_numbers from validation response
+    if (response.inventory_numbers) {
+      validatedInventoryNumbers.value = response.inventory_numbers;
+      const invCount = Object.keys(response.inventory_numbers).length;
+      console.log(`🚀 [OPTIMIZATION] Saved ${invCount} inventory_numbers from validation for reuse`);
+    }
+
+    // 🔥 OPTIMIZATION: Mark stock as validated for this cart
+    stockValidatedForCurrentCart.value = true;
+
+    // Ocultar overlay de validación
+    validatingStock.value = false;
+
+    // Continuar con el flujo de pago
+    // La exclusión de bonificaciones ocurrirá automáticamente en el backend
+    // después de que el Legacy API cree la orden
+    if (remainingAmount.value > 0) {
+      showPaymentModal.value = true;
+    } else if (payments.value.length > 0) {
+      handlePaymentCompleted();
+    }
+
+  } catch (error) {
+    console.error('❌ [POS] Error retrying stock validation:', error);
+    validatingStock.value = false;
+
+    // Check if error contains unavailable_items
+    const errorData = error.response?.data;
+    const unavailableItems = errorData?.unavailable_items || [];
+
+    if (unavailableItems.length > 0) {
+      stockValidationErrors.value = unavailableItems.map(item => {
+        const cartItem = cartItems.value.find(ci => ci.id === item.product_id || ci.sku === item.sku);
+        return {
+          ...item,
+          product_name: cartItem?.nombre || item.product_name || 'Producto desconocido'
+        };
+      });
+      showStockValidationError.value = true;
+      return;
+    }
+
+    alert('Error al validar stock. Por favor, intente nuevamente.');
   }
 };
 
