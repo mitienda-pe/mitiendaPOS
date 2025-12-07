@@ -510,7 +510,7 @@ const validatePinAvailability = async () => {
   }, 500); // Esperar 500ms después de que el usuario deje de escribir
 };
 
-const editEmpleado = (empleado) => {
+const editEmpleado = async (empleado) => {
   editingEmpleado.value = empleado;
 
   // Resetear validación de PIN
@@ -525,6 +525,10 @@ const editEmpleado = (empleado) => {
     ? empleado.sucursales_ids.map(id => parseInt(id))
     : [];
 
+  // Primero cargar las sucursales disponibles
+  await loadBranches();
+
+  // Luego asignar los datos del formulario para que los checkboxes hagan match correctamente
   formData.value = {
     tienda_id: empleado.tienda_id,
     empleado_nombres: empleado.empleado_nombres,
@@ -540,7 +544,6 @@ const editEmpleado = (empleado) => {
     sucursales: sucursalesIds
   };
 
-  loadBranches();
   showEditModal.value = true;
 };
 

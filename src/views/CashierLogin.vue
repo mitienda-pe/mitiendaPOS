@@ -192,7 +192,36 @@ const handleLogin = async () => {
 
   } catch (err) {
     console.error('❌ [CASHIER LOGIN] Error:', err);
-    error.value = err.response?.data?.messages?.error || err.message || 'Error al iniciar sesión';
+
+    // Detectar errores específicos del backend
+    const response = err.response?.data;
+    const status = err.response?.status;
+
+    if (status === 401) {
+      // PIN inválido o empleado inactivo
+      error.value = response?.message || 'PIN incorrecto o empleado desactivado';
+    } else if (status === 403) {
+      // Fuera de horario
+      const horarioInicio = response?.empleado_horario_inicio?.substring(0, 5);
+      const horarioFin = response?.empleado_horario_fin?.substring(0, 5);
+      const horaActual = response?.hora_actual?.substring(0, 5);
+
+      if (horarioInicio && horarioFin) {
+        error.value = `⏰ Fuera de horario. Tu horario es de ${horarioInicio} a ${horarioFin} (hora actual: ${horaActual})`;
+      } else {
+        error.value = response?.message || 'No tienes permiso para ingresar en este momento';
+      }
+    } else if (status === 404) {
+      // Tienda no encontrada
+      error.value = `La tienda con ID ${storeId.value} no existe`;
+    } else if (status === 400) {
+      // Parámetros faltantes
+      error.value = 'Datos incompletos. Verifica el ID de tienda y PIN';
+    } else {
+      // Error genérico
+      error.value = response?.message || err.message || 'Error al iniciar sesión. Intenta nuevamente';
+    }
+
     pin.value = ''; // Limpiar PIN
     pinInput.value?.focus();
   } finally {
