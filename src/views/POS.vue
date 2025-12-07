@@ -84,6 +84,9 @@ const validatedInventoryNumbers = ref(null);
 // to avoid re-validating when adding multiple payment methods
 const stockValidatedForCurrentCart = ref(false);
 
+// 🔥 NUEVO: Flag para rastrear si el usuario aceptó continuar sin bonificaciones
+const skipBonificationsForCurrentOrder = ref(false);
+
 // Tipo de comprobante seleccionado al inicio de la venta
 const billingDocumentType = ref('boleta'); // 'boleta' o 'factura'
 
@@ -662,6 +665,9 @@ const handlePaymentAdded = (paymentData) => {
 const handleBonificationWarningProceed = async () => {
   console.log('✅ [POS] User accepted to proceed without bonifications');
 
+  // 🔥 NUEVO: Marcar que esta orden debe crearse SIN bonificaciones
+  skipBonificationsForCurrentOrder.value = true;
+
   // Cerrar modal
   showBonificationWarning.value = false;
 
@@ -887,7 +893,11 @@ const handlePaymentCompleted = async () => {
       rounding_amount: cartStore.appliedRounding, // Redondeo aplicado (puede ser positivo o negativo)
       total_after_rounding: cartStore.totalWithRounding, // Total final después de redondeo
       currency: 'PEN',
-      notes: '' // Campo para notas adicionales
+      notes: '', // Campo para notas adicionales
+
+      // 🔥 NUEVO: Flag para deshabilitar bonificaciones automáticas
+      // Se activa cuando el usuario acepta continuar sin bonificaciones sin stock
+      skip_bonification_validation: skipBonificationsForCurrentOrder.value
     };
 
     // 🔥 OPTIMIZATION DISABLED: inventory_numbers causes error in legacy API
@@ -1173,6 +1183,9 @@ const resetSale = (orderData = null) => {
   // 🔥 OPTIMIZATION: Clear validated inventory numbers and stock validation flag
   validatedInventoryNumbers.value = null;
   stockValidatedForCurrentCart.value = false;
+
+  // 🔥 NUEVO: Resetear flag de bonificaciones
+  skipBonificationsForCurrentOrder.value = false;
 };
 
 const handleBillingSuccess = (billingData) => {
