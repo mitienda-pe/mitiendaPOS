@@ -683,10 +683,14 @@ const handleBonificationWarningProceed = async () => {
       quantity: item.quantity
     }));
 
-    const response = await ordersApi.validateStock({
-      items,
-      skip_bonification_validation: true  // 🔥 NUEVO FLAG: Omitir bonificaciones
-    });
+    // 🔥 NUEVO: Enviar IDs específicos de bonificaciones a excluir
+    const payload = { items };
+    if (unavailableBonifications.value.length > 0) {
+      payload.excluded_bonification_ids = unavailableBonifications.value.map(b => b.product_id);
+      console.log('🔍 [POS] Re-validating stock excluding bonifications:', payload.excluded_bonification_ids);
+    }
+
+    const response = await ordersApi.validateStock(payload);
 
     if (!response.success) {
       console.error('❌ [POS] Stock validation failed even without bonifications:', response);
@@ -893,12 +897,16 @@ const handlePaymentCompleted = async () => {
       rounding_amount: cartStore.appliedRounding, // Redondeo aplicado (puede ser positivo o negativo)
       total_after_rounding: cartStore.totalWithRounding, // Total final después de redondeo
       currency: 'PEN',
-      notes: '', // Campo para notas adicionales
-
-      // 🔥 NUEVO: Flag para deshabilitar bonificaciones automáticas
-      // Se activa cuando el usuario acepta continuar sin bonificaciones sin stock
-      skip_bonification_validation: skipBonificationsForCurrentOrder.value
+      notes: '' // Campo para notas adicionales
     };
+
+    // 🔥 NUEVO: Enviar IDs específicos de bonificaciones a excluir (no todas)
+    // Solo se envía si el usuario aceptó continuar sin algunas bonificaciones
+    if (skipBonificationsForCurrentOrder.value && unavailableBonifications.value.length > 0) {
+      // Extraer los IDs de las bonificaciones sin stock
+      orderData.excluded_bonification_ids = unavailableBonifications.value.map(b => b.product_id);
+      console.log('🔍 [POS] Excluding specific bonifications:', orderData.excluded_bonification_ids);
+    }
 
     // 🔥 OPTIMIZATION DISABLED: inventory_numbers causes error in legacy API
     // The legacy API doesn't recognize this field and throws 'subtract_array()' error
