@@ -78,11 +78,22 @@ export const useCartStore = defineStore('cart', {
       if (state.calculatedTotals) {
         return state.calculatedTotals.subtotal;
       }
-      // Fallback: cálculo local (puede tener discrepancias de 0.01)
+      // Fallback: cálculo local
+      // IMPORTANTE: Usar price_without_tax si está disponible, sino calcular desde precio con IGV
       return state.items.reduce((sum, item) => {
-        const precioConIGV = parseFloat(item.precio) || 0;
         const cantidad = parseInt(item.quantity) || 0;
-        const precioSinIGV = precioConIGV / 1.18;
+
+        // Verificar si tenemos precio sin IGV disponible
+        let precioSinIGV;
+        if (item.price_without_tax !== null && item.price_without_tax !== undefined) {
+          // Usar precio sin IGV directamente del backend (ya viene de la columna producto_precio_sin_igv)
+          precioSinIGV = parseFloat(item.price_without_tax) || 0;
+        } else {
+          // Fallback: extraer base desde precio con IGV (puede causar redondeos de 0.01)
+          const precioConIGV = parseFloat(item.precio || item.price) || 0;
+          precioSinIGV = precioConIGV / 1.18;
+        }
+
         return sum + (precioSinIGV * cantidad);
       }, 0);
     },
