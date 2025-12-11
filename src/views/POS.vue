@@ -75,6 +75,7 @@ const existingSaleForMerge = ref(null);
 // Stock validation error data
 const stockValidationErrors = ref([]);
 const unavailableBonifications = ref([]);
+const availableBonifications = ref([]); // 🔥 NUEVO: Bonificaciones con stock disponible
 
 // 🔥 OPTIMIZATION: Store inventory_numbers from stock validation
 // to reuse in order creation (avoids ~10s duplicate NetSuite call)
@@ -575,6 +576,7 @@ const processPayment = async () => {
     // IMPORTANTE: CI4 fail() retorna los datos dentro de 'messages'
     const hasBonificationIssues = errorData?.has_bonification_issues || errorData?.messages?.has_bonification_issues || false;
     const unavailableBonifs = errorData?.unavailable_bonifications || errorData?.messages?.unavailable_bonifications || [];
+    const availableBonifs = errorData?.available_bonifications || errorData?.messages?.available_bonifications || [];
 
     if (unavailableItems && Array.isArray(unavailableItems)) {
       // ✅ NUEVO: Si SOLO hay problemas con bonificaciones, mostrar modal de advertencia
@@ -585,6 +587,7 @@ const processPayment = async () => {
         if (regularItemsWithIssues.length === 0) {
           console.log('⚠️ [POS] Only bonifications have stock issues, showing warning modal');
           unavailableBonifications.value = unavailableBonifs;
+          availableBonifications.value = availableBonifs; // 🔥 NUEVO: Pasar bonificaciones disponibles
           showBonificationWarning.value = true;
           return;
         }
@@ -1902,6 +1905,7 @@ const getPaymentMethodName = (method) => {
   <BonificationWarningModal
     :is-visible="showBonificationWarning"
     :unavailable-bonifications="unavailableBonifications"
+    :available-bonifications="availableBonifications"
     @proceed="handleBonificationWarningProceed"
     @cancel="handleBonificationWarningCancel"
   />

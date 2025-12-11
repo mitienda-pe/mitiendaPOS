@@ -73,6 +73,54 @@
           </div>
         </div>
 
+        <!-- Available bonifications (will be included) -->
+        <div v-if="availableBonifications && availableBonifications.length > 0" class="mt-6">
+          <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+            <div class="flex gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              <div class="text-sm text-green-800">
+                <p class="font-medium">Las siguientes bonificaciones SÍ están disponibles y serán incluidas en la venta:</p>
+              </div>
+            </div>
+          </div>
+
+          <div
+            v-for="bonif in availableBonifications"
+            :key="bonif.product_id"
+            class="bg-green-50 border-l-4 border-green-500 rounded-lg p-4 mb-3"
+          >
+            <div class="flex items-start gap-4">
+              <!-- Gift icon -->
+              <div class="flex-shrink-0 mt-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M5 5a3 3 0 015-2.236A3 3 0 0114.83 6H16a2 2 0 110 4h-5V9a1 1 0 10-2 0v1H4a2 2 0 110-4h1.17C5.06 5.687 5 5.35 5 5zm4 1V5a1 1 0 10-1 1h1zm3 0a1 1 0 10-1-1v1h1z" clip-rule="evenodd" />
+                  <path d="M9 11H3v5a2 2 0 002 2h4v-7zM11 18h4a2 2 0 002-2v-5h-6v7z" />
+                </svg>
+              </div>
+
+              <div class="flex-1">
+                <h4 class="font-semibold text-gray-900 text-lg flex items-center gap-2">
+                  {{ bonif.product_name || bonif.name }}
+                  <span class="text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full font-medium">DISPONIBLE</span>
+                </h4>
+                <p class="text-sm text-gray-600 mt-1">Cantidad bonificada: {{ bonif.quantity }}</p>
+
+                <div class="mt-3 flex items-start gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                  </svg>
+                  <div class="text-sm">
+                    <p class="font-medium text-green-800">Stock disponible</p>
+                    <p class="text-gray-600 mt-1">Este producto será incluido en la venta</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Decision prompt -->
         <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <div class="flex gap-3">
@@ -82,7 +130,12 @@
             <div class="text-sm text-blue-800">
               <p class="font-medium mb-2">¿Cómo desea proceder?</p>
               <ul class="list-disc list-inside space-y-1 ml-2">
-                <li><strong>Continuar sin bonificaciones:</strong> La venta se procesará normalmente pero sin los productos bonificados.</li>
+                <li v-if="availableBonifications && availableBonifications.length > 0">
+                  <strong>Continuar:</strong> La venta se procesará con las bonificaciones disponibles, excluyendo solo las que no tienen stock.
+                </li>
+                <li v-else>
+                  <strong>Continuar sin bonificaciones:</strong> La venta se procesará normalmente pero sin los productos bonificados.
+                </li>
                 <li><strong>Cancelar:</strong> Podrá contactar al cliente para informarle sobre la situación.</li>
               </ul>
             </div>
@@ -123,6 +176,10 @@ const props = defineProps({
     default: false
   },
   unavailableBonifications: {
+    type: Array,
+    default: () => []
+  },
+  availableBonifications: {
     type: Array,
     default: () => []
   }
