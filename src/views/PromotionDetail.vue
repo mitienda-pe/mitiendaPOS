@@ -301,7 +301,7 @@
                         <input
                           type="number"
                           min="1"
-                          :value="product.tiendapromocionproducto_cantidad || 1"
+                          :value="product.productobonificacion_cantidad || 1"
                           @change="updateBonificationQuantity(product.producto_id, product.productoatributo_id, $event.target.value)"
                           class="w-20 px-2 py-1 border rounded focus:ring-2 focus:ring-green-500 text-sm"
                         />
@@ -466,11 +466,17 @@ async function fetchPromotion() {
 
       // Extract products and bonifications from the response
       if (response.data.productos) {
-        products.value = response.data.productos;
+        products.value = response.data.productos.map(product => ({
+          ...product,
+          productopromocion_cantidadproducto: Number(product.productopromocion_cantidadproducto) || 1
+        }));
       }
 
       if (response.data.productos_bonificacion) {
-        bonifications.value = response.data.productos_bonificacion;
+        bonifications.value = response.data.productos_bonificacion.map(product => ({
+          ...product,
+          productobonificacion_cantidad: Number(product.productobonificacion_cantidad) || 1
+        }));
       }
 
       // Initialize bonFormaGrupos
@@ -643,7 +649,7 @@ async function updateBonificationQuantity(productId, attributeId, quantity) {
         p => p.producto_id === productId && p.productoatributo_id === attributeId
       );
       if (product) {
-        product.tiendapromocionproducto_cantidad = parseInt(quantity);
+        product.productobonificacion_cantidad = parseInt(quantity);
       }
     }
   } catch (error) {
