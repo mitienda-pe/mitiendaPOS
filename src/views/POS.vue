@@ -1798,16 +1798,16 @@ const getPaymentMethodName = (method) => {
                       <td class="px-6 py-4 text-sm truncate max-w-xs">{{ product.nombre }}</td>
                       <td class="px-6 py-4 text-sm truncate">{{ product.categoria }}</td>
                       <td class="px-6 py-4 whitespace-nowrap text-sm">
-                        <div v-if="product.precio_original" class="flex flex-col">
-                          <span class="text-gray-400 line-through text-xs">{{ formatCurrency(product.precio_original) }}</span>
-                          <div class="flex items-center gap-1">
-                            <span class="font-semibold text-green-600">{{ formatCurrency(product.precio) }}</span>
-                            <span v-if="product.promocion" class="text-xs bg-red-100 text-red-700 px-1 rounded">
+                        <div v-if="product.precio_original" class="flex flex-col gap-0.5">
+                          <span class="text-gray-500 line-through text-xs">{{ formatCurrency(product.precio_original) }}</span>
+                          <div class="flex items-center gap-2">
+                            <span class="font-bold text-green-600 text-base">{{ formatCurrency(product.precio) }}</span>
+                            <span v-if="product.promocion" class="text-xs font-semibold bg-red-500 text-white px-2 py-0.5 rounded">
                               {{ product.promocion.value }}
                             </span>
                           </div>
                         </div>
-                        <span v-else>{{ formatCurrency(product.precio) }}</span>
+                        <span v-else class="font-medium">{{ formatCurrency(product.precio) }}</span>
                       </td>
                       <td class="px-6 py-4 whitespace-nowrap text-sm">
                         <button @click="selectProduct(product)" :disabled="!product.unlimited_stock && product.stock === 0"
