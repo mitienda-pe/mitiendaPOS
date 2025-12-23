@@ -1557,8 +1557,17 @@ const getPaymentMethodName = (method) => {
                     <div class="text-sm font-medium text-gray-900">{{ item.nombre }}</div>
                     <div class="text-sm text-gray-500">SKU: {{ item.sku }}</div>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {{ formatCurrency(item.precio) }}
+                  <td class="px-6 py-4 whitespace-nowrap text-sm">
+                    <div v-if="item.precio_original" class="flex flex-col gap-0.5">
+                      <span class="text-gray-400 line-through text-xs">{{ formatCurrency(item.precio_original) }}</span>
+                      <div class="flex items-center gap-2">
+                        <span class="font-semibold text-green-600">{{ formatCurrency(item.precio) }}</span>
+                        <span v-if="item.promocion" class="text-xs font-semibold bg-red-500 text-white px-1.5 py-0.5 rounded">
+                          {{ item.promocion.value }}
+                        </span>
+                      </div>
+                    </div>
+                    <span v-else class="text-gray-500">{{ formatCurrency(item.precio) }}</span>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <QuantityStepperInput
