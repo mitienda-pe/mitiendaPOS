@@ -1292,6 +1292,8 @@ const showProductList = async () => {
         sku: item.sku ? String(item.sku) : '',
         nombre: item.name,
         precio: item.price,
+        precio_original: item.original_price,
+        promocion: item.promotion,
         stock: item.stock,
         unlimited_stock: item.unlimited_stock,
         categoria: item.category?.name || 'Sin categoría',
@@ -1795,7 +1797,18 @@ const getPaymentMethodName = (method) => {
                       <td class="px-6 py-4 whitespace-nowrap text-sm">{{ product.sku }}</td>
                       <td class="px-6 py-4 text-sm truncate max-w-xs">{{ product.nombre }}</td>
                       <td class="px-6 py-4 text-sm truncate">{{ product.categoria }}</td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm">{{ formatCurrency(product.precio) }}</td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <div v-if="product.precio_original" class="flex flex-col">
+                          <span class="text-gray-400 line-through text-xs">{{ formatCurrency(product.precio_original) }}</span>
+                          <div class="flex items-center gap-1">
+                            <span class="font-semibold text-green-600">{{ formatCurrency(product.precio) }}</span>
+                            <span v-if="product.promocion" class="text-xs bg-red-100 text-red-700 px-1 rounded">
+                              {{ product.promocion.value }}
+                            </span>
+                          </div>
+                        </div>
+                        <span v-else>{{ formatCurrency(product.precio) }}</span>
+                      </td>
                       <td class="px-6 py-4 whitespace-nowrap text-sm">
                         <button @click="selectProduct(product)" :disabled="!product.unlimited_stock && product.stock === 0"
                           class="text-indigo-600 hover:text-indigo-900 disabled:opacity-50 disabled:cursor-not-allowed">
