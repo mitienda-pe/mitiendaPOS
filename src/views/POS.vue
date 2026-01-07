@@ -797,7 +797,16 @@ const handlePaymentCompleted = async () => {
 
     // Validación: Factura siempre requiere RUC
     if (billingDocumentType.value === 'factura') {
-      if (!selectedCustomer.value || selectedCustomer.value.document_type !== 'ruc') {
+      // Normalizar document_type: puede venir como 'ruc', 'RUC', '2', '6'
+      const docType = selectedCustomer.value?.document_type?.toString().toLowerCase();
+      const isRuc = docType === 'ruc' || docType === '2' || docType === '6';
+
+      console.log('🔍 [DEBUG Factura Validation] document_type:', selectedCustomer.value?.document_type);
+      console.log('🔍 [DEBUG Factura Validation] docType normalizado:', docType);
+      console.log('🔍 [DEBUG Factura Validation] isRuc:', isRuc);
+      console.log('🔍 [DEBUG Factura Validation] selectedCustomer:', JSON.stringify(selectedCustomer.value, null, 2));
+
+      if (!selectedCustomer.value || !isRuc) {
         alert('⚠️ Para emitir una Factura es obligatorio tener un cliente con RUC.\n\nPor favor, agregue el RUC del cliente antes de continuar.');
         processingOrder.value = false;
         return;

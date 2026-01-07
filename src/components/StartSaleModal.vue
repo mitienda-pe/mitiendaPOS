@@ -358,6 +358,12 @@ const searchCustomer = async () => {
       // Customer exists in our database
       customerFound.value = searchResponse.data;
       showCreateForm.value = false;
+
+      console.log('🎯 [StartSaleModal] Cliente encontrado en BD:');
+      console.log('   - customerFound.document_type:', customerFound.value?.document_type);
+      console.log('   - tipoDoc seleccionado:', tipoDoc.value);
+      console.log('   - selectedDocumentType:', selectedDocumentType.value);
+      console.log('   - customerFound completo:', JSON.stringify(customerFound.value, null, 2));
     } else {
       // Step 2: Customer not found, lookup in Decolecta API
       const lookupResponse = await customersApi.lookupDocument(

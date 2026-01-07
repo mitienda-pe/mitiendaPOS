@@ -76,6 +76,10 @@ export const customersApi = {
       if (response.data.found) {
         console.log('✅ API: Customer found:', response.data.data);
         console.log('👤 API: Customer name:', response.data.data?.name);
+        console.log('📄 API: document_type RAW:', response.data.data?.document_type);
+        console.log('📄 API: tipoDocumento:', response.data.data?.tipoDocumento);
+        console.log('📄 API: documento_id:', response.data.data?.documento_id);
+        console.log('📋 API: All customer keys:', Object.keys(response.data.data || {}));
       } else {
         console.log('❌ API: Customer NOT found in database');
       }
