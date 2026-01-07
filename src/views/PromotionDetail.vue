@@ -222,7 +222,7 @@
                         <input
                           type="number"
                           min="1"
-                          :value="product.tiendapromocionproducto_cantidad || 1"
+                          :value="product.productopromocion_cantidadproducto || 1"
                           @change="updateProductQuantity(product.producto_id, $event.target.value)"
                           class="w-20 px-2 py-1 border rounded focus:ring-2 focus:ring-blue-500 text-sm"
                         />
@@ -620,7 +620,7 @@ async function updateProductQuantity(productId, quantity) {
       // Update local data
       const product = products.value.find(p => p.producto_id === productId);
       if (product) {
-        product.tiendapromocionproducto_cantidad = parseInt(quantity);
+        product.productopromocion_cantidadproducto = parseInt(quantity);
       }
     }
   } catch (error) {
