@@ -908,7 +908,10 @@ const handlePaymentCompleted = async () => {
         unit_price: item.precio / 1.18, // Precio sin IGV
         subtotal: (item.precio / 1.18) * item.quantity, // Subtotal sin IGV
         tax: ((item.precio / 1.18) * item.quantity) * 0.18, // IGV del subtotal
-        total: item.precio * item.quantity // Total con IGV (precio original * cantidad)
+        total: item.precio * item.quantity, // Total con IGV (precio original * cantidad)
+        // Información de promoción para trazabilidad en NetSuite
+        promotion_id: item.promotion?.id || null,
+        unit_price_original: item.originalPrice || null // Precio original antes del descuento (con IGV)
       })),
       payments: payments.value.map(payment => ({
         method: payment.method,
