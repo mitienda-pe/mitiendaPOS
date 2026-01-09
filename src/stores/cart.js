@@ -116,6 +116,11 @@ export const useCartStore = defineStore('cart', {
       return this.subtotal + this.tax;
     },
 
+    // Indica si los totales vienen del backend (precisos) o son cálculo local (impreciso)
+    hasBackendTotals() {
+      return this.calculatedTotals !== null;
+    },
+
     // 🔧 FIX: Redondeo aplicado (solo cuando hay pago en efectivo registrado)
     // Ya no calculamos redondeo anticipado - solo usamos el que se guardó al registrar el pago
     appliedRounding(state) {

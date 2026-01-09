@@ -486,6 +486,21 @@ const processPayment = async () => {
     return;
   }
 
+  // 🔧 FIX: Asegurar que los totales vienen del backend (no cálculo local impreciso)
+  // Esto previene discrepancias entre lo que el cliente paga y lo que NetSuite recibe
+  if (!cartStore.hasBackendTotals) {
+    console.warn('⚠️ [POS] No hay totales del backend, recalculando...');
+    await cartStore.recalculateTotals();
+
+    // Si sigue sin haber totales, mostrar error y no permitir pagar
+    if (!cartStore.hasBackendTotals) {
+      console.error('❌ [POS] No se pudieron calcular los totales');
+      alert('⚠️ Error al calcular totales. Verifica tu conexión e intenta de nuevo.');
+      return;
+    }
+    console.log('✅ [POS] Totales recalculados desde backend:', cartStore.calculatedTotals);
+  }
+
   // 🔥 OPTIMIZATION: Skip stock validation if already validated for this cart
   // This happens when adding multiple payment methods (e.g., cash + card)
   if (stockValidatedForCurrentCart.value && payments.value.length > 0) {
