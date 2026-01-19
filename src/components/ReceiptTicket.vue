@@ -66,7 +66,7 @@
           <div v-for="(item, index) in items" :key="item.id || index" class="mb-2">
             <div>{{ getItemName(item) }}</div>
             <div class="flex justify-between">
-              <span>{{ getItemQuantity(item) }} x S/ {{ getItemPrice(item).toFixed(2) }}</span>
+              <span>{{ getItemQuantity(item) }} x S/ {{ formatUnitPrice(getItemPrice(item)) }}</span>
               <span>S/ {{ getItemTotal(item).toFixed(2) }}</span>
             </div>
           </div>
@@ -340,6 +340,17 @@ const getItemQuantity = (item) => {
 
 const getItemPrice = (item) => {
   return parseFloat(item.precio || item.price || item.unit_price || 0);
+};
+
+// Formatear precio unitario con 2-3 decimales según precisión
+const formatUnitPrice = (price) => {
+  const num = parseFloat(price) || 0;
+  // Si tiene más de 2 decimales significativos, mostrar 3
+  const rounded2 = Math.round(num * 100) / 100;
+  if (Math.abs(num - rounded2) > 0.001) {
+    return num.toFixed(3);
+  }
+  return num.toFixed(2);
 };
 
 const getItemTotal = (item) => {
