@@ -64,9 +64,23 @@
 
         <div v-if="items && items.length > 0">
           <div v-for="(item, index) in items" :key="item.id || index" class="mb-2">
-            <div>{{ getItemName(item) }}</div>
+            <div class="flex items-center gap-1">
+              <span>{{ getItemName(item) }}</span>
+              <span v-if="getItemDiscountPercent(item)" class="text-xs bg-red-100 text-red-600 px-1 rounded">
+                -{{ getItemDiscountPercent(item) }}%
+              </span>
+            </div>
             <div class="flex justify-between">
-              <span>{{ getItemQuantity(item) }} x S/ {{ getItemPrice(item).toFixed(2) }}</span>
+              <span>
+                {{ getItemQuantity(item) }} x
+                <template v-if="getItemOriginalPrice(item)">
+                  <span class="line-through text-gray-400">S/ {{ getItemOriginalPrice(item).toFixed(2) }}</span>
+                  <span class="ml-1">S/ {{ getItemPrice(item).toFixed(2) }}</span>
+                </template>
+                <template v-else>
+                  S/ {{ getItemPrice(item).toFixed(2) }}
+                </template>
+              </span>
               <span>S/ {{ getItemTotal(item).toFixed(2) }}</span>
             </div>
           </div>
@@ -347,6 +361,29 @@ const getItemTotal = (item) => {
     return parseFloat(item.total);
   }
   return getItemQuantity(item) * getItemPrice(item);
+};
+
+const getItemOriginalPrice = (item) => {
+  // Obtener precio original si hay descuento
+  const originalPrice = item.original_price || item.precio_original;
+  if (originalPrice && parseFloat(originalPrice) > 0) {
+    return parseFloat(originalPrice);
+  }
+  return null;
+};
+
+const getItemDiscountPercent = (item) => {
+  // Obtener porcentaje de descuento
+  if (item.discount_percent) {
+    return Math.round(item.discount_percent);
+  }
+  // Calcular si hay precio original
+  const originalPrice = getItemOriginalPrice(item);
+  const currentPrice = getItemPrice(item);
+  if (originalPrice && originalPrice > currentPrice) {
+    return Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
+  }
+  return null;
 };
 
 // Helpers para pagos

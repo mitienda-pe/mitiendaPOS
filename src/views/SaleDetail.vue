@@ -308,6 +308,8 @@ const getProducts = () => {
       name: item.tittle || item.name || 'Producto',
       quantity: item.quantity || 1,
       price: parseFloat(item.price || 0),
+      original_price: item.original_price ? parseFloat(item.original_price) : null,
+      discount_percent: item.discount_percent || null,
       total: parseFloat(item.total || 0)
     }));
   }
@@ -319,6 +321,8 @@ const getProducts = () => {
       name: item.name || item.producto_nombre || 'Producto',
       quantity: item.quantity || item.cantidad || 1,
       price: parseFloat(item.price || item.precio || 0),
+      original_price: item.original_price ? parseFloat(item.original_price) : null,
+      discount_percent: item.discount_percent || null,
       total: parseFloat(item.total || ((item.quantity || item.cantidad) * (item.price || item.precio)) || 0)
     }));
   }
@@ -567,10 +571,10 @@ const printTicket = () => {
       <div class="line"></div>
       ${products.map(item => `
         <div>
-          ${item.name}
+          ${item.name}${item.discount_percent ? ` <span style="font-size: 9px; background: #fee2e2; color: #dc2626; padding: 1px 3px; border-radius: 2px;">-${item.discount_percent}%</span>` : ''}
           <table>
             <tr>
-              <td>${item.quantity} x S/ ${item.price.toFixed(2)}</td>
+              <td>${item.quantity} x ${item.original_price ? `<span style="text-decoration: line-through; color: #999;">S/ ${item.original_price.toFixed(2)}</span> ` : ''}S/ ${item.price.toFixed(2)}</td>
               <td class="right">S/ ${item.total.toFixed(2)}</td>
             </tr>
           </table>

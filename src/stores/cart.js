@@ -268,7 +268,14 @@ export const useCartStore = defineStore('cart', {
         status: this.status,
         canAddProducts: this.canAddProducts,
         hasAuthorization: !!authorization,
-        authData: authorization
+        authData: authorization,
+        productData: {
+          id: product.id,
+          precio: product.precio,
+          precio_original: product.precio_original,
+          promocion: product.promocion,
+          allKeys: Object.keys(product)
+        }
       });
 
       // Validar estado
@@ -294,9 +301,19 @@ export const useCartStore = defineStore('cart', {
         existingItem.quantity++;
       } else {
         // Agregar nuevo item
-        this.items.push({
+        const newItem = {
           ...product,
           quantity: 1
+        };
+        this.items.push(newItem);
+
+        console.log('📦 [CART] New item added to cart:', {
+          id: newItem.id,
+          nombre: newItem.nombre,
+          precio: newItem.precio,
+          precio_original: newItem.precio_original,
+          promocion: newItem.promocion,
+          allKeys: Object.keys(newItem)
         });
       }
 

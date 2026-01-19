@@ -174,6 +174,8 @@ const handleBarcodeInput = async () => {
         sku: response.data.sku || '',
         nombre: response.data.name,
         precio: response.data.price,
+        precio_original: response.data.original_price,
+        promocion: response.data.promotion,
         stock: response.data.stock,
         unlimited_stock: response.data.unlimited_stock,
         categoria: response.data.category?.name || 'Sin categoría',
@@ -904,14 +906,15 @@ const handlePaymentCompleted = async () => {
         sku: item.sku,
         name: item.nombre,
         quantity: item.quantity,
-        // IMPORTANTE: item.precio YA incluye IGV, debemos extraer el precio base
-        unit_price: item.precio / 1.18, // Precio sin IGV
+        // IMPORTANTE: item.precio YA incluye IGV (y con descuento aplicado si hay promoción)
+        unit_price: item.precio / 1.18, // Precio con descuento, sin IGV
+        unit_price_original: item.precio_original ? item.precio_original : null, // Precio original CON IGV (para mostrar en detalle de venta)
         subtotal: (item.precio / 1.18) * item.quantity, // Subtotal sin IGV
         tax: ((item.precio / 1.18) * item.quantity) * 0.18, // IGV del subtotal
-        total: item.precio * item.quantity, // Total con IGV (precio original * cantidad)
+        total: item.precio * item.quantity, // Total con IGV (precio con descuento * cantidad)
         // Información de promoción para trazabilidad en NetSuite
-        promotion_id: item.promotion?.id || null,
-        unit_price_original: item.originalPrice || null // Precio original antes del descuento (con IGV)
+        promotion_id: item.promocion?.id || null,
+        discount_percent: item.promocion?.value || null // Ej: "-5%"
       })),
       payments: payments.value.map(payment => ({
         method: payment.method,
@@ -1077,7 +1080,10 @@ const handlePaymentCompleted = async () => {
             nombre: item.name || item.product_name || item.tittle || 'Producto',
             quantity: item.quantity || item.cantidad || 1,
             precio: parseFloat(item.price || item.precio || 0),
-            total: parseFloat(item.total || 0)
+            total: parseFloat(item.total || 0),
+            // Campos de descuento/promoción
+            original_price: item.original_price ? parseFloat(item.original_price) : null,
+            discount_percent: item.discount_percent ? parseFloat(item.discount_percent) : null
           })),
           // Usar pagos locales en lugar de los del backend (que pueden venir como 'unknown')
           payments: payments.value.map(payment => ({
@@ -1267,6 +1273,8 @@ const searchProducts = async () => {
         sku: item.sku ? String(item.sku) : '',
         nombre: item.name,
         precio: item.price,
+        precio_original: item.original_price,
+        promocion: item.promotion,
         stock: item.stock,
         unlimited_stock: item.unlimited_stock,
         categoria: item.category?.name || 'Sin categoría',
@@ -1280,11 +1288,29 @@ const searchProducts = async () => {
 };
 
 const selectProduct = (product) => {
+  console.log('🎯 [POS] selectProduct called with:', {
+    id: product.id,
+    nombre: product.nombre,
+    precio: product.precio,
+    precio_original: product.precio_original,
+    promocion: product.promocion,
+    allKeys: Object.keys(product)
+  });
+
   // Asegurarse de que el SKU sea un string
   const safeProduct = {
     ...product,
     sku: product.sku ? String(product.sku) : ''
   };
+
+  console.log('🎯 [POS] safeProduct after spread:', {
+    id: safeProduct.id,
+    nombre: safeProduct.nombre,
+    precio: safeProduct.precio,
+    precio_original: safeProduct.precio_original,
+    promocion: safeProduct.promocion,
+    allKeys: Object.keys(safeProduct)
+  });
 
   if (safeProduct.unlimited_stock || safeProduct.stock > 0) {
     addToCart(safeProduct);
@@ -1314,6 +1340,18 @@ const showProductList = async () => {
       categories.value = Array.from(uniqueCategories);
 
       // Mapear productos al formato del POS
+      // 🔍 DEBUG: Ver datos de promoción antes del mapeo
+      if (productsResponse.data.length > 0) {
+        const firstItem = productsResponse.data[0];
+        console.log('🔍 [POS] showProductList - First item before mapping:', {
+          id: firstItem.id,
+          name: firstItem.name,
+          price: firstItem.price,
+          original_price: firstItem.original_price,
+          promotion: firstItem.promotion
+        });
+      }
+
       allProducts.value = productsResponse.data.map(item => ({
         id: item.id,
         sku: item.sku ? String(item.sku) : '',
@@ -1326,6 +1364,18 @@ const showProductList = async () => {
         categoria: item.category?.name || 'Sin categoría',
         images: item.images || []
       }));
+
+      // 🔍 DEBUG: Ver datos después del mapeo
+      if (allProducts.value.length > 0) {
+        const firstMapped = allProducts.value[0];
+        console.log('🔍 [POS] showProductList - First item AFTER mapping:', {
+          id: firstMapped.id,
+          nombre: firstMapped.nombre,
+          precio: firstMapped.precio,
+          precio_original: firstMapped.precio_original,
+          promocion: firstMapped.promocion
+        });
+      }
     }
 
     showProductModal.value = true;
