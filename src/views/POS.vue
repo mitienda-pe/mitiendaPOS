@@ -1259,7 +1259,7 @@ const searchProducts = async () => {
   try {
     const response = await productsApi.getProducts({
       search: barcode.value,
-      limit: 5,
+      limit: 20,
       published: true
     });
 
@@ -1301,7 +1301,7 @@ const selectProduct = (product) => {
 const showProductList = async () => {
   try {
     const productsResponse = await productsApi.getProducts({
-      limit: 100,
+      limit: 50,
       published: true
     });
 
@@ -1316,18 +1316,7 @@ const showProductList = async () => {
       categories.value = Array.from(uniqueCategories);
 
       // Mapear productos al formato del POS
-      allProducts.value = productsResponse.data.map(item => ({
-        id: item.id,
-        sku: item.sku ? String(item.sku) : '',
-        nombre: item.name,
-        precio: item.price,
-        precio_original: item.original_price,
-        promocion: item.promotion,
-        stock: item.stock,
-        unlimited_stock: item.unlimited_stock,
-        categoria: item.category?.name || 'Sin categoría',
-        images: item.images || []
-      }));
+      allProducts.value = mapProductsToFormat(productsResponse.data);
     }
 
     showProductModal.value = true;
@@ -1337,14 +1326,58 @@ const showProductList = async () => {
   }
 };
 
+// Helper para mapear productos al formato del POS
+const mapProductsToFormat = (products) => {
+  return products.map(item => ({
+    id: item.id,
+    sku: item.sku ? String(item.sku) : '',
+    nombre: item.name,
+    precio: item.price,
+    precio_original: item.original_price,
+    promocion: item.promotion,
+    stock: item.stock,
+    unlimited_stock: item.unlimited_stock,
+    categoria: item.category?.name || 'Sin categoría',
+    images: item.images || []
+  }));
+};
+
 const closeProductModal = () => {
   showProductModal.value = false;
   productSearchQuery.value = '';
   productCategoryFilter.value = '';
 };
 
-const searchProductList = () => {
-  // No need to do anything here as we're using a computed property
+// Búsqueda en modal de catálogo - ahora busca por API
+let searchTimeout = null;
+const searchProductList = async () => {
+  // Cancelar búsqueda anterior si existe
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
+  }
+
+  // Debounce de 300ms para evitar muchas llamadas
+  searchTimeout = setTimeout(async () => {
+    try {
+      const params = {
+        limit: 50,
+        published: true
+      };
+
+      // Si hay texto de búsqueda (min 2 caracteres), buscar por API
+      if (productSearchQuery.value && productSearchQuery.value.trim().length >= 2) {
+        params.search = productSearchQuery.value.trim();
+      }
+
+      const productsResponse = await productsApi.getProducts(params);
+
+      if (productsResponse.success) {
+        allProducts.value = mapProductsToFormat(productsResponse.data);
+      }
+    } catch (error) {
+      console.error('Error searching products:', error);
+    }
+  }, 300);
 };
 
 // Click outside to close search results
