@@ -1077,6 +1077,8 @@ const handlePaymentCompleted = async () => {
             nombre: item.name || item.product_name || item.tittle || 'Producto',
             quantity: item.quantity || item.cantidad || 1,
             precio: parseFloat(item.price || item.precio || 0),
+            precio_original: item.original_price ? parseFloat(item.original_price) : null,
+            discount_percent: item.discount_percent || null,
             total: parseFloat(item.total || 0)
           })),
           // Usar pagos locales en lugar de los del backend (que pueden venir como 'unknown')
