@@ -69,6 +69,14 @@
               <span>{{ getItemQuantity(item) }} x S/ {{ formatUnitPrice(getItemPrice(item)) }}</span>
               <span>S/ {{ getItemTotal(item).toFixed(2) }}</span>
             </div>
+            <!-- Mostrar descuento si existe precio original -->
+            <div v-if="getItemOriginalPrice(item)" class="text-xs text-gray-500 flex justify-between">
+              <span>
+                <span class="line-through">S/ {{ formatUnitPrice(getItemOriginalPrice(item)) }}</span>
+                <span v-if="getItemPromotion(item)" class="ml-1">({{ getItemPromotion(item) }})</span>
+              </span>
+              <span class="text-green-600">-S/ {{ getItemDiscountTotal(item).toFixed(2) }}</span>
+            </div>
           </div>
         </div>
         <div v-else class="text-center py-4 text-gray-500">
@@ -358,6 +366,27 @@ const getItemTotal = (item) => {
     return parseFloat(item.total);
   }
   return getItemQuantity(item) * getItemPrice(item);
+};
+
+// Helpers para descuentos
+const getItemOriginalPrice = (item) => {
+  const original = parseFloat(item.precio_original || item.original_price || item.precioOriginal || 0);
+  const current = getItemPrice(item);
+  // Solo retornar si hay descuento real
+  return original > current ? original : null;
+};
+
+const getItemPromotion = (item) => {
+  return item.promocion?.value || item.promotion?.value || item.discount_percent
+    ? `${item.discount_percent}%`
+    : null;
+};
+
+const getItemDiscountTotal = (item) => {
+  const original = getItemOriginalPrice(item);
+  if (!original) return 0;
+  const current = getItemPrice(item);
+  return (original - current) * getItemQuantity(item);
 };
 
 // Helpers para pagos
