@@ -83,7 +83,7 @@
                 :model-value="branch.tiendadireccion_netsuite_location_id"
                 placeholder="Sin configurar"
                 :maxlength="50"
-                @save="(value) => updateNetsuiteLocationId(branch.tiendadireccion_id, value)"
+                :on-save="(value) => updateNetsuiteLocationId(branch.tiendadireccion_id, value)"
               />
             </td>
 

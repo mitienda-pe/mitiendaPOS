@@ -64,24 +64,18 @@
 
         <div v-if="items && items.length > 0">
           <div v-for="(item, index) in items" :key="item.id || index" class="mb-2">
-            <div class="flex items-center gap-1">
-              <span>{{ getItemName(item) }}</span>
-              <span v-if="getItemDiscountPercent(item)" class="text-xs bg-red-100 text-red-600 px-1 rounded">
-                -{{ getItemDiscountPercent(item) }}%
-              </span>
-            </div>
+            <div>{{ getItemName(item) }}</div>
             <div class="flex justify-between">
-              <span>
-                {{ getItemQuantity(item) }} x
-                <template v-if="getItemOriginalPrice(item)">
-                  <span class="line-through text-gray-400">S/ {{ getItemOriginalPrice(item).toFixed(2) }}</span>
-                  <span class="ml-1">S/ {{ getItemPrice(item).toFixed(2) }}</span>
-                </template>
-                <template v-else>
-                  S/ {{ getItemPrice(item).toFixed(2) }}
-                </template>
-              </span>
+              <span>{{ getItemQuantity(item) }} x S/ {{ formatUnitPrice(getItemPrice(item)) }}</span>
               <span>S/ {{ getItemTotal(item).toFixed(2) }}</span>
+            </div>
+            <!-- Mostrar descuento si existe precio original -->
+            <div v-if="getItemOriginalPrice(item)" class="text-xs text-gray-500 flex justify-between">
+              <span>
+                <span class="line-through">S/ {{ formatUnitPrice(getItemOriginalPrice(item)) }}</span>
+                <span v-if="getItemPromotion(item)" class="ml-1">({{ getItemPromotion(item) }})</span>
+              </span>
+              <span class="text-green-600">-S/ {{ getItemDiscountTotal(item).toFixed(2) }}</span>
             </div>
           </div>
         </div>
@@ -356,6 +350,17 @@ const getItemPrice = (item) => {
   return parseFloat(item.precio || item.price || item.unit_price || 0);
 };
 
+// Formatear precio unitario con 2-3 decimales según precisión
+const formatUnitPrice = (price) => {
+  const num = parseFloat(price) || 0;
+  // Si tiene más de 2 decimales significativos, mostrar 3
+  const rounded2 = Math.round(num * 100) / 100;
+  if (Math.abs(num - rounded2) > 0.001) {
+    return num.toFixed(3);
+  }
+  return num.toFixed(2);
+};
+
 const getItemTotal = (item) => {
   if (item.total !== undefined && item.total !== null) {
     return parseFloat(item.total);
@@ -363,27 +368,25 @@ const getItemTotal = (item) => {
   return getItemQuantity(item) * getItemPrice(item);
 };
 
+// Helpers para descuentos
 const getItemOriginalPrice = (item) => {
-  // Obtener precio original si hay descuento
-  const originalPrice = item.original_price || item.precio_original;
-  if (originalPrice && parseFloat(originalPrice) > 0) {
-    return parseFloat(originalPrice);
-  }
-  return null;
+  const original = parseFloat(item.precio_original || item.original_price || item.precioOriginal || 0);
+  const current = getItemPrice(item);
+  // Solo retornar si hay descuento real
+  return original > current ? original : null;
 };
 
-const getItemDiscountPercent = (item) => {
-  // Obtener porcentaje de descuento
-  if (item.discount_percent) {
-    return Math.round(item.discount_percent);
-  }
-  // Calcular si hay precio original
-  const originalPrice = getItemOriginalPrice(item);
-  const currentPrice = getItemPrice(item);
-  if (originalPrice && originalPrice > currentPrice) {
-    return Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
-  }
-  return null;
+const getItemPromotion = (item) => {
+  return item.promocion?.value || item.promotion?.value || item.discount_percent
+    ? `${item.discount_percent}%`
+    : null;
+};
+
+const getItemDiscountTotal = (item) => {
+  const original = getItemOriginalPrice(item);
+  if (!original) return 0;
+  const current = getItemPrice(item);
+  return (original - current) * getItemQuantity(item);
 };
 
 // Helpers para pagos

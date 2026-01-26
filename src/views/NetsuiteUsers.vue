@@ -84,7 +84,7 @@
                 :model-value="user.empleado_netsuite_id"
                 placeholder="Sin configurar"
                 :maxlength="50"
-                @save="(value) => updateNetsuiteId(user.empleado_id, value)"
+                :on-save="(value) => updateNetsuiteId(user.empleado_id, value)"
               />
             </td>
 

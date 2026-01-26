@@ -57,6 +57,11 @@ const props = defineProps({
   maxlength: {
     type: Number,
     default: 50
+  },
+  // Function that returns a Promise - used for async save operations
+  onSave: {
+    type: Function,
+    default: null
   }
 });
 
@@ -110,8 +115,13 @@ const save = async () => {
     isSaving.value = true;
     error.value = '';
 
-    // Emit save event and wait for parent to handle it
-    await emit('save', editValue.value);
+    // If onSave prop is provided, call it and wait for it to resolve
+    if (props.onSave) {
+      await props.onSave(editValue.value);
+    } else {
+      // Fallback to emit (for backwards compatibility, though emit won't wait)
+      emit('save', editValue.value);
+    }
 
     // Update display value and exit edit mode
     displayValue.value = editValue.value;

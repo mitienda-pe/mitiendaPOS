@@ -4,10 +4,10 @@
 
 /**
  * Formatear moneda (Soles peruanos)
- * Muestra solo 2 decimales visualmente (los cálculos internos mantienen precisión completa)
+ * Muestra 2-3 decimales según precisión del valor
  *
  * @param {number} amount - Monto a formatear
- * @returns {string} Monto formateado con símbolo de moneda (2 decimales)
+ * @returns {string} Monto formateado con símbolo de moneda (2-3 decimales)
  */
 export function formatCurrency(amount) {
   if (isNaN(amount) || amount === null || amount === undefined) {
@@ -18,7 +18,7 @@ export function formatCurrency(amount) {
     style: 'currency',
     currency: 'PEN',
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2 // Solo muestra 2 decimales en la UI
+    maximumFractionDigits: 3
   }).format(amount)
 }
 
