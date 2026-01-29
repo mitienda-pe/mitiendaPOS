@@ -91,15 +91,26 @@
         </div>
       </div>
 
-      <!-- Notificación al ERP -->
-      <div v-if="showErpNotification()" class="mb-4 bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
-        <div class="flex">
-          <svg class="h-5 w-5 text-blue-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <!-- Sincronización ERP -->
+      <div v-if="showErpNotification()" class="mb-4 border-l-4 p-4 rounded" :class="erpSyncSuccess ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'">
+        <div class="flex items-start">
+          <!-- Success icon -->
+          <svg v-if="erpSyncSuccess" class="h-5 w-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <div>
-            <p class="font-medium text-blue-800 mb-1">Notificación al ERP</p>
-            <p class="text-blue-700 text-sm">{{ order._rawDetail.tiendaventa_mensaje_notif_erp || 'Se intentó notificar al ERP' }}</p>
+          <!-- Error icon -->
+          <svg v-else class="h-5 w-5 text-red-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div class="flex-1">
+            <p class="font-medium mb-1" :class="erpSyncSuccess ? 'text-green-800' : 'text-red-800'">
+              Sincronización ERP: {{ erpSyncSuccess ? 'Exitoso' : 'Error' }}
+            </p>
+            <!-- Error details -->
+            <div v-if="!erpSyncSuccess && erpErrorDetail" class="text-red-700 text-sm space-y-1">
+              <p v-if="erpErrorDetail.error">{{ erpErrorDetail.error }}</p>
+              <p v-if="erpErrorDetail.failed_at" class="text-red-600 text-xs">Paso: {{ erpErrorDetail.failed_at }}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -205,7 +216,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ordersApi } from '../services/ordersApi';
 import ReceiptTicket from '../components/ReceiptTicket.vue';
@@ -716,9 +727,28 @@ const canShowEmailButton = () => {
 };
 
 const showErpNotification = () => {
-  // Mostrar notificación si se intentó notificar al ERP
-  return order.value?._rawDetail?.tiendaventa_estado_notif_erp == 1;
+  // Mostrar notificación si se intentó sincronizar con el ERP (status != null)
+  return order.value?._rawDetail?.tiendaventa_estado_notif_erp != null;
 };
+
+const erpSyncSuccess = computed(() => {
+  return order.value?._rawDetail?.tiendaventa_estado_notif_erp === 0;
+});
+
+const erpErrorDetail = computed(() => {
+  if (erpSyncSuccess.value) return null;
+  const raw = order.value?._rawDetail?.tiendaventa_mensaje_notif_erp;
+  if (!raw) return null;
+  try {
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return {
+      error: parsed.error || parsed.message || parsed.error_message || null,
+      failed_at: parsed.failed_at || parsed.step || null,
+    };
+  } catch {
+    return { error: raw, failed_at: null };
+  }
+});
 
 const formatDate = (dateString) => {
   if (!dateString) return '-';
