@@ -509,6 +509,23 @@ const startWithCustomer = async () => {
     }
   }
 
+  // NetSuite validation (non-blocking)
+  const docNumber = customerToSend?.document_number || customerToSend?.numDoc || numDoc.value;
+  if (docNumber) {
+    try {
+      const nsResult = await customersApi.netSuiteLookup(docNumber);
+      if (nsResult.success && nsResult.data?.warnings?.length > 0) {
+        const warningMsg = nsResult.data.warnings.join('\n');
+        const proceed = confirm(
+          `Advertencia NetSuite:\n\n${warningMsg}\n\n¿Desea continuar con la venta?`
+        );
+        if (!proceed) return;
+      }
+    } catch (e) {
+      console.warn('NetSuite lookup failed, continuing...', e);
+    }
+  }
+
   console.log('🚀 [StartSaleModal] Emitiendo evento start con customer:', customerToSend);
   emit('start', {
     customer: customerToSend,

@@ -223,6 +223,27 @@ export const customersApi = {
   },
 
   /**
+   * Lookup customer in NetSuite to validate category and price level
+   * @param {string} documentNumber - Document number (DNI or RUC)
+   * @returns {Promise<{success: boolean, data?: object, error?: string}>}
+   */
+  async netSuiteLookup(documentNumber) {
+    try {
+      const response = await apiClient.get(`/customers/netsuite-lookup/${documentNumber}`);
+      return {
+        success: response.data.success ?? true,
+        data: response.data.data || null
+      };
+    } catch (error) {
+      console.warn('NetSuite lookup failed:', error.message);
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message || 'NetSuite lookup failed'
+      };
+    }
+  },
+
+  /**
    * Delete customer
    * @param {number} id - Customer ID
    */
