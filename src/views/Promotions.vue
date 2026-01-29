@@ -309,7 +309,8 @@ async function fetchPromotions() {
       promocion_id: 7, // Solo bonificaciones (tipo 7)
       search: searchQuery.value || undefined,
       estado: statusFilter.value,
-      active_only: activeOnlyFilter.value
+      active_only: activeOnlyFilter.value,
+      exclude_specific_customers: 1 // Solo promociones para todos (excluir SPECIFICCUSTOMERS de NetSuite)
     };
 
     const response = await promotionsApi.getPromotions(params);
