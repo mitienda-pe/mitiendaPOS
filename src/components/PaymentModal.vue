@@ -1318,79 +1318,190 @@ const printTicket = () => {
 };
 
 const printTicketDirect = () => {
-  // Imprimir solo el contenido del ticket (usando el componente ReceiptTicket)
   console.log('🖨️ [PaymentModal] Printing ticket directly');
 
-  const ticketElement = document.getElementById('ticket-print-area');
-  if (!ticketElement) {
-    console.error('❌ [PaymentModal] Ticket element not found');
-    return;
+  const companyInfo = getCompanyInfo();
+  const storeName = getStoreName();
+  const storeAddress = getStoreAddress();
+  const storePhone = getStorePhone();
+  const billingDoc = displayBillingDocument.value;
+  const items = displayItems.value || [];
+  const payments = displayPayments.value || [];
+  const customer = displayCustomer.value;
+  const createdAt = props.completedSaleData?.createdAt || new Date().toISOString();
+
+  // Determinar tipo de documento
+  let docType = 'COMPROBANTE ELECTRÓNICO';
+  if (billingDoc?.serie) {
+    const serie = billingDoc.serie.toString().toUpperCase();
+    if (serie.startsWith('F')) docType = 'FACTURA ELECTRÓNICA';
+    else if (serie.startsWith('B')) docType = 'BOLETA ELECTRÓNICA';
   }
 
-  // Crear una ventana de impresión con solo el contenido del ticket
-  const printWindow = window.open('', '', 'width=800,height=600');
-  if (!printWindow) {
-    console.error('❌ [PaymentModal] Could not open print window');
-    return;
-  }
+  // Formatear fecha
+  const formatDateLocal = (dateString) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleString('es-PE', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit'
+    });
+  };
 
-  // Obtener todos los estilos de Tailwind CSS del documento principal
-  const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
-    .map(style => {
-      if (style.tagName === 'LINK') {
-        return `<link rel="stylesheet" href="${style.href}">`;
-      }
-      return `<style>${style.innerHTML}</style>`;
-    })
-    .join('\n');
-
-  printWindow.document.write(`
+  const ticketHTML = `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="UTF-8">
       <title>Ticket de Venta #${displayOrderNumber.value}</title>
-      ${styles}
       <style>
-        @page {
-          size: 80mm auto;
-          margin: 0;
-        }
-        @media print {
-          body {
-            margin: 0;
-            padding: 10px;
-            width: 80mm;
-          }
-          /* Ocultar elementos innecesarios en impresión */
-          .no-print {
-            display: none !important;
-          }
-        }
+        @page { size: 80mm auto; margin: 0; }
         body {
           font-family: 'Courier New', monospace;
+          font-size: 11px;
           margin: 0;
           padding: 10px;
-          max-width: 80mm;
+          width: 80mm;
         }
+        .center { text-align: center; }
+        .bold { font-weight: bold; }
+        .line { border-top: 1px dashed #000; margin: 5px 0; }
+        .item-row { display: flex; justify-content: space-between; margin: 2px 0; }
+        .total { font-size: 13px; font-weight: bold; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; }
+        td { padding: 2px 0; }
+        .right { text-align: right; }
+        .small { font-size: 9px; }
+        img { max-width: 60px; height: auto; }
       </style>
     </head>
     <body>
-      ${ticketElement.innerHTML}
+      <!-- Header -->
+      ${companyInfo?.logoUrl ? `<div class="center"><img src="${companyInfo.logoUrl}" alt="Logo" /></div>` : ''}
+      <div class="center bold">${companyInfo?.legalName || 'TICKET DE VENTA'}</div>
+      ${storeAddress ? `<div class="center small">${storeAddress}</div>` : ''}
+      ${companyInfo?.ruc ? `<div class="center small">RUC: ${companyInfo.ruc}</div>` : ''}
+      ${storeName ? `<div class="center small">TIENDA ${storeName.toUpperCase()}</div>` : ''}
+      ${storePhone ? `<div class="center small">TLF.: ${storePhone}</div>` : ''}
+      <div class="line"></div>
+
+      <!-- Información del Documento -->
+      ${billingDoc ? `
+        <div class="center bold">${docType}</div>
+        <div class="center bold">${billingDoc.serie}-${billingDoc.correlative}</div>
+      ` : `
+        <div class="center bold">Nro: ${displayOrderNumber.value}</div>
+      `}
+      <div class="line"></div>
+
+      <!-- Información General -->
+      <div>Fecha: ${formatDateLocal(createdAt)}</div>
+      <div>Cliente: ${customer?.name || 'Cliente General'}</div>
+      ${customer?.document_number ? `<div>Doc: ${customer.document_number}</div>` : ''}
+      <div class="line"></div>
+
+      <!-- Productos -->
+      <div class="bold">PRODUCTOS</div>
+      <div class="line"></div>
+      ${items.map(item => {
+        const price = parseFloat(item.price || item.unit_price || 0);
+        const quantity = parseFloat(item.quantity || 1);
+        const total = parseFloat(item.total || item.subtotal || (price * quantity));
+        const originalPrice = item.original_price ? parseFloat(item.original_price) : null;
+        const discountPercent = item.discount_percent || item.discount_percentage || null;
+        return `
+          <div>
+            ${item.name || item.product_name}${discountPercent ? ` <span style="font-size: 9px; background: #fee2e2; color: #dc2626; padding: 1px 3px; border-radius: 2px;">-${discountPercent}%</span>` : ''}
+            <table>
+              <tr>
+                <td>${quantity} x ${originalPrice ? `<span style="text-decoration: line-through; color: #999;">S/ ${originalPrice.toFixed(2)}</span> ` : ''}S/ ${price.toFixed(2)}</td>
+                <td class="right">S/ ${total.toFixed(2)}</td>
+              </tr>
+            </table>
+          </div>
+        `;
+      }).join('')}
+      <div class="line"></div>
+
+      <!-- Totales -->
+      <table>
+        <tr>
+          <td>OPERACIONES GRAVADAS:</td>
+          <td class="right">S/ ${parseFloat(displaySubtotal.value || 0).toFixed(2)}</td>
+        </tr>
+        <tr>
+          <td>IGV (18%):</td>
+          <td class="right">S/ ${parseFloat(displayTax.value || 0).toFixed(2)}</td>
+        </tr>
+        ${displayRoundingAmount.value && parseFloat(displayRoundingAmount.value) !== 0 ? `
+        <tr>
+          <td>Redondeo:</td>
+          <td class="right">S/ ${parseFloat(displayRoundingAmount.value).toFixed(2)}</td>
+        </tr>
+        ` : ''}
+        <tr class="total">
+          <td>TOTAL GENERAL S/:</td>
+          <td class="right">S/ ${parseFloat(displayTotalAfterRounding.value || displayTotal.value || 0).toFixed(2)}</td>
+        </tr>
+      </table>
+
+      <!-- Pagos -->
+      ${payments.length > 0 ? `
+        <div class="line"></div>
+        <div class="bold">PAGOS</div>
+        ${payments.map(p => `
+          <div class="item-row">
+            <span>${p.method_name || p.metodo || p.payment_method || ''}</span>
+            <span>S/ ${parseFloat(p.amount || p.monto || 0).toFixed(2)}</span>
+          </div>
+        `).join('')}
+      ` : ''}
+      <div class="line"></div>
+
+      <!-- Footer Legal -->
+      ${companyInfo?.sunat ? `
+        <div class="center small" style="margin-bottom: 5px;">
+          ${companyInfo.sunat.authorizationText || ''}
+        </div>
+        <div class="center small" style="margin-bottom: 10px;">
+          ${companyInfo.sunat.representationText || ''}
+        </div>
+      ` : ''}
+
+      <!-- QR Code -->
+      ${billingDoc?.files?.pdf ? `
+        <div class="center" style="margin: 10px 0;">
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(billingDoc.files.pdf)}" alt="QR Comprobante" style="width: 120px; height: 120px; border: 1px solid #ccc; padding: 4px;" />
+        </div>
+      ` : ''}
+
+      <!-- Website -->
+      ${companyInfo?.website ? `
+        <div class="center small" style="margin-bottom: 10px;">
+          Para más productos visita<br />
+          <span class="bold">${companyInfo.website}</span>
+        </div>
+      ` : ''}
+
+      <div class="center bold">¡Gracias por su compra!</div>
+      <div class="center small">${formatDateLocal(createdAt)}</div>
+      ${displayCajero.value ? `<div class="center small">Cajero: ${displayCajero.value}</div>` : ''}
     </body>
     </html>
-  `);
+  `;
 
+  const printWindow = window.open('', '_blank', 'width=300,height=600');
+  if (!printWindow) {
+    console.error('❌ [PaymentModal] Could not open print window');
+    return;
+  }
+  printWindow.document.write(ticketHTML);
   printWindow.document.close();
-  printWindow.focus();
-
-  // Esperar a que se carguen los estilos antes de imprimir
-  setTimeout(() => {
+  printWindow.onload = () => {
+    printWindow.focus();
     printWindow.print();
-    setTimeout(() => {
-      printWindow.close();
-    }, 500);
-  }, 500);
+    setTimeout(() => printWindow.close(), 1000);
+  };
 };
 
 const finalizeSale = () => {
