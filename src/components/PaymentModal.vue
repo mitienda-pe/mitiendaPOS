@@ -1404,17 +1404,21 @@ const printTicketDirect = () => {
       <div class="bold">PRODUCTOS</div>
       <div class="line"></div>
       ${items.map(item => {
-        const price = parseFloat(item.price || item.unit_price || 0);
-        const quantity = parseFloat(item.quantity || 1);
-        const total = parseFloat(item.total || item.subtotal || (price * quantity));
-        const originalPrice = item.original_price ? parseFloat(item.original_price) : null;
-        const discountPercent = item.discount_percent || item.discount_percentage || null;
+        const name = item.nombre || item.name || item.tittle || item.product_name || 'Producto';
+        const price = parseFloat(item.precio || item.price || item.unit_price || 0);
+        const quantity = parseFloat(item.quantity || item.cantidad || 1);
+        const total = item.total !== undefined && item.total !== null ? parseFloat(item.total) : (quantity * price);
+        const originalPrice = parseFloat(item.precio_original || item.original_price || item.precioOriginal || 0);
+        const hasDiscount = originalPrice > price;
+        const discountPercent = item.discount_percent || item.promocion?.value || item.promotion?.value || null;
+        // Formatear precio unitario con precisión adecuada
+        const formatPrice = (p) => { const n = parseFloat(p) || 0; const r2 = Math.round(n * 100) / 100; return Math.abs(n - r2) > 0.001 ? n.toFixed(3) : n.toFixed(2); };
         return `
           <div>
-            ${item.name || item.product_name}${discountPercent ? ` <span style="font-size: 9px; background: #fee2e2; color: #dc2626; padding: 1px 3px; border-radius: 2px;">-${discountPercent}%</span>` : ''}
+            ${name}${discountPercent ? ` <span style="font-size: 9px; background: #fee2e2; color: #dc2626; padding: 1px 3px; border-radius: 2px;">-${discountPercent}%</span>` : ''}
             <table>
               <tr>
-                <td>${quantity} x ${originalPrice ? `<span style="text-decoration: line-through; color: #999;">S/ ${originalPrice.toFixed(2)}</span> ` : ''}S/ ${price.toFixed(2)}</td>
+                <td>${quantity} x ${hasDiscount ? `<span style="text-decoration: line-through; color: #999;">S/ ${formatPrice(originalPrice)}</span> ` : ''}S/ ${formatPrice(price)}</td>
                 <td class="right">S/ ${total.toFixed(2)}</td>
               </tr>
             </table>
@@ -1451,7 +1455,7 @@ const printTicketDirect = () => {
         <div class="bold">PAGOS</div>
         ${payments.map(p => `
           <div class="item-row">
-            <span>${p.method_name || p.metodo || p.payment_method || ''}</span>
+            <span>${p.methodName || p.method_name || p.metodo || p.method || 'Pago'}</span>
             <span>S/ ${parseFloat(p.amount || p.monto || 0).toFixed(2)}</span>
           </div>
         `).join('')}
