@@ -566,6 +566,7 @@ import { useAuthStore } from '../stores/auth';
 import RightToLeftMoneyInput from './RightToLeftMoneyInput.vue';
 import ReceiptTicket from './ReceiptTicket.vue';
 import { COMPANY_CONFIG } from '../config/companyConfig';
+import { useThermalPrinter } from '../composables/useThermalPrinter';
 import {
   suggestOptimalPayments,
   validateCashPayment,
@@ -576,6 +577,7 @@ import { formatCurrency } from '../utils/formatters.js';
 
 const cartStore = useCartStore();
 const authStore = useAuthStore();
+const { isConnected: thermalConnected, isEnabled: thermalEnabled, printReceipt: thermalPrint } = useThermalPrinter();
 
 const props = defineProps({
   modelValue: {
@@ -1305,20 +1307,62 @@ const getNetsuiteCustomerCode = () => {
   return null;
 };
 
-const printTicket = () => {
-  // Si hay un PDF del comprobante electrónico, abrirlo en nueva pestaña
+/**
+ * Build order data object for thermal ESC/POS printing
+ */
+const buildThermalOrderData = () => ({
+  companyInfo: getCompanyInfo(),
+  storeName: getStoreName(),
+  storeAddress: getStoreAddress(),
+  storePhone: getStorePhone(),
+  orderNumber: displayOrderNumber.value,
+  billingDoc: displayBillingDocument.value,
+  items: displayItems.value || [],
+  payments: displayPayments.value || [],
+  customer: displayCustomer.value,
+  subtotal: displaySubtotal.value,
+  tax: displayTax.value,
+  total: displayTotal.value,
+  roundingAmount: displayRoundingAmount.value,
+  totalAfterRounding: displayTotalAfterRounding.value,
+  cajero: displayCajero.value,
+  createdAt: props.completedSaleData?.createdAt || new Date().toISOString(),
+});
+
+const printTicket = async () => {
+  // Intentar impresión térmica ESC/POS primero
+  if (thermalEnabled.value && thermalConnected.value) {
+    const orderData = buildThermalOrderData();
+    const printed = await thermalPrint(orderData);
+    if (printed) {
+      console.log('🖨️ [PaymentModal] Printed via thermal ESC/POS');
+      return;
+    }
+  }
+
+  // Fallback: PDF o window.print()
   if (displayBillingDocument.value?.files?.pdf) {
     console.log('📄 [PaymentModal] Opening billing document PDF:', displayBillingDocument.value.files.pdf);
     window.open(displayBillingDocument.value.files.pdf, '_blank');
   } else {
-    // Si no hay PDF, usar window.print() para imprimir la página actual
     console.log('🖨️ [PaymentModal] No PDF available, using window.print()');
     window.print();
   }
 };
 
-const printTicketDirect = () => {
+const printTicketDirect = async () => {
   console.log('🖨️ [PaymentModal] Printing ticket directly');
+
+  // Intentar impresión térmica ESC/POS primero
+  if (thermalEnabled.value && thermalConnected.value) {
+    const orderData = buildThermalOrderData();
+    const printed = await thermalPrint(orderData);
+    if (printed) {
+      console.log('🖨️ [PaymentModal] Printed via thermal ESC/POS');
+      return;
+    }
+    console.log('🖨️ [PaymentModal] Thermal print failed, falling back to HTML popup');
+  }
 
   const companyInfo = getCompanyInfo();
   const storeName = getStoreName();

@@ -153,6 +153,11 @@ const routes = [
         component: () => import('../views/Users.vue')
       },
       {
+        path: 'printer',
+        name: 'PrinterSettings',
+        component: () => import('../components/settings/PrinterSettings.vue')
+      },
+      {
         path: 'netsuite/preferences',
         name: 'Preferences',
         component: Preferences

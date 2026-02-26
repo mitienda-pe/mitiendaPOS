@@ -222,10 +222,12 @@ import { ordersApi } from '../services/ordersApi';
 import ReceiptTicket from '../components/ReceiptTicket.vue';
 import { COMPANY_CONFIG } from '../config/companyConfig';
 import { useAuthStore } from '../stores/auth';
+import { useThermalPrinter } from '../composables/useThermalPrinter';
 
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
+const { isConnected: thermalConnected, isEnabled: thermalEnabled, printReceipt: thermalPrint } = useThermalPrinter();
 
 const order = ref(null);
 const loading = ref(false);
@@ -508,7 +510,35 @@ const getStoreInfo = () => {
   return null;
 };
 
-const printTicket = () => {
+const printTicket = async () => {
+  // Intentar impresión térmica ESC/POS primero
+  if (thermalEnabled.value && thermalConnected.value) {
+    const thermalData = {
+      companyInfo: getCompanyInfo(),
+      storeName: getStoreName(),
+      storeAddress: getStoreAddress(),
+      storePhone: getStorePhone(),
+      orderNumber: order.value.order_number,
+      billingDoc: getBillingDocument(),
+      items: getProducts(),
+      payments: order.value._rawDetail?.payments || [],
+      customer: order.value.customer,
+      subtotal: getSubtotal(),
+      tax: getTax(),
+      total: getTotal(),
+      roundingAmount: 0,
+      totalAfterRounding: getTotal(),
+      cajero: order.value.cajero_nombre || '',
+      createdAt: order.value.created_at,
+    };
+    const printed = await thermalPrint(thermalData);
+    if (printed) {
+      console.log('🖨️ [SaleDetail] Printed via thermal ESC/POS');
+      return;
+    }
+    console.log('🖨️ [SaleDetail] Thermal print failed, falling back to HTML popup');
+  }
+
   const products = getProducts();
   const payments = order.value._rawDetail?.payments || [];
   const billingDoc = getBillingDocument();
