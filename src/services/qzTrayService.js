@@ -9,25 +9,20 @@ import qz from 'qz-tray'
 let connected = false
 
 /**
- * Override certificate handling for unsigned usage.
- * In production, you should sign with your own certificate.
+ * Unsigned mode: no certificate, no signature.
+ * QZ Tray will show a trust dialog the first time asking the user to allow the connection.
+ * Once trusted, subsequent connections are automatic.
  */
-qz.security.setCertificatePromise(() =>
-  Promise.resolve(
-    '-----BEGIN CERTIFICATE-----\n' +
-    'MIIBszCCARigAwIBAgIJALB5Wv3MOLEEMA0GCSqGSIb3DQEBCwUAMBMxETAPBgNV\n' +
-    'BAMMCHFyLXRlc3QwHhcNMjMwMTAxMDAwMDAwWhcNMjYwMTAxMDAwMDAwWjATMREw\n' +
-    'DwYDVQQDDAhxci10ZXN0MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDGmTj3\n' +
-    'nnn/nnn/nnn/nnn/nnn/nnn/nnn/nnn/nnn/nnn/nnn/nnn/nnn/nnn/nnn/nnn/nnn\n' +
-    'nnn/nnn/nnn/QIDAQABoyMwITAfBgNVHREEGDAWhwR/AAABhwQAAAABhwSsEAABMA0G\n' +
-    'CSqGSIb3DQEBCwUAA4GBAFplaceholder\n' +
-    '-----END CERTIFICATE-----'
-  )
-)
+qz.security.setCertificatePromise(function (resolve) {
+  resolve()
+})
 
-// Skip signature validation for development (unsigned mode)
 qz.security.setSignatureAlgorithm('SHA512')
-qz.security.setSignaturePromise(() => () => Promise.resolve(''))
+qz.security.setSignaturePromise(function () {
+  return function (resolve) {
+    resolve()
+  }
+})
 
 /**
  * Connect to QZ Tray via WebSocket
@@ -44,12 +39,7 @@ export async function connect() {
     return true
   } catch (err) {
     connected = false
-    // QUIE-4xx = QZ Tray not running, expected in environments without it
-    if (err?.message?.includes?.('QUIE') || err?.message?.includes?.('Unable to connect')) {
-      console.warn('[QZ Tray] No se pudo conectar. ¿Está QZ Tray ejecutándose?')
-    } else {
-      console.error('[QZ Tray] Error de conexión:', err)
-    }
+    console.error('[QZ Tray] Error de conexión:', err?.message || err)
     return false
   }
 }
