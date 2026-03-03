@@ -31,16 +31,16 @@
             :key="item.product_id || item.sku"
             class="bg-red-50 border border-red-200 rounded-lg p-4"
           >
-            <!-- Product not found in NetSuite (no stock data) -->
-            <div v-if="item.reason === 'not_found_in_netsuite'" class="flex items-start gap-4">
+            <!-- System/API/Config errors (show backend message directly) -->
+            <div v-if="isSystemError(item.reason)" class="flex items-start gap-4">
               <div class="flex-shrink-0 mt-1">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-red-600" viewBox="0 0 20 20" fill="currentColor">
                   <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
                 </svg>
               </div>
               <div class="flex-1">
-                <h4 class="font-semibold text-gray-900 text-lg">{{ item.product_name }}</h4>
-                <p class="text-sm text-gray-600 mt-1">SKU: {{ item.sku }}</p>
+                <h4 class="font-semibold text-gray-900 text-lg">{{ item.product_name || 'Producto' }}</h4>
+                <p v-if="item.sku" class="text-sm text-gray-600 mt-1">SKU: {{ item.sku }}</p>
                 <div class="mt-3 p-3 bg-white border border-red-300 rounded">
                   <p class="text-red-700 font-medium">{{ item.message }}</p>
                 </div>
@@ -56,17 +56,17 @@
                 </div>
                 <div class="text-right">
                   <div class="text-sm text-gray-600">Solicitado</div>
-                  <div class="text-2xl font-bold text-gray-900">{{ item.requested }}</div>
+                  <div class="text-2xl font-bold text-gray-900">{{ item.requested ?? 0 }}</div>
                 </div>
                 <div class="text-right">
                   <div class="text-sm text-gray-600">Disponible</div>
-                  <div class="text-2xl font-bold text-red-600">{{ item.available }}</div>
+                  <div class="text-2xl font-bold text-red-600">{{ item.available ?? 0 }}</div>
                 </div>
               </div>
 
               <!-- Stock status -->
               <div class="mt-3 pt-3 border-t border-red-200">
-                <div v-if="item.available === 0" class="flex items-center gap-2 text-red-700">
+                <div v-if="!item.available || item.available === 0" class="flex items-center gap-2 text-red-700">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
                   </svg>
@@ -76,7 +76,7 @@
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
                   </svg>
-                  <span class="text-sm font-medium">Stock insuficiente (Faltante: {{ item.requested - item.available }})</span>
+                  <span class="text-sm font-medium">Stock insuficiente (Faltante: {{ (item.requested || 0) - (item.available || 0) }})</span>
                 </div>
               </div>
             </div>
@@ -133,6 +133,13 @@ const emit = defineEmits(['close']);
 
 const close = () => {
   emit('close');
+};
+
+// Reasons that should show the backend message directly instead of stock quantities
+const isSystemError = (reason) => {
+  return ['not_found_in_netsuite', 'not_found_in_db', 'no_sku', 'not_in_inventory_locations',
+          'no_inventory_numbers', 'api_error', 'config_error', 'system_error',
+          'assembly_item', 'kit_item', 'service_item'].includes(reason);
 };
 
 // Close on ESC key
