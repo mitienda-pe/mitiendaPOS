@@ -105,6 +105,12 @@ export const useAuthStore = defineStore('auth', {
           const store = this.stores.find(s => s.id === storeId);
           this.selectedStore = store;
           localStorage.setItem('selected_store', JSON.stringify(store));
+
+          // Limpiar turno de caja al cambiar de tienda para evitar
+          // contaminación cross-tenant de movimientos de caja
+          const { useShiftStore } = await import('./shift');
+          const shiftStore = useShiftStore();
+          shiftStore.clearActiveShift();
         }
       } catch (error) {
         console.error('Error selecting store:', error);
