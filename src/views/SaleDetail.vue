@@ -425,10 +425,16 @@ const getBillingDocument = () => {
   }
 
   const eBilling = order.value._rawDetail.billing_info['e-billing'];
+  // status = 1 cuando fue emitido por Nubefact O NetSuite (delegate_billing)
+  if (!eBilling.status) {
+    return null;
+  }
+
   return {
     serie: eBilling.serie,
     correlative: eBilling.correlative,
     status: eBilling.status,
+    source: eBilling.source || null, // 'nubefact' | 'netsuite' | null
     billingDate: eBilling.billing_date,
     files: {
       pdf: eBilling.url_pdf,
