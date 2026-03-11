@@ -429,26 +429,29 @@ const handleCreateNewSale = () => {
 const handleStartSale = (data) => {
   const state = saleState.value;
 
-  // Guardar el tipo de comprobante seleccionado
-  if (data.billingDocumentType) {
-    billingDocumentType.value = data.billingDocumentType;
-    console.log('📄 [POS] Billing document type selected:', billingDocumentType.value);
-  }
-
   // Si estamos en Estado B (productos sin documento), NO limpiar el carrito
   // Solo agregar el cliente
   if (state === 'B') {
     if (data.customer) {
       selectedCustomer.value = data.customer;
     }
+    if (data.billingDocumentType) {
+      billingDocumentType.value = data.billingDocumentType;
+      console.log('📄 [POS] Billing document type selected:', billingDocumentType.value);
+    }
     saleHasUnsavedChanges.value = true; // Marcar como cambios sin guardar
     return;
   }
 
   // En cualquier otro caso (A o C), limpiar y empezar de nuevo
-  resetSale();
+  resetSale(); // resetSale() pone billingDocumentType = 'boleta'
   if (data.customer) {
     selectedCustomer.value = data.customer;
+  }
+  // FIX: Aplicar tipo de comprobante DESPUÉS de resetSale() para no perder la selección del usuario
+  if (data.billingDocumentType) {
+    billingDocumentType.value = data.billingDocumentType;
+    console.log('📄 [POS] Billing document type selected:', billingDocumentType.value);
   }
   saleHasUnsavedChanges.value = false;
 };
