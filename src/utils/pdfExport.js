@@ -226,12 +226,17 @@ export const exportShiftReportToPdf = (shift, movements, cashier = null) => {
         minute: '2-digit'
       });
 
-      const tipo = {
-        'venta': 'Venta',
-        'entrada': 'Ingreso',
-        'salida': 'Retiro',
-        'ajuste': 'Ajuste'
-      }[movement.tipo] || movement.tipo;
+      let tipo;
+      if (movement.eliminado) {
+        tipo = 'ANULADO';
+      } else {
+        tipo = {
+          'venta': 'Venta',
+          'entrada': 'Ingreso',
+          'salida': 'Retiro',
+          'ajuste': 'Ajuste'
+        }[movement.tipo] || movement.tipo;
+      }
 
       const sign = (movement.tipo === 'entrada' || movement.tipo === 'venta') ? '+' :
                    (movement.tipo === 'salida' ? '-' : '');

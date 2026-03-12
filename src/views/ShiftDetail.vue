@@ -171,12 +171,15 @@
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="movement in movements" :key="movement.id" class="hover:bg-gray-50">
+              <tr v-for="movement in movements" :key="movement.id" class="hover:bg-gray-50" :class="{ 'opacity-50': movement.eliminado }">
                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                   {{ formatTime(movement.fecha_registro) }}
                 </td>
                 <td class="px-4 py-3 whitespace-nowrap">
-                  <span class="px-2 py-1 text-xs font-medium rounded-full" :class="getMovementTypeClass(movement.tipo)">
+                  <span v-if="movement.eliminado" class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
+                    ANULADO
+                  </span>
+                  <span v-else class="px-2 py-1 text-xs font-medium rounded-full" :class="getMovementTypeClass(movement.tipo)">
                     {{ getMovementTypeLabel(movement.tipo) }}
                   </span>
                 </td>
@@ -184,18 +187,18 @@
                   <div v-if="movement.tipo === 'venta' && movement.referencia">
                     <router-link
                       :to="`/order/${movement.referencia}`"
-                      class="text-blue-600 hover:text-blue-800 font-medium">
+                      class="font-medium" :class="movement.eliminado ? 'text-gray-400 line-through' : 'text-blue-600 hover:text-blue-800'">
                       🛒 Venta #{{ movement.referencia }}
                     </router-link>
                     <p class="text-xs text-gray-500 mt-1">{{ movement.concepto }}</p>
                   </div>
-                  <span v-else>{{ movement.concepto }}</span>
+                  <span v-else :class="{ 'line-through': movement.eliminado }">{{ movement.concepto }}</span>
                 </td>
                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
                   {{ movement.metodo_pago || '-' }}
                 </td>
                 <td class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium"
-                    :class="getMovementAmountClass(movement.tipo)">
+                    :class="movement.eliminado ? 'text-gray-400 line-through' : getMovementAmountClass(movement.tipo)">
                   {{ getMovementSign(movement.tipo) }}S/ {{ parseFloat(movement.monto).toFixed(2) }}
                 </td>
               </tr>
