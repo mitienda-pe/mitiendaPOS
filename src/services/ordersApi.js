@@ -128,6 +128,23 @@ export const ordersApi = {
     }
   },
 
+  // Anular una venta POS (requiere PIN supervisor o contraseña admin)
+  async voidOrder(orderId, { authType, authValue, motivo }) {
+    try {
+      const response = await apiClient.post(`/orders/${orderId}/void`, {
+        auth_type: authType,
+        auth_value: authValue,
+        motivo
+      });
+      return response.data;
+    } catch (error) {
+      if (error.response?.data) {
+        throw new Error(error.response.data.messages?.error || error.response.data.message || 'Error al anular la venta');
+      }
+      throw error;
+    }
+  },
+
   // Calcular total de la orden usando el método de NetSuite
   // Este endpoint garantiza que los totales coincidan exactamente con lo que NetSuite espera
   async calculateTotal(items) {

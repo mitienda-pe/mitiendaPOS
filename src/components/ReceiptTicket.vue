@@ -460,6 +460,7 @@ const getStatusText = (status) => {
     0: 'Rechazado',
     1: 'Aprobado',
     2: 'Pendiente',
+    4: 'Anulado',
     9: 'Creado'
   };
   return statusMap[status] || 'Desconocido';
@@ -470,6 +471,7 @@ const getStatusClass = (status) => {
     0: 'bg-red-100 text-red-800',
     1: 'bg-green-100 text-green-800',
     2: 'bg-yellow-100 text-yellow-800',
+    4: 'bg-orange-100 text-orange-800',
     9: 'bg-gray-100 text-gray-800'
   };
   return classMap[status] || 'bg-gray-100 text-gray-800';

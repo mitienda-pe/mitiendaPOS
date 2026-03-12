@@ -68,6 +68,40 @@
             </svg>
             Reimprimir
           </button>
+
+          <button
+            v-if="canVoidOrder()"
+            @click="showVoidModal = true"
+            class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+          >
+            <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
+            Anular Venta
+          </button>
+        </div>
+      </div>
+
+      <!-- Banner de venta anulada -->
+      <div v-if="order.status == 4" class="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded">
+        <div class="flex items-center">
+          <svg class="h-6 w-6 text-red-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+          </svg>
+          <div>
+            <p class="text-red-800 font-semibold">VENTA ANULADA</p>
+            <p v-if="getVoidReason()" class="text-red-700 text-sm mt-1">Motivo: {{ getVoidReason() }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notificación anulación exitosa -->
+      <div v-if="voidSuccess" class="mb-4 bg-orange-50 border-l-4 border-orange-500 p-4 rounded">
+        <div class="flex">
+          <svg class="h-5 w-5 text-orange-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p class="text-orange-700">{{ voidSuccess }}</p>
         </div>
       </div>
 
@@ -212,6 +246,95 @@
         </div>
       </div>
     </div>
+    <!-- Modal para anular venta -->
+    <div v-if="showVoidModal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="void-modal-title" role="dialog" aria-modal="true">
+      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" @click="closeVoidModal"></div>
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+          <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div class="sm:flex sm:items-start">
+              <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                <h3 class="text-lg leading-6 font-medium text-gray-900" id="void-modal-title">
+                  Anular Venta
+                </h3>
+                <p class="text-sm text-gray-500 mt-1">
+                  Venta #{{ order?.order_number }} - S/ {{ getTotal().toFixed(2) }}
+                </p>
+
+                <div class="mt-4 space-y-4">
+                  <!-- Auth type -->
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Autenticación</label>
+                    <div class="flex gap-4">
+                      <label class="inline-flex items-center">
+                        <input type="radio" v-model="voidAuthType" value="pin" class="form-radio text-red-600" />
+                        <span class="ml-2 text-sm text-gray-700">PIN de supervisor</span>
+                      </label>
+                      <label class="inline-flex items-center">
+                        <input type="radio" v-model="voidAuthType" value="password" class="form-radio text-red-600" />
+                        <span class="ml-2 text-sm text-gray-700">Contraseña admin</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- PIN or Password input -->
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                      {{ voidAuthType === 'pin' ? 'PIN de supervisor' : 'Contraseña de administrador' }}
+                    </label>
+                    <input
+                      v-model="voidAuthValue"
+                      :type="'password'"
+                      :maxlength="voidAuthType === 'pin' ? 4 : undefined"
+                      :placeholder="voidAuthType === 'pin' ? '****' : 'Ingresa tu contraseña'"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      @keyup.enter="confirmVoid"
+                    />
+                  </div>
+
+                  <!-- Motivo -->
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Motivo de anulación</label>
+                    <textarea
+                      v-model="voidMotivo"
+                      rows="2"
+                      placeholder="Ej: Cliente pidió anulación, error en documento..."
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                    ></textarea>
+                  </div>
+
+                  <!-- Error -->
+                  <p v-if="voidError" class="text-sm text-red-600">{{ voidError }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+            <button
+              type="button"
+              @click="confirmVoid"
+              :disabled="voidLoading"
+              class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {{ voidLoading ? 'Anulando...' : 'Confirmar Anulación' }}
+            </button>
+            <button
+              type="button"
+              @click="closeVoidModal"
+              :disabled="voidLoading"
+              class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -239,6 +362,15 @@ const emailError = ref(null);
 const showEmailModal = ref(false);
 const emailInput = ref('');
 const emailInputError = ref(null);
+
+// Void order state
+const showVoidModal = ref(false);
+const voidAuthType = ref('pin');
+const voidAuthValue = ref('');
+const voidMotivo = ref('');
+const voidLoading = ref(false);
+const voidError = ref(null);
+const voidSuccess = ref(null);
 
 const loadOrderDetail = async () => {
   loading.value = true;
@@ -754,6 +886,71 @@ const confirmSendEmail = async () => {
     setTimeout(() => emailError.value = null, 8000);
   } finally {
     sendingEmail.value = false;
+  }
+};
+
+// === Void order functions ===
+const canVoidOrder = () => {
+  return order.value &&
+         order.value.status == 1 &&
+         order.value.source === 'pos';
+};
+
+const getVoidReason = () => {
+  try {
+    const raw = order.value?._rawDetail?.tiendaventa_errormensajeusuario;
+    if (!raw) return null;
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    if (parsed.tipo === 'anulacion_pos') return parsed.motivo;
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+const closeVoidModal = () => {
+  if (!voidLoading.value) {
+    showVoidModal.value = false;
+    voidAuthValue.value = '';
+    voidMotivo.value = '';
+    voidError.value = null;
+  }
+};
+
+const confirmVoid = async () => {
+  voidError.value = null;
+
+  if (!voidAuthValue.value) {
+    voidError.value = voidAuthType.value === 'pin' ? 'Ingresa el PIN' : 'Ingresa la contraseña';
+    return;
+  }
+
+  if (!voidMotivo.value || voidMotivo.value.trim().length < 3) {
+    voidError.value = 'Ingresa un motivo válido (mínimo 3 caracteres)';
+    return;
+  }
+
+  try {
+    voidLoading.value = true;
+    const result = await ordersApi.voidOrder(order.value.id, {
+      authType: voidAuthType.value,
+      authValue: voidAuthValue.value,
+      motivo: voidMotivo.value.trim()
+    });
+
+    // Update local state
+    order.value.status = 4;
+    showVoidModal.value = false;
+    voidSuccess.value = 'Venta anulada correctamente';
+    setTimeout(() => voidSuccess.value = null, 5000);
+
+    // Reload order to get updated data
+    await loadOrderDetail();
+  } catch (err) {
+    console.error('Error voiding order:', err);
+    voidError.value = err.message || 'Error al anular la venta';
+  } finally {
+    voidLoading.value = false;
   }
 };
 
