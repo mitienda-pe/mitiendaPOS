@@ -1119,20 +1119,18 @@ const handlePaymentCompleted = async () => {
           console.log('📄 [POS] Billing document found:', completedSaleSnapshot.value.billingDocument);
         }
 
+        // Limpiar carrito ANTES de mostrar ticket para evitar re-envíos
+        resetSale();
+
         // Mostrar el ticket
         showTicket.value = true;
 
-        // El API legacy emite el comprobante automáticamente
-        // Solo necesitamos esperar un momento para que el usuario vea el ticket
-        setTimeout(() => {
-          console.log('✅ [POS] Sale completed successfully. Billing document was emitted by legacy API.');
-          resetSale();
-        }, 2000); // 2 segundos para que el usuario vea el ticket
+        console.log('✅ [POS] Sale completed successfully. Billing document was emitted by legacy API.');
         } catch (fetchError) {
           console.error('❌ [POS] Error fetching order details:', fetchError);
-          // Si falla la obtención, mostrar el ticket con datos locales como fallback
-          alert('La venta se completó exitosamente, pero no se pudieron obtener todos los detalles.\n\nPuede consultar la venta en el módulo de Ventas.');
+          // Limpiar carrito incluso si falla getOrder — la venta YA se creó
           resetSale();
+          alert('La venta se completó exitosamente, pero no se pudieron obtener todos los detalles.\n\nPuede consultar la venta en el módulo de Ventas.');
         }
       } else {
         // No hay order_id - usar datos locales como fallback
@@ -1153,12 +1151,11 @@ const handlePaymentCompleted = async () => {
           cajero: authStore.user?.name || '',
         };
 
-        showTicket.value = true;
+        // Limpiar carrito ANTES de mostrar ticket
+        resetSale();
 
-        setTimeout(() => {
-          console.log('✅ [POS] Sale completed successfully with local data.');
-          resetSale();
-        }, 2000);
+        showTicket.value = true;
+        console.log('✅ [POS] Sale completed successfully with local data.');
       }
     } else {
       // Si error no es 0, es un error del backend
@@ -1197,7 +1194,11 @@ const handlePaymentCompleted = async () => {
       alert(`Error: ${fullMessage}\n\nPor favor, intente nuevamente.`);
     }
   } finally {
-    processingOrder.value = false;
+    // En caso de error, desbloquear para que el cajero pueda reintentar.
+    // En caso de éxito, resetSale() ya se encargó de esto.
+    if (processingOrder.value) {
+      processingOrder.value = false;
+    }
   }
 };
 
@@ -1208,6 +1209,9 @@ const cancelSale = () => {
 };
 
 const resetSale = (orderData = null) => {
+  // Desbloquear el botón de cobrar al limpiar la venta
+  processingOrder.value = false;
+
   // If we have order data, store it for billing and show billing modal
   if (orderData && orderData.order_id) {
     completedOrder.value = orderData;
