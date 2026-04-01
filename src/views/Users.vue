@@ -125,7 +125,6 @@
   <div
     v-if="showCreateModal || showEditModal"
     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto"
-    @click.self="closeModal"
   >
     <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6 my-8">
       <h2 class="text-xl font-semibold mb-4">
@@ -289,7 +288,7 @@
               >
                 <input
                   type="checkbox"
-                  :value="branch.tiendadireccion_id"
+                  :value="Number(branch.tiendadireccion_id)"
                   v-model="formData.sucursales"
                   class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                 />
