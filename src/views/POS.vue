@@ -977,13 +977,15 @@ const handlePaymentCompleted = async () => {
       // El backend legacy ya actualiza el stock automáticamente
       // No necesitamos hacerlo manualmente desde el frontend
 
-      // Registrar movimientos de caja por cada pago
-      if (shiftStore.hasActiveShift) {
+      // Registrar movimientos de caja (solo si el backend no lo hizo)
+      const backendRegisteredMovements = response.data?.cash_movements_registered === true;
+
+      if (shiftStore.hasActiveShift && !backendRegisteredMovements) {
         const shiftId = shiftStore.activeShift.id;
         const saleReference = `VENTA-${response.data.order_id || response.data.id || Date.now()}`;
         const customerName = selectedCustomer.value?.name || 'Cliente General';
 
-        console.log('💰 [POS] Registering cash movements for shift:', shiftId);
+        console.log('💰 [POS] Backend did not register cash movements, registering from frontend...');
 
         for (const payment of payments.value) {
           try {
@@ -997,19 +999,19 @@ const handlePaymentCompleted = async () => {
             console.log(`✅ [POS] Movement registered: ${payment.method} - S/ ${payment.amount}`);
           } catch (movementError) {
             console.error('❌ [POS] Error registering movement:', movementError);
-            // No interrumpir el flujo si falla el registro de movimiento
-            // La venta ya se completó exitosamente
           }
         }
+      } else if (backendRegisteredMovements) {
+        console.log('✅ [POS] Cash movements already registered by backend, skipping frontend registration');
+      }
 
-        // Actualizar turno activo para reflejar los nuevos totales
+      // Actualizar turno activo para reflejar los nuevos totales
+      if (shiftStore.hasActiveShift) {
         try {
           await shiftStore.fetchActiveShift();
         } catch (shiftError) {
           console.error('Error updating shift data:', shiftError);
         }
-      } else {
-        console.warn('⚠️ [POS] No active shift - movements not registered');
       }
 
       // Si esta venta estaba guardada, eliminarla de las ventas guardadas
