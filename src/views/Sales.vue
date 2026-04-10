@@ -399,7 +399,7 @@ const fetchOrders = async () => {
         cajero_nombre: order.cajero_nombre || null,
         total: parseFloat(order.total_amount || '0'),
         status: order.status, // Ya viene mapeado por el backend
-        source: order.tiendaventa_origen || 'web',
+        source: order.source || order.tiendaventa_origen || 'web',
         created_at: order.date_created,
         // Guardar datos raw para modal
         _raw: order
