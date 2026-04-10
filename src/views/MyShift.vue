@@ -224,9 +224,9 @@
                 <td class="px-4 py-3 text-sm text-gray-700">
                   <div v-if="movement.tipo === 'venta' && movement.referencia">
                     <router-link
-                      :to="`/order/${movement.referencia}`"
+                      :to="`/sales/${movement.referencia.replace('VENTA-', '')}`"
                       class="font-medium" :class="movement.eliminado ? 'text-gray-400 line-through' : 'text-blue-600 hover:text-blue-800'">
-                      🛒 Venta #{{ movement.referencia }}
+                      🛒 Venta #{{ movement.referencia.replace('VENTA-', '') }}
                     </router-link>
                     <p class="text-xs text-gray-500 mt-1">{{ movement.concepto }}</p>
                   </div>
