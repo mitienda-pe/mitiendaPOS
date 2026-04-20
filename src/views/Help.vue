@@ -555,6 +555,96 @@
                 </div>
               </div>
             </div>
+
+            <!-- Anular Venta -->
+            <div class="border-t pt-6">
+              <h3 class="text-xl font-semibold text-gray-900 mb-3 flex items-center">
+                <span class="bg-green-100 text-green-800 rounded-full w-8 h-8 flex items-center justify-center mr-3 text-sm font-bold">10</span>
+                Cómo Anular una Venta
+              </h3>
+              <div class="ml-11 space-y-3">
+                <p class="text-gray-700">Las ventas POS aprobadas pueden anularse con autorización de un supervisor o administrador:</p>
+
+                <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                  <li>Ve al módulo <strong>"Ventas"</strong> y busca la venta en el historial</li>
+                  <li>Abre el detalle de la venta</li>
+                  <li>Haz clic en el botón <strong>"Anular Venta"</strong> (en la parte superior derecha)</li>
+                  <li>Ingresa el <strong>motivo</strong> de la anulación (mínimo 3 caracteres, obligatorio)</li>
+                  <li>Autoriza con una de estas dos formas:
+                    <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
+                      <li><strong>PIN de supervisor</strong> (empleado con rol supervisor o administrador)</li>
+                      <li><strong>Contraseña de administrador</strong> (la del login por email)</li>
+                    </ul>
+                  </li>
+                  <li>Confirma la anulación</li>
+                </ol>
+
+                <h4 class="font-semibold text-gray-900 mt-4">Qué ocurre al anular</h4>
+                <ul class="list-disc list-inside space-y-1 text-gray-700 ml-4">
+                  <li>La venta pasa a estado <strong>Anulada</strong> con el motivo registrado</li>
+                  <li>Los movimientos de caja asociados se marcan como eliminados</li>
+                  <li>Los totales del turno se recalculan automáticamente (incluso turnos cerrados)</li>
+                  <li>El <strong>stock de los productos se repone</strong> automáticamente (excepto productos marcados como stock ilimitado)</li>
+                </ul>
+
+                <div class="bg-red-50 border-l-4 border-red-400 p-4 mt-3">
+                  <p class="text-sm text-red-700">
+                    <strong>Importante:</strong> Solo se pueden anular ventas con origen POS y en estado Aprobado. Ventas web, ya anuladas o pendientes no se permiten desde este flujo.
+                  </p>
+                </div>
+
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mt-3">
+                  <p class="text-sm text-yellow-700">
+                    <strong>Nota:</strong> La anulación no revierte la factura electrónica ni la orden en NetSuite — esos procesos se manejan por separado desde contabilidad/ERP.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Sincronizar Stock -->
+            <div class="border-t pt-6">
+              <h3 class="text-xl font-semibold text-gray-900 mb-3 flex items-center">
+                <span class="bg-green-100 text-green-800 rounded-full w-8 h-8 flex items-center justify-center mr-3 text-sm font-bold">11</span>
+                Cómo Sincronizar Stock desde el ERP (NetSuite)
+              </h3>
+              <div class="ml-11 space-y-3">
+                <p class="text-gray-700">Si notas que el stock de un producto está desactualizado respecto a NetSuite, puedes sincronizarlo manualmente:</p>
+
+                <h4 class="font-semibold text-gray-900 mt-4">Sincronizar un producto individual</h4>
+                <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                  <li>Ve a <strong>"Inventario"</strong> desde el menú principal</li>
+                  <li>Busca el producto por nombre o SKU</li>
+                  <li>Haz clic en el botón <strong>"Sincronizar"</strong> (color turquesa) en la columna de acciones</li>
+                  <li>Espera la confirmación: verás el stock nuevo y la diferencia respecto al anterior</li>
+                </ol>
+
+                <h4 class="font-semibold text-gray-900 mt-4">Sincronizar todos los productos visibles</h4>
+                <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                  <li>En <strong>"Inventario"</strong>, aplica los filtros que quieras (por ejemplo, "Stock Bajo")</li>
+                  <li>Haz clic en el botón <strong>"Sincronizar ERP"</strong> (header, color turquesa)</li>
+                  <li>El sistema sincronizará hasta <strong>50 productos</strong> de la página actual en un solo lote</li>
+                  <li>Los productos con stock ilimitado se omiten automáticamente</li>
+                </ol>
+
+                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mt-3">
+                  <p class="text-sm text-blue-700">
+                    <strong>Cuándo usar la sincronización manual:</strong> cuando un cliente reporta que el stock mostrado no coincide con la realidad, cuando hubo un ingreso de mercadería y querés ver el stock actualizado sin esperar al cron, o para confirmar el stock antes de una venta grande.
+                  </p>
+                </div>
+
+                <div class="bg-green-50 border-l-4 border-green-400 p-4 mt-3">
+                  <p class="text-sm text-green-700">
+                    <strong>Disponible para todos los roles:</strong> cualquier empleado (cajero, supervisor, administrador) puede disparar la sincronización. No modifica precios ni edita stock manualmente — sólo trae el valor real desde NetSuite.
+                  </p>
+                </div>
+
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mt-3">
+                  <p class="text-sm text-yellow-700">
+                    <strong>Requisitos:</strong> la tienda debe tener la integración NetSuite activa y el SKU del producto debe estar mapeado. Si el producto no está en NetSuite, verás un mensaje de error.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Administrador Section -->
@@ -774,10 +864,57 @@
               </div>
             </div>
 
-            <!-- Reportes y Auditoría -->
+            <!-- Migración Stock Ilimitado -->
             <div class="border-t pt-6">
               <h3 class="text-xl font-semibold text-gray-900 mb-3 flex items-center">
                 <span class="bg-purple-100 text-purple-800 rounded-full w-8 h-8 flex items-center justify-center mr-3 text-sm font-bold">4</span>
+                Migrar productos con Stock Ilimitado a Stock Controlado
+              </h3>
+              <div class="ml-11 space-y-3">
+                <p class="text-gray-700">
+                  Tiendas con catálogo marcado históricamente como "stock ilimitado" pueden migrar a stock real desde NetSuite. Esta es una operación CLI que ejecuta el equipo técnico.
+                </p>
+
+                <h4 class="font-semibold text-gray-900 mt-4">Estrategia híbrida (recomendada)</h4>
+                <ul class="list-disc list-inside space-y-1 text-gray-700 ml-4">
+                  <li><strong>SKU mapeado en NetSuite</strong> → se flipea a controlado y se copia el stock actual (incluso si es 0).</li>
+                  <li><strong>SKU NO mapeado</strong> → se preserva como ilimitado y se reporta en el CSV.</li>
+                </ul>
+
+                <h4 class="font-semibold text-gray-900 mt-4">Uso del comando</h4>
+                <div class="bg-gray-900 text-gray-100 rounded p-4 text-sm font-mono overflow-x-auto">
+                  <p class="text-gray-400"># Dry-run (simula sin aplicar cambios, genera CSV de auditoría)</p>
+                  <p>php spark stock:migrate-unlimited &lt;tienda_id&gt; --dry-run --csv /tmp/migrate.csv</p>
+                  <p class="mt-2 text-gray-400"># Ejecución real</p>
+                  <p>php spark stock:migrate-unlimited &lt;tienda_id&gt; --csv /tmp/migrate.csv</p>
+                </div>
+
+                <h4 class="font-semibold text-gray-900 mt-4">Flujo sugerido</h4>
+                <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                  <li>Correr primero <strong>--dry-run</strong> para ver el reparto (mapeados vs sin mapeo)</li>
+                  <li>Revisar el CSV generado: columnas <code class="text-sm bg-gray-100 px-1 rounded">producto_id, sku, titulo, accion, stock_netsuite, stock_nuevo</code></li>
+                  <li>Si los números son razonables, correr la versión real</li>
+                  <li>Guardar el CSV como auditoría</li>
+                </ol>
+
+                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mt-3">
+                  <p class="text-sm text-blue-700">
+                    <strong>Requisitos:</strong> la tienda debe tener credenciales NetSuite configuradas y <code class="text-sm bg-white px-1 rounded">location_id</code> asignado en <code class="text-sm bg-white px-1 rounded">tiendascredenciales_erp</code>. Los productos sin SKU no se pueden mapear y se omiten automáticamente.
+                  </p>
+                </div>
+
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mt-3">
+                  <p class="text-sm text-yellow-700">
+                    <strong>Impacto post-migración:</strong> los productos flipeados con stock=0 aparecerán como "Agotado" en POS y storefront. Esto refleja la realidad del ERP — si el stock cambia, el sync automático (cron) o el botón manual desde Inventario lo actualizarán.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Reportes y Auditoría -->
+            <div class="border-t pt-6">
+              <h3 class="text-xl font-semibold text-gray-900 mb-3 flex items-center">
+                <span class="bg-purple-100 text-purple-800 rounded-full w-8 h-8 flex items-center justify-center mr-3 text-sm font-bold">5</span>
                 Reportes y Auditoría
               </h3>
               <div class="ml-11 space-y-3">
@@ -829,7 +966,9 @@
 
               <div class="bg-gray-50 p-4 rounded-lg">
                 <h3 class="font-semibold text-gray-900 mb-2">¿Puedo cancelar una venta después de confirmarla?</h3>
-                <p class="text-gray-700">Las ventas confirmadas solo pueden ser anuladas por un administrador o supervisor. Debes solicitar autorización.</p>
+                <p class="text-gray-700">
+                  Sí: desde el detalle de la venta usa el botón <strong>"Anular Venta"</strong>. Requiere ingresar un motivo y autorizarla con PIN de supervisor o contraseña de administrador. Al anular, el stock se repone automáticamente y los totales del turno se recalculan. Ver sección 10 del manual Cajero para más detalles.
+                </p>
               </div>
 
               <div class="bg-gray-50 p-4 rounded-lg">
