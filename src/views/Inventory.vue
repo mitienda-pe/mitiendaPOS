@@ -232,19 +232,31 @@
                   Imagen
                 </th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  SKU
+                  <button @click="toggleSort('sku')" class="inline-flex items-center gap-1 hover:text-gray-900 transition-colors uppercase">
+                    SKU
+                    <span class="text-gray-400" v-html="sortIndicator('sku')"></span>
+                  </button>
                 </th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Producto
+                  <button @click="toggleSort('name')" class="inline-flex items-center gap-1 hover:text-gray-900 transition-colors uppercase">
+                    Producto
+                    <span class="text-gray-400" v-html="sortIndicator('name')"></span>
+                  </button>
                 </th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Categoría
                 </th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Precio
+                  <button @click="toggleSort('price')" class="inline-flex items-center gap-1 hover:text-gray-900 transition-colors uppercase">
+                    Precio
+                    <span class="text-gray-400" v-html="sortIndicator('price')"></span>
+                  </button>
                 </th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Stock
+                  <button @click="toggleSort('stock')" class="inline-flex items-center gap-1 hover:text-gray-900 transition-colors uppercase">
+                    Stock
+                    <span class="text-gray-400" v-html="sortIndicator('stock')"></span>
+                  </button>
                 </th>
                 <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Acciones
@@ -490,6 +502,17 @@ const debouncedSearch = () => {
 // Manejar cambios de filtros
 const handleFilterChange = () => {
   loadData();
+};
+
+// Sort por columna: alterna dirección si ya está activa
+const toggleSort = (column) => {
+  inventoryStore.toggleSort(column);
+  loadData();
+};
+
+const sortIndicator = (column) => {
+  if (inventoryStore.filters.sort_by !== column) return '&#8597;'; // ↕
+  return inventoryStore.filters.sort_dir === 'asc' ? '&#9650;' : '&#9660;'; // ▲ ▼
 };
 
 // Resetear filtros

@@ -11,6 +11,8 @@ export const useInventoryStore = defineStore('inventory', {
       brand_id: null,
       stock_status: 'all', // 'all', 'in_stock', 'low_stock', 'out_of_stock'
       published: true, // Por defecto solo productos publicados en POS
+      sort_by: null,   // 'sku' | 'name' | 'price' | 'stock' (null = default por fecha)
+      sort_dir: 'asc', // 'asc' | 'desc'
       page: 1,
       limit: 20
     },
@@ -253,9 +255,26 @@ export const useInventoryStore = defineStore('inventory', {
         brand_id: null,
         stock_status: 'all',
         published: true, // Mantener solo productos publicados en POS
+        sort_by: null,
+        sort_dir: 'asc',
         page: 1,
         limit: 20
       };
+    },
+
+    /**
+     * Aplicar o alternar sort por columna
+     * Si la columna ya está activa, alterna la dirección.
+     * Si es una columna nueva, empieza en ascendente.
+     */
+    toggleSort(column) {
+      if (this.filters.sort_by === column) {
+        this.filters.sort_dir = this.filters.sort_dir === 'asc' ? 'desc' : 'asc';
+      } else {
+        this.filters.sort_by = column;
+        this.filters.sort_dir = 'asc';
+      }
+      this.filters.page = 1;
     },
 
     /**

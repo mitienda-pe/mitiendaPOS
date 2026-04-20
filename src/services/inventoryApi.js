@@ -24,6 +24,10 @@ export const inventoryApi = {
     if (filters.stock_status && filters.stock_status !== 'all') {
       params.append('stock_status', filters.stock_status);
     }
+    if (filters.sort_by) {
+      params.append('sort_by', filters.sort_by);
+      params.append('sort_dir', filters.sort_dir || 'asc');
+    }
 
     const response = await apiClient.get(`/products?${params.toString()}`);
 
