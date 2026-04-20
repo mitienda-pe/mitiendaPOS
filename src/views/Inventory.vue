@@ -10,8 +10,8 @@
               <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
             </svg>
             <div>
-              <p class="text-sm font-medium text-blue-800">Modo solo lectura</p>
-              <p class="text-sm text-blue-700">Puedes consultar el inventario pero no modificar precios ni stock</p>
+              <p class="text-sm font-medium text-blue-800">Modo limitado</p>
+              <p class="text-sm text-blue-700">Puedes consultar y sincronizar stock desde el ERP, pero no editar precios ni stock manualmente</p>
             </div>
           </div>
         </div>
@@ -25,7 +25,6 @@
           </div>
           <div class="flex gap-2">
             <button
-              v-if="canEdit"
               @click="syncVisibleStock"
               :disabled="batchSyncing || inventoryStore.products.length === 0"
               class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -312,8 +311,9 @@
 
                 <!-- Acciones -->
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div v-if="canEdit" class="flex items-center justify-end gap-3">
+                  <div class="flex items-center justify-end gap-3">
                     <button
+                      v-if="canEdit"
                       @click="openQuickEdit(product)"
                       class="text-indigo-600 hover:text-indigo-900 transition-colors"
                     >
@@ -332,7 +332,6 @@
                       <span v-else>Sincronizar</span>
                     </button>
                   </div>
-                  <span v-else class="text-gray-400 text-sm italic">Solo lectura</span>
                 </td>
               </tr>
             </tbody>
