@@ -23,15 +23,32 @@
               Gestión de productos y stock
             </p>
           </div>
-          <button
-            @click="router.push('/menu')"
-            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Volver al Menú
-          </button>
+          <div class="flex gap-2">
+            <button
+              v-if="canEdit"
+              @click="syncVisibleStock"
+              :disabled="batchSyncing || inventoryStore.products.length === 0"
+              class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg v-if="batchSyncing" class="animate-spin h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+              </svg>
+              <svg v-else class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              {{ batchSyncing ? 'Sincronizando…' : 'Sincronizar ERP' }}
+            </button>
+            <button
+              @click="router.push('/menu')"
+              class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Volver al Menú
+            </button>
+          </div>
         </div>
 
         <!-- Stats Cards -->
@@ -295,13 +312,26 @@
 
                 <!-- Acciones -->
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
-                    v-if="canEdit"
-                    @click="openQuickEdit(product)"
-                    class="text-indigo-600 hover:text-indigo-900 transition-colors"
-                  >
-                    Editar Rápido
-                  </button>
+                  <div v-if="canEdit" class="flex items-center justify-end gap-3">
+                    <button
+                      @click="openQuickEdit(product)"
+                      class="text-indigo-600 hover:text-indigo-900 transition-colors"
+                    >
+                      Editar Rápido
+                    </button>
+                    <button
+                      @click="syncProductStock(product)"
+                      :disabled="syncingProductIds.has(product.id)"
+                      :title="`Sincronizar stock de ${product.name} desde ERP`"
+                      class="text-teal-600 hover:text-teal-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <svg v-if="syncingProductIds.has(product.id)" class="animate-spin h-4 w-4 inline" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                      </svg>
+                      <span v-else>Sincronizar</span>
+                    </button>
+                  </div>
                   <span v-else class="text-gray-400 text-sm italic">Solo lectura</span>
                 </td>
               </tr>
@@ -400,12 +430,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { useInventoryStore } from '../stores/inventory';
 import { useAuthStore } from '../stores/auth';
 import { useCashierStore } from '../stores/cashier';
 import QuickEditModal from '../components/QuickEditModal.vue';
+import { netsuiteStockApi } from '../services/netsuiteStockApi';
 
 const router = useRouter();
 const inventoryStore = useInventoryStore();
@@ -429,6 +460,8 @@ const canEdit = computed(() => {
 const searchInput = ref('');
 const showQuickEdit = ref(false);
 const selectedProduct = ref(null);
+const batchSyncing = ref(false);
+const syncingProductIds = reactive(new Set());
 const toast = ref({
   show: false,
   type: 'success',
@@ -491,6 +524,50 @@ const handleQuickSave = async (data) => {
     await loadData();
   } else {
     showToast('error', result.message || 'Error al actualizar el producto');
+  }
+};
+
+// Sincronizar stock individual desde ERP
+const syncProductStock = async (product) => {
+  if (syncingProductIds.has(product.id)) return;
+  syncingProductIds.add(product.id);
+  try {
+    const response = await netsuiteStockApi.syncProductStock(product.id);
+    const data = response?.data || {};
+    const diff = data.difference ?? 0;
+    const current = data.current_stock ?? '—';
+    showToast('success', `${product.sku || product.name}: stock ${current} (Δ ${diff >= 0 ? '+' : ''}${diff})`);
+    await loadData();
+  } catch (err) {
+    showToast('error', err.message || 'Error al sincronizar stock');
+  } finally {
+    syncingProductIds.delete(product.id);
+  }
+};
+
+// Sincronizar stock del lote visible (página actual)
+const syncVisibleStock = async () => {
+  const ids = inventoryStore.products
+    .filter(p => !p.unlimited_stock)
+    .map(p => p.id);
+
+  if (ids.length === 0) {
+    showToast('error', 'No hay productos con stock controlado en esta página');
+    return;
+  }
+
+  batchSyncing.value = true;
+  try {
+    // El endpoint batch limita a 50; si la página tiene más, cortamos.
+    const batch = ids.slice(0, 50);
+    const response = await netsuiteStockApi.syncStockBatch(batch);
+    const synced = response?.data?.synced_count ?? batch.length;
+    showToast('success', `Sincronización completada: ${synced} producto(s)`);
+    await loadData();
+  } catch (err) {
+    showToast('error', err.message || 'Error al sincronizar lote');
+  } finally {
+    batchSyncing.value = false;
   }
 };
 

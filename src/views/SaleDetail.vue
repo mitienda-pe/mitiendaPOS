@@ -426,8 +426,8 @@ const loadOrderDetail = async () => {
         },
         cajero_nombre: response.cajero_nombre || null,
         total: parseFloat(response.tiendaventa_totalpagar || response.total_amount || '0'),
-        status: response.tiendaventa_pagado || response.status,
-        source: response.tiendaventa_origen || 'web',
+        status: response.tiendaventa_pagado ?? response.status,
+        source: response.source || response.tiendaventa_origen || 'web',
         created_at: response.tiendaventa_fecha || response.date_created,
         _rawDetail: response
       };
