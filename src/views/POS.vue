@@ -22,7 +22,9 @@ import BarcodeScanner from '../components/BarcodeScanner.vue';
 import BillingDocumentModal from '../components/BillingDocumentModal.vue';
 import ProcessingOverlay from '../components/ProcessingOverlay.vue';
 import StockValidationErrorModal from '../components/StockValidationErrorModal.vue';
+import NetsuiteCustomerIssueModal from '../components/NetsuiteCustomerIssueModal.vue';
 import BonificationWarningModal from '../components/BonificationWarningModal.vue';
+import { customersApi } from '../services/customersApi';
 import QuantityStepperInput from '../components/QuantityStepperInput.vue';
 import { useBillingStore } from '../stores/billing.js';
 import { formatCurrency } from '../utils/formatters.js';
@@ -66,6 +68,8 @@ const showMergeSales = ref(false);
 const showBarcodeScanner = ref(false);
 const showBillingModal = ref(false);
 const showStockValidationError = ref(false);
+const showNetsuiteCustomerIssue = ref(false);
+const netsuiteCustomerIssue = ref({ customer: null, issues: [], documentNumber: '' });
 const showBonificationWarning = ref(false);
 const validatingStock = ref(false);
 
@@ -794,6 +798,13 @@ const handleBonificationWarningCancel = () => {
 
 const processingOrder = ref(false);
 
+const handleNetsuiteCustomerFixed = () => {
+  showNetsuiteCustomerIssue.value = false;
+  netsuiteCustomerIssue.value = { customer: null, issues: [], documentNumber: '' };
+  // Reintentar la venta ahora que el cliente fue corregido
+  handlePaymentCompleted();
+};
+
 const handlePaymentCompleted = async () => {
   // Prevenir múltiples clics
   if (processingOrder.value) {
@@ -828,6 +839,28 @@ const handlePaymentCompleted = async () => {
         alert('⚠️ Para emitir una Factura es obligatorio tener un cliente con RUC.\n\nPor favor, agregue el RUC del cliente antes de continuar.');
         processingOrder.value = false;
         return;
+      }
+    }
+
+    // Pre-validación NetSuite: detectar inconsistencias antes de crear la orden
+    if (selectedCustomer.value?.document_number) {
+      const checkResult = await customersApi.netSuiteCheck(
+        selectedCustomer.value.document_number,
+        billingDocumentType.value
+      );
+
+      if (checkResult.success && checkResult.data?.issues?.length > 0) {
+        const errorIssues = checkResult.data.issues.filter(i => i.severity === 'error');
+        if (errorIssues.length > 0) {
+          netsuiteCustomerIssue.value = {
+            customer: checkResult.data.customer,
+            issues: errorIssues,
+            documentNumber: selectedCustomer.value.document_number,
+          };
+          showNetsuiteCustomerIssue.value = true;
+          processingOrder.value = false;
+          return;
+        }
       }
     }
 
@@ -1992,6 +2025,15 @@ const getPaymentMethodName = (method) => {
     :is-visible="showStockValidationError"
     :unavailable-items="stockValidationErrors"
     @close="showStockValidationError = false"
+  />
+
+  <NetsuiteCustomerIssueModal
+    :is-visible="showNetsuiteCustomerIssue"
+    :customer="netsuiteCustomerIssue.customer"
+    :issues="netsuiteCustomerIssue.issues"
+    :document-number="netsuiteCustomerIssue.documentNumber"
+    @close="showNetsuiteCustomerIssue = false"
+    @fixed="handleNetsuiteCustomerFixed"
   />
 
   <!-- Bonification Warning Modal -->

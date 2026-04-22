@@ -244,6 +244,47 @@ export const customersApi = {
   },
 
   /**
+   * Validate customer consistency in NetSuite for the invoice type being issued.
+   * Returns issues array with severity + auto-fix capability.
+   */
+  async netSuiteCheck(documentNumber, invoiceType = 'boleta') {
+    try {
+      const response = await apiClient.get(
+        `/customers/netsuite-check/${documentNumber}?invoice_type=${invoiceType}`
+      );
+      return {
+        success: response.data.success ?? true,
+        data: response.data.data || null
+      };
+    } catch (error) {
+      console.warn('NetSuite check failed:', error.message);
+      return { success: false, error: error.message };
+    }
+  },
+
+  /**
+   * Apply a fix to a NetSuite customer.
+   * fixAction: 'update_document_type' | 'set_legal_entity' | 'set_natural_person'
+   */
+  async netSuiteFix(netsuiteId, fixAction, document) {
+    try {
+      const response = await apiClient.post(
+        `/customers/netsuite-fix/${netsuiteId}`,
+        { fix_action: fixAction, document }
+      );
+      return {
+        success: response.data.success ?? true,
+        data: response.data.data || null
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message || 'NetSuite fix failed'
+      };
+    }
+  },
+
+  /**
    * Delete customer
    * @param {number} id - Customer ID
    */
