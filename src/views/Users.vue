@@ -519,10 +519,19 @@ const editEmpleado = async (empleado) => {
     error: null
   };
 
-  // Parsear sucursales_ids (viene como array del backend)
-  const sucursalesIds = Array.isArray(empleado.sucursales_ids)
-    ? empleado.sucursales_ids.map(id => parseInt(id))
-    : [];
+  // Parsear sucursales_ids: el backend devuelve un string CSV (GROUP_CONCAT) o null,
+  // pero también soportamos array por si cambia el shape.
+  let sucursalesIds = [];
+  if (Array.isArray(empleado.sucursales_ids)) {
+    sucursalesIds = empleado.sucursales_ids
+      .map(id => parseInt(id, 10))
+      .filter(id => !Number.isNaN(id));
+  } else if (typeof empleado.sucursales_ids === 'string' && empleado.sucursales_ids.length > 0) {
+    sucursalesIds = empleado.sucursales_ids
+      .split(',')
+      .map(id => parseInt(id, 10))
+      .filter(id => !Number.isNaN(id));
+  }
 
   // Primero cargar las sucursales disponibles
   await loadBranches();
