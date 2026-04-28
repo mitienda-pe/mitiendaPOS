@@ -1,4 +1,18 @@
 import apiClient from './axios';
+import { useShiftStore } from '../stores/shift';
+
+// Sucursal del turno activo: se envía al backend como tiendadireccion_id
+// para que el catálogo POS filtre por stock de esa sucursal y use
+// producto_publicado_pos en lugar del flag de storefront.
+const getActiveTiendadireccionId = () => {
+  try {
+    const shiftStore = useShiftStore();
+    const id = shiftStore.activeShift?.tiendadireccion_id;
+    return id ? Number(id) : null;
+  } catch (e) {
+    return null;
+  }
+};
 
 export const productsApi = {
   // Listar productos con filtros y paginación
@@ -15,6 +29,12 @@ export const productsApi = {
     }
     if (filters.stock_status && filters.stock_status !== 'all') {
       params.append('stock_status', filters.stock_status);
+    }
+
+    // Multi-sucursal: si hay turno activo, el backend filtra por stock de la sucursal
+    const tiendadireccionId = filters.tiendadireccion_id ?? getActiveTiendadireccionId();
+    if (tiendadireccionId) {
+      params.append('tiendadireccion_id', String(tiendadireccionId));
     }
 
     const response = await apiClient.get(`/products?${params.toString()}`);
