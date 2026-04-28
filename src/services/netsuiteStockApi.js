@@ -1,4 +1,17 @@
 import apiClient from './axios';
+import { useShiftStore } from '../stores/shift';
+
+// Sucursal del turno activo. Se envía al backend como tiendadireccion_id para
+// que NetSuite consulte stock de la ubicación correcta en tiendas multi-sucursal.
+const getActiveTiendadireccionId = () => {
+  try {
+    const shiftStore = useShiftStore();
+    const id = shiftStore.activeShift?.tiendadireccion_id;
+    return id ? Number(id) : null;
+  } catch (e) {
+    return null;
+  }
+};
 
 /**
  * NetSuite Stock API Service
@@ -28,8 +41,10 @@ export const netsuiteStockApi = {
    */
   async getProductStock(productId) {
     try {
-      console.log(`🔍 [netsuiteStockApi] Querying NetSuite stock for product ${productId}`);
-      const response = await apiClient.get(`/products/${productId}/netsuite-stock`);
+      const tiendadireccionId = getActiveTiendadireccionId();
+      console.log(`🔍 [netsuiteStockApi] Querying NetSuite stock for product ${productId} (sucursal: ${tiendadireccionId ?? 'default'})`);
+      const params = tiendadireccionId ? { params: { tiendadireccion_id: tiendadireccionId } } : {};
+      const response = await apiClient.get(`/products/${productId}/netsuite-stock`, params);
       console.log('✅ [netsuiteStockApi] Stock received:', response.data);
       return response.data;
     } catch (error) {
@@ -64,8 +79,12 @@ export const netsuiteStockApi = {
    */
   async syncProductStock(productId) {
     try {
-      console.log(`🔄 [netsuiteStockApi] Syncing stock for product ${productId}`);
-      const response = await apiClient.post(`/products/${productId}/sync-stock`);
+      const tiendadireccionId = getActiveTiendadireccionId();
+      console.log(`🔄 [netsuiteStockApi] Syncing stock for product ${productId} (sucursal: ${tiendadireccionId ?? 'default'})`);
+      const url = tiendadireccionId
+        ? `/products/${productId}/sync-stock?tiendadireccion_id=${tiendadireccionId}`
+        : `/products/${productId}/sync-stock`;
+      const response = await apiClient.post(url);
       console.log('✅ [netsuiteStockApi] Stock synced:', response.data);
       return response.data;
     } catch (error) {
@@ -109,10 +128,11 @@ export const netsuiteStockApi = {
         throw new Error('Máximo 50 productos por lote');
       }
 
-      console.log(`🔄 [netsuiteStockApi] Syncing stock for ${productIds.length} products`);
-      const response = await apiClient.post('/products/sync-stock-batch', {
-        product_ids: productIds
-      });
+      const tiendadireccionId = getActiveTiendadireccionId();
+      console.log(`🔄 [netsuiteStockApi] Syncing stock for ${productIds.length} products (sucursal: ${tiendadireccionId ?? 'default'})`);
+      const payload = { product_ids: productIds };
+      if (tiendadireccionId) payload.tiendadireccion_id = tiendadireccionId;
+      const response = await apiClient.post('/products/sync-stock-batch', payload);
       console.log('✅ [netsuiteStockApi] Batch sync completed:', response.data);
       return response.data;
     } catch (error) {
