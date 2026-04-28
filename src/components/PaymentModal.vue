@@ -105,9 +105,9 @@
 
                     Nota C.
                   </button>
-                  <button @click="selectPaymentMethod('kasnet')" :class="[
+                  <button @click="selectPaymentMethod('kasnet-qr')" :class="[
                     'btn flex items-center justify-center py-3 rounded-lg transition-colors duration-200',
-                    paymentMethod === 'kasnet'
+                    paymentMethod === 'kasnet-qr'
                       ? 'bg-purple-600 text-white'
                       : 'bg-purple-100 hover:bg-purple-200 text-purple-800'
                   ]">
@@ -119,7 +119,7 @@
                       <rect x="7" y="14" width="3" height="3"></rect>
                       <rect x="14" y="14" width="3" height="3"></rect>
                     </svg>
-                    Kasnet
+                    Kasnet QR
                   </button>
                   <button @click="selectPaymentMethod('credito')" disabled :class="[
                     'btn flex items-center justify-center py-3 rounded-lg transition-colors duration-200',
@@ -325,32 +325,24 @@
                   </p>
                 </div>
 
-                <!-- Kasnet (Globokas) -->
-                <div v-if="paymentMethod === 'kasnet'" class="mb-3">
+                <!-- Kasnet QR Interoperable -->
+                <div v-if="paymentMethod === 'kasnet-qr'" class="mb-3">
                   <RightToLeftMoneyInput v-model="paymentAmount" label="Monto a cobrar"
-                    helpText="Monto del pago Kasnet" />
+                    helpText="Monto del pago Kasnet QR" />
 
-                  <!-- Selector de sub-método (antes de iniciar el pago) -->
+                  <!-- Botón para generar el QR -->
                   <div v-if="!kasnetPago" class="mt-3">
-                    <div class="text-sm font-medium mb-2">Método Kasnet:</div>
-                    <div class="grid grid-cols-2 gap-2">
-                      <button type="button" @click="startKasnetFlow('qr')"
-                        :disabled="paymentAmount <= 0 || kasnetLoading"
-                        class="py-3 px-3 rounded-lg bg-purple-100 hover:bg-purple-200 text-purple-800 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium">
-                        QR (15 min)
-                      </button>
-                      <button type="button" @click="startKasnetFlow('agente')"
-                        :disabled="paymentAmount <= 0 || kasnetLoading"
-                        class="py-3 px-3 rounded-lg bg-purple-100 hover:bg-purple-200 text-purple-800 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium">
-                        Agente (24 h)
-                      </button>
-                    </div>
+                    <button type="button" @click="startKasnetFlow"
+                      :disabled="paymentAmount <= 0 || kasnetLoading"
+                      class="w-full py-3 px-3 rounded-lg bg-purple-100 hover:bg-purple-200 text-purple-800 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium">
+                      Generar QR (15 min)
+                    </button>
                     <div v-if="kasnetLoading" class="text-center text-xs text-gray-500 mt-2">Generando código…</div>
                   </div>
 
                   <!-- Pago generado -->
                   <div v-if="kasnetPago" class="mt-3 text-center">
-                    <div v-if="kasnetPago.metodo === 'qr' && kasnetQrImage" class="flex justify-center mb-3">
+                    <div v-if="kasnetQrImage" class="flex justify-center mb-3">
                       <img :src="kasnetQrImage" alt="Kasnet QR"
                         class="border-2 border-purple-200 p-2 rounded-lg bg-white" style="width:200px;height:200px" />
                     </div>
@@ -363,7 +355,7 @@
                     </div>
 
                     <div class="text-xs text-gray-500 mb-3">
-                      {{ kasnetPago.metodo === 'qr' ? 'Escanea el QR o presenta el código en un agente' : 'Presenta este código en cualquier agente Kasnet' }}
+                      Escanea el QR con la app Kasnet
                       <br>
                       Expira: {{ kasnetPago.expira_en }}
                     </div>
@@ -617,7 +609,7 @@ import RightToLeftMoneyInput from './RightToLeftMoneyInput.vue';
 import ReceiptTicket from './ReceiptTicket.vue';
 import { COMPANY_CONFIG } from '../config/companyConfig';
 import { useThermalPrinter } from '../composables/useThermalPrinter';
-import { kasnetApi } from '../services/kasnetApi';
+import { kasnetQrApi } from '../services/kasnetQrApi';
 import {
   suggestOptimalPayments,
   validateCashPayment,
@@ -699,8 +691,8 @@ const paymentSuggestions = ref([]);
 const cashValidation = ref(null);
 const changeBreakdownDisplay = ref(null);
 
-// Estado Kasnet
-const kasnetPago = ref(null);       // { codigo_pago, qr_payload, metodo, monto, expira_en, estado, modo }
+// Estado Kasnet QR
+const kasnetPago = ref(null);       // { codigo_pago, qr_payload, monto, expira_en, estado, modo }
 const kasnetQrImage = ref('');      // data URL del QR renderizado
 const kasnetLoading = ref(false);
 let kasnetPollingId = null;
@@ -733,21 +725,20 @@ const kasnetStatusDot = computed(() => {
   })[e];
 });
 
-async function startKasnetFlow(metodo) {
+async function startKasnetFlow() {
   if (paymentAmount.value <= 0) return;
   kasnetLoading.value = true;
   try {
-    const result = await kasnetApi.initiate({
-      metodo,
+    const result = await kasnetQrApi.initiate({
       monto: Number(paymentAmount.value),
     });
     if (!result.success || !result.data) {
-      console.error('[Kasnet] initiate fallo:', result.error);
-      alert(result.error || 'No se pudo iniciar el pago Kasnet');
+      console.error('[KasnetQR] initiate fallo:', result.error);
+      alert(result.error || 'No se pudo iniciar el pago Kasnet QR');
       return;
     }
     kasnetPago.value = result.data;
-    if (metodo === 'qr' && result.data.qr_payload) {
+    if (result.data.qr_payload) {
       try {
         kasnetQrImage.value = await QRCode.toDataURL(result.data.qr_payload, {
           width: 256,
@@ -755,7 +746,7 @@ async function startKasnetFlow(metodo) {
           margin: 1,
         });
       } catch (e) {
-        console.error('[Kasnet] error renderizando QR:', e);
+        console.error('[KasnetQR] error renderizando QR:', e);
       }
     }
     startKasnetPolling();
@@ -769,7 +760,7 @@ function startKasnetPolling() {
   kasnetPollingId = setInterval(async () => {
     const codigo = kasnetPago.value?.codigo_pago;
     if (!codigo) return;
-    const result = await kasnetApi.status(codigo);
+    const result = await kasnetQrApi.status(codigo);
     if (result.success && result.data) {
       kasnetPago.value = { ...kasnetPago.value, ...result.data };
       if (['confirmado', 'expirado', 'cancelado'].includes(result.data.estado)) {
@@ -789,7 +780,7 @@ function stopKasnetPolling() {
 async function simulateKasnet() {
   const codigo = kasnetPago.value?.codigo_pago;
   if (!codigo) return;
-  const result = await kasnetApi.simulateConfirm(codigo);
+  const result = await kasnetQrApi.simulateConfirm(codigo);
   if (result.success) {
     kasnetPago.value = { ...kasnetPago.value, estado: 'confirmado' };
     stopKasnetPolling();
@@ -803,7 +794,7 @@ function resetKasnet() {
   const codigo = kasnetPago.value?.codigo_pago;
   const estado = kasnetPago.value?.estado;
   if (codigo && estado === 'pendiente') {
-    kasnetApi.cancel(codigo); // fire-and-forget
+    kasnetQrApi.cancel(codigo); // fire-and-forget
   }
   kasnetPago.value = null;
   kasnetQrImage.value = '';
@@ -927,8 +918,8 @@ const isPaymentValid = computed(() => {
     return false;
   }
 
-  // Kasnet: solo válido cuando el pago fue confirmado (por polling o simulate)
-  if (paymentMethod.value === 'kasnet') {
+  // Kasnet QR: solo válido cuando el pago fue confirmado (por polling o simulate)
+  if (paymentMethod.value === 'kasnet-qr') {
     return kasnetPago.value?.estado === 'confirmado';
   }
 
@@ -967,8 +958,8 @@ const selectPaymentMethod = (method) => {
     paymentSuggestions.value = [];
   }
 
-  // Kasnet: pre-llenar con el saldo pendiente para que el cajero solo elija método
-  if (method === 'kasnet') {
+  // Kasnet QR: pre-llenar con el saldo pendiente
+  if (method === 'kasnet-qr') {
     paymentAmount.value = Number(props.remainingAmount) || 0;
   }
 };
@@ -1032,7 +1023,7 @@ const getPaymentMethodName = (method) => {
     'tarjeta': 'Tarjeta de crédito/débito',
     'banco': 'Transferencia/Depósito bancario',
     'qr': 'Pago con QR',
-    'kasnet': 'Kasnet',
+    'kasnet-qr': 'Kasnet QR',
     'credito': 'Crédito',
     'giftcard': 'Gift Card',
     'puntos': 'Puntos',
@@ -1211,12 +1202,12 @@ const addPayment = () => {
       }
       reference = 'QR';
       break;
-    case 'kasnet':
+    case 'kasnet-qr':
       amount = Math.min(paymentAmount.value, props.remainingAmount);
       if (cartStore.appliedRounding !== 0 && props.payments.length > 0) {
         amount = Math.min(paymentAmount.value, props.remainingAmount - cartStore.appliedRounding);
       }
-      reference = `Kasnet ${String(kasnetPago.value?.metodo || '').toUpperCase()}: ${kasnetPago.value?.codigo_pago || ''}`.trim();
+      reference = `Kasnet QR: ${kasnetPago.value?.codigo_pago || ''}`.trim();
       break;
     case 'giftcard':
       amount = Math.min(paymentAmount.value, props.remainingAmount);
