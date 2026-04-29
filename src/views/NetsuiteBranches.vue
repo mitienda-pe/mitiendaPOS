@@ -191,7 +191,8 @@ const fetchBranches = async () => {
 
 // Helpers para overrides
 const getBranchConfig = (branchId) => {
-  return branchesNetsuiteConfig.value.find(b => b.tiendadireccion_id === branchId);
+  const id = Number(branchId);
+  return branchesNetsuiteConfig.value.find(b => Number(b.tiendadireccion_id) === id);
 };
 
 const getOverrideValue = (branchId, field) => {
