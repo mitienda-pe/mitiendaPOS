@@ -4,8 +4,16 @@
     <div class="mb-6">
       <h1 class="text-3xl font-bold text-gray-900">Sucursales - NetSuite</h1>
       <p class="mt-2 text-gray-600">
-        Configure el Location ID de NetSuite para cada sucursal. Esta información se utiliza para el control de inventario y facturación en NetSuite.
+        Configure los IDs de NetSuite para cada sucursal: Location ID (inventario + facturación), series boleta/factura y cliente genérico. Series y generic customer son opcionales: si los dejas vacíos, la sucursal usa la configuración general de la tienda.
       </p>
+
+      <!-- Defaults info -->
+      <div v-if="defaults" class="mt-3 inline-flex items-center gap-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
+        <span class="font-medium">Defaults de la tienda:</span>
+        <span>Boleta: <code class="font-mono">{{ defaults.serie_boleta_netsuite_id || '—' }}</code></span>
+        <span>Factura: <code class="font-mono">{{ defaults.serie_factura_netsuite_id || '—' }}</code></span>
+        <span>Customer: <code class="font-mono">{{ defaults.generic_customer_id || '—' }}</code></span>
+      </div>
     </div>
 
     <!-- Loading State -->
@@ -21,64 +29,49 @@
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Sucursal
             </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Dirección
+            <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Cajas
             </th>
-            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-              N° Cajas
+            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
+              Location ID
             </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-64">
-              NetSuite Location ID
+            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
+              Serie Boleta
             </th>
-            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Estado
+            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
+              Serie Factura
+            </th>
+            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
+              Generic Customer
             </th>
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
           <tr v-for="branch in branches" :key="branch.tiendadireccion_id" class="hover:bg-gray-50">
-            <!-- Branch Name -->
-            <td class="px-6 py-4 whitespace-nowrap">
-              <div class="flex items-center">
-                <div class="flex-shrink-0 h-10 w-10">
-                  <div class="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-                    <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                      <polyline stroke-linecap="round" stroke-linejoin="round" stroke-width="2" points="9 22 9 12 15 12 15 22" />
-                    </svg>
-                  </div>
-                </div>
-                <div class="ml-4">
-                  <div class="text-sm font-medium text-gray-900">
-                    {{ branch.tiendadireccion_nombresucursal }}
-                  </div>
-                </div>
+            <!-- Branch Name + Address compacta -->
+            <td class="px-4 py-3">
+              <div class="text-sm font-medium text-gray-900">
+                {{ branch.tiendadireccion_nombresucursal }}
               </div>
-            </td>
-
-            <!-- Address -->
-            <td class="px-6 py-4">
-              <div class="text-sm text-gray-900">{{ branch.tiendadireccion_direccion }}</div>
-              <div class="text-sm text-gray-500" v-if="branch.tiendadireccion_interior">
-                {{ branch.tiendadireccion_interior }}
+              <div class="text-xs text-gray-500">
+                {{ branch.tiendadireccion_direccion }}
+                <span v-if="branch.tiendadireccion_interior">— {{ branch.tiendadireccion_interior }}</span>
               </div>
-              <div class="text-sm text-gray-500">
-                {{ formatLocation(branch) }}
-              </div>
+              <div class="text-xs text-gray-400">{{ formatLocation(branch) }}</div>
             </td>
 
             <!-- Number of Cashiers -->
-            <td class="px-6 py-4 whitespace-nowrap text-center">
+            <td class="px-4 py-3 whitespace-nowrap text-center">
               <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
                 {{ branch.tiendadireccion_numero_cajas }}
               </span>
             </td>
 
             <!-- NetSuite Location ID - Inline Editable -->
-            <td class="px-6 py-4">
+            <td class="px-4 py-3">
               <InlineEditField
                 :model-value="branch.tiendadireccion_netsuite_location_id"
                 placeholder="Sin configurar"
@@ -87,18 +80,46 @@
               />
             </td>
 
-            <!-- Status -->
-            <td class="px-6 py-4 whitespace-nowrap text-center">
-              <span v-if="branch.tiendadireccion_netsuite_location_id" class="inline-flex items-center text-green-600">
-                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                </svg>
-              </span>
-              <span v-else class="inline-flex items-center text-gray-400">
-                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                </svg>
-              </span>
+            <!-- Serie Boleta override -->
+            <td class="px-4 py-3">
+              <InlineEditField
+                :model-value="getOverrideValue(branch.tiendadireccion_id, 'serie_boleta')"
+                :placeholder="branchPlaceholder('serie_boleta_netsuite_id')"
+                :maxlength="20"
+                :on-save="(value) => updateNetsuiteConfig(branch.tiendadireccion_id, { serie_boleta_netsuite_id: value || null })"
+              />
+              <div v-if="!getOverrideValue(branch.tiendadireccion_id, 'serie_boleta') && defaults?.serie_boleta_netsuite_id"
+                   class="text-xs text-gray-400 mt-1">
+                de tienda: {{ defaults.serie_boleta_netsuite_id }}
+              </div>
+            </td>
+
+            <!-- Serie Factura override -->
+            <td class="px-4 py-3">
+              <InlineEditField
+                :model-value="getOverrideValue(branch.tiendadireccion_id, 'serie_factura')"
+                :placeholder="branchPlaceholder('serie_factura_netsuite_id')"
+                :maxlength="20"
+                :on-save="(value) => updateNetsuiteConfig(branch.tiendadireccion_id, { serie_factura_netsuite_id: value || null })"
+              />
+              <div v-if="!getOverrideValue(branch.tiendadireccion_id, 'serie_factura') && defaults?.serie_factura_netsuite_id"
+                   class="text-xs text-gray-400 mt-1">
+                de tienda: {{ defaults.serie_factura_netsuite_id }}
+              </div>
+            </td>
+
+            <!-- Generic Customer override -->
+            <td class="px-4 py-3">
+              <InlineEditField
+                :model-value="getOverrideValue(branch.tiendadireccion_id, 'generic_customer')"
+                :placeholder="branchPlaceholder('generic_customer_id')"
+                :maxlength="20"
+                :on-save="(value) => updateNetsuiteConfig(branch.tiendadireccion_id, { generic_customer_id: value || null })"
+              />
+              <div v-if="!getOverrideValue(branch.tiendadireccion_id, 'generic_customer') && defaults?.generic_customer_id"
+                   class="text-xs text-gray-400 mt-1">
+                de tienda: {{ defaults.generic_customer_id }}
+              </div>
             </td>
           </tr>
         </tbody>
@@ -140,19 +161,65 @@ const loading = ref(true);
 const branches = ref([]);
 const successMessage = ref('');
 
+// NetSuite branch-level overrides (series + generic customer + location)
+const branchesNetsuiteConfig = ref([]);
+const defaults = ref(null);
+
 const currentStoreId = computed(() => authStore.selectedStore?.id || null);
 
-// Fetch branches
+// Fetch branches y config NetSuite
 const fetchBranches = async () => {
   try {
     loading.value = true;
-    const response = await branchesApi.getAll(currentStoreId.value);
-    branches.value = response.data || [];
+    const [branchesResp, nsResp] = await Promise.all([
+      branchesApi.getAll(currentStoreId.value),
+      branchesApi.getNetsuiteConfig(currentStoreId.value).catch(err => {
+        console.error('Error fetching NetSuite branch config:', err);
+        return { success: false, data: [], defaults: null };
+      })
+    ]);
+    branches.value = branchesResp.data || [];
+    branchesNetsuiteConfig.value = nsResp?.data || [];
+    defaults.value = nsResp?.defaults || null;
   } catch (error) {
     console.error('Error fetching branches:', error);
     alert('Error al cargar las sucursales');
   } finally {
     loading.value = false;
+  }
+};
+
+// Helpers para overrides
+const getBranchConfig = (branchId) => {
+  return branchesNetsuiteConfig.value.find(b => b.tiendadireccion_id === branchId);
+};
+
+const getOverrideValue = (branchId, field) => {
+  const cfg = getBranchConfig(branchId);
+  if (!cfg) return null;
+  if (field === 'serie_boleta') return cfg.serie_boleta_is_override ? cfg.serie_boleta_netsuite_id : null;
+  if (field === 'serie_factura') return cfg.serie_factura_is_override ? cfg.serie_factura_netsuite_id : null;
+  if (field === 'generic_customer') return cfg.generic_customer_is_override ? cfg.generic_customer_id : null;
+  return null;
+};
+
+const branchPlaceholder = (defaultKey) => {
+  const v = defaults.value?.[defaultKey];
+  return v ? `Default: ${v}` : 'Sin configurar';
+};
+
+// Guardar override (series o generic customer) por sucursal
+const updateNetsuiteConfig = async (branchId, payload) => {
+  try {
+    await branchesApi.updateNetsuiteConfig(currentStoreId.value, branchId, payload);
+    // Refrescar para obtener flags is_override actualizados
+    const nsResp = await branchesApi.getNetsuiteConfig(currentStoreId.value);
+    branchesNetsuiteConfig.value = nsResp?.data || [];
+    defaults.value = nsResp?.defaults || null;
+    showSuccessMessage('Configuración NetSuite actualizada');
+  } catch (error) {
+    console.error('Error updating branch NetSuite config:', error);
+    throw new Error('Error al actualizar la configuración NetSuite');
   }
 };
 

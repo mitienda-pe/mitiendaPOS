@@ -58,5 +58,28 @@ export const branchesApi = {
   async getEmpleados(id) {
     const response = await apiClient.get(`/branches/${id}/empleados`);
     return response.data;
+  },
+
+  /**
+   * Configuración NetSuite por sucursal (location, generic customer, series)
+   * @param {number} tiendaId
+   */
+  async getNetsuiteConfig(tiendaId) {
+    const response = await apiClient.get(`/netsuite-credentials/${tiendaId}/branches-config`);
+    return response.data;
+  },
+
+  /**
+   * Guardar overrides NetSuite por sucursal. Pasar null/'' borra el override.
+   * @param {number} tiendaId
+   * @param {number} branchId
+   * @param {{generic_customer_id?: string|null, serie_boleta_netsuite_id?: string|null, serie_factura_netsuite_id?: string|null}} data
+   */
+  async updateNetsuiteConfig(tiendaId, branchId, data) {
+    const response = await apiClient.put(
+      `/netsuite-credentials/${tiendaId}/branches/${branchId}/config`,
+      data
+    );
+    return response.data;
   }
 };
