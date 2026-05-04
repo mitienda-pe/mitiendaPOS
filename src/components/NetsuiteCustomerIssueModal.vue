@@ -80,6 +80,7 @@ const fixLabel = (action) => {
     update_document_type: 'Actualizar tipo de documento',
     set_legal_entity: 'Marcar como persona jurídica',
     set_natural_person: 'Marcar como persona natural',
+    set_natural_person_with_ruc: 'Marcar como persona natural con RUC',
   };
   return map[action] || action;
 };
@@ -96,7 +97,7 @@ const applyFix = async () => {
   try {
     // Prioritize the most comprehensive fix (set_legal_entity / set_natural_person)
     // over simple document type update.
-    const priority = ['set_legal_entity', 'set_natural_person', 'update_document_type'];
+    const priority = ['set_legal_entity', 'set_natural_person_with_ruc', 'set_natural_person', 'update_document_type'];
     const chosen = priority.map(p => fixable.value.find(f => f.fix_action === p)).find(Boolean)
       || fixable.value[0];
 
