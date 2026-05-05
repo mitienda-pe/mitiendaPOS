@@ -424,6 +424,9 @@
               <svg v-if="toast.type === 'success'" class="h-6 w-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
+              <svg v-else-if="toast.type === 'info'" class="h-6 w-6 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
               <svg v-else class="h-6 w-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -554,11 +557,15 @@ const syncProductStock = async (product) => {
   if (syncingProductIds.has(product.id)) return;
   syncingProductIds.add(product.id);
   try {
-    const response = await netsuiteStockApi.syncProductStock(product.id);
-    const data = response?.data || {};
-    const diff = data.difference ?? 0;
-    const current = data.current_stock ?? '—';
-    showToast('success', `${product.sku || product.name}: stock ${current} (Δ ${diff >= 0 ? '+' : ''}${diff})`);
+    const data = await netsuiteStockApi.syncProductStock(product.id) || {};
+    const label = product.sku || product.name;
+    if (data.synced === false) {
+      showToast('info', `${label}: ${data.message || 'No sincronizable desde NetSuite'}`);
+    } else {
+      const diff = data.difference ?? 0;
+      const current = data.current_stock ?? '—';
+      showToast('success', `${label}: stock ${current} (Δ ${diff >= 0 ? '+' : ''}${diff})`);
+    }
     await loadData();
   } catch (err) {
     showToast('error', err.message || 'Error al sincronizar stock');
@@ -582,9 +589,14 @@ const syncVisibleStock = async () => {
   try {
     // El endpoint batch limita a 50; si la página tiene más, cortamos.
     const batch = ids.slice(0, 50);
-    const response = await netsuiteStockApi.syncStockBatch(batch);
-    const synced = response?.data?.synced_count ?? batch.length;
-    showToast('success', `Sincronización completada: ${synced} producto(s)`);
+    const data = await netsuiteStockApi.syncStockBatch(batch) || {};
+    const synced = data.synced_count ?? batch.length;
+    const skipped = data.skipped_count ?? 0;
+    if (skipped > 0) {
+      showToast('info', `${synced} sincronizado(s), ${skipped} omitido(s) (Assembly/Kit/sin stock en NetSuite)`);
+    } else {
+      showToast('success', `Sincronización completada: ${synced} producto(s)`);
+    }
     await loadData();
   } catch (err) {
     showToast('error', err.message || 'Error al sincronizar lote');
