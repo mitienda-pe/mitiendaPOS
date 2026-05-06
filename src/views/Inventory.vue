@@ -23,10 +23,10 @@
               Gestión de productos y stock
             </p>
           </div>
-          <div class="flex gap-2">
+          <div class="flex gap-2 flex-wrap">
             <button
               @click="syncVisibleStock"
-              :disabled="batchSyncing || inventoryStore.products.length === 0"
+              :disabled="batchSyncing || syncingTiendaStock || syncingTiendaPrices || inventoryStore.products.length === 0"
               class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg v-if="batchSyncing" class="animate-spin h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24">
@@ -36,7 +36,35 @@
               <svg v-else class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              {{ batchSyncing ? 'Sincronizando…' : 'Sincronizar ERP' }}
+              {{ batchSyncing ? 'Sincronizando…' : 'Sincronizar visibles' }}
+            </button>
+            <button
+              @click="syncTiendaStockNow"
+              :disabled="syncingTiendaStock || syncingTiendaPrices || batchSyncing"
+              class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg v-if="syncingTiendaStock" class="animate-spin h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+              </svg>
+              <svg v-else class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 6h10M9 14h6m-7 4h8" />
+              </svg>
+              {{ syncingTiendaStock ? 'Sincronizando…' : 'Stock total' }}
+            </button>
+            <button
+              @click="syncTiendaPricesNow"
+              :disabled="syncingTiendaPrices || syncingTiendaStock || batchSyncing"
+              class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg v-if="syncingTiendaPrices" class="animate-spin h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+              </svg>
+              <svg v-else class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {{ syncingTiendaPrices ? 'Sincronizando…' : 'Precios total' }}
             </button>
             <button
               @click="router.push('/menu')"
@@ -475,6 +503,8 @@ const searchInput = ref('');
 const showQuickEdit = ref(false);
 const selectedProduct = ref(null);
 const batchSyncing = ref(false);
+const syncingTiendaStock = ref(false);
+const syncingTiendaPrices = ref(false);
 const syncingProductIds = reactive(new Set());
 const toast = ref({
   show: false,
@@ -602,6 +632,48 @@ const syncVisibleStock = async () => {
     showToast('error', err.message || 'Error al sincronizar lote');
   } finally {
     batchSyncing.value = false;
+  }
+};
+
+// Sync tienda-wide stock (equivalente a `php spark sync:stock {tiendaId}`)
+const syncTiendaStockNow = async () => {
+  syncingTiendaStock.value = true;
+  try {
+    const res = await netsuiteStockApi.syncTiendaStock(false);
+    const stats = res?.data?.stats || res?.data || {};
+    const updated = stats.updated_count ?? stats.updated ?? 0;
+    const errors = stats.errors_count ?? (Array.isArray(stats.errors) ? stats.errors.length : 0);
+    if (errors > 0) {
+      showToast('info', `Stock: ${updated} actualizado(s), ${errors} error(es)`);
+    } else {
+      showToast('success', `Stock sincronizado: ${updated} producto(s)`);
+    }
+    await loadData();
+  } catch (err) {
+    showToast('error', err.message || 'Error al sincronizar stock de la tienda');
+  } finally {
+    syncingTiendaStock.value = false;
+  }
+};
+
+// Sync tienda-wide prices (equivalente a `php spark sync:prices {tiendaId}`)
+const syncTiendaPricesNow = async () => {
+  syncingTiendaPrices.value = true;
+  try {
+    const res = await netsuiteStockApi.syncTiendaPrices(false);
+    const stats = res?.data || {};
+    const updated = stats.updated_count ?? 0;
+    const created = stats.created_count ?? 0;
+    const errors = Array.isArray(stats.errors) ? stats.errors.length : 0;
+    const parts = [`${updated} actualizado(s)`];
+    if (created > 0) parts.push(`${created} nuevo(s)`);
+    if (errors > 0) parts.push(`${errors} error(es)`);
+    showToast(errors > 0 ? 'info' : 'success', `Precios: ${parts.join(', ')}`);
+    await loadData();
+  } catch (err) {
+    showToast('error', err.message || 'Error al sincronizar precios de la tienda');
+  } finally {
+    syncingTiendaPrices.value = false;
   }
 };
 

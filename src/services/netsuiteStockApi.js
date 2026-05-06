@@ -144,5 +144,47 @@ export const netsuiteStockApi = {
       }
       throw error;
     }
+  },
+
+  /**
+   * Sincronizar stock de TODA la tienda desde NetSuite (equivale a `php spark sync:stock`).
+   * Long-running: ~30-90s. El backend extiende el timeout PHP a 10 min.
+   *
+   * @param {boolean} dryRun
+   * @returns {Promise<Object>}
+   */
+  async syncTiendaStock(dryRun = false) {
+    try {
+      const url = `/tienda/sync-stock${dryRun ? '?dry_run=1' : ''}`;
+      const response = await apiClient.post(url, {}, { timeout: 600000 });
+      return response.data;
+    } catch (error) {
+      console.error('❌ [netsuiteStockApi] Error syncTiendaStock:', error);
+      if (error.response?.data) {
+        throw new Error(error.response.data.message || JSON.stringify(error.response.data));
+      }
+      throw error;
+    }
+  },
+
+  /**
+   * Sincronizar precios de TODA la tienda desde NetSuite (equivale a `php spark sync:prices`).
+   * Long-running: ~60-120s. Backend extiende timeout PHP a 15 min.
+   *
+   * @param {boolean} dryRun
+   * @returns {Promise<Object>}
+   */
+  async syncTiendaPrices(dryRun = false) {
+    try {
+      const url = `/tienda/sync-prices${dryRun ? '?dry_run=1' : ''}`;
+      const response = await apiClient.post(url, {}, { timeout: 900000 });
+      return response.data;
+    } catch (error) {
+      console.error('❌ [netsuiteStockApi] Error syncTiendaPrices:', error);
+      if (error.response?.data) {
+        throw new Error(error.response.data.message || JSON.stringify(error.response.data));
+      }
+      throw error;
+    }
   }
 };
