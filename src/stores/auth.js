@@ -13,6 +13,21 @@ const getStoredUser = () => {
   }
 };
 
+// Decode the payload of a JWT without verifying its signature.
+// Returns null on any malformed input.
+const decodeJwtPayload = (token) => {
+  if (!token || typeof token !== 'string') return null;
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  try {
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+    return JSON.parse(decodeURIComponent(escape(atob(padded))));
+  } catch (e) {
+    return null;
+  }
+};
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: getStoredUser(),
@@ -31,6 +46,18 @@ export const useAuthStore = defineStore('auth', {
     isAdmin: (state) => state.user?.user_type !== 'cashier',
     hasSelectedStore: (state) => !!state.selectedStore,
     hasMultipleStores: (state) => state.stores.length > 1,
+    // tienda_id real al que apunta el JWT (lo que el backend va a usar).
+    tokenTiendaId: (state) => {
+      const payload = decodeJwtPayload(state.accessToken);
+      const id = payload?.tienda_id ?? payload?.store_id;
+      return id != null ? Number(id) : null;
+    },
+    // true si el JWT activo apunta a una tienda distinta a la seleccionada en UI.
+    // Esto detecta sesiones cruzadas (token viejo de otra tienda en localStorage).
+    tokenStoreMismatch() {
+      if (!this.selectedStore?.id || this.tokenTiendaId == null) return false;
+      return Number(this.selectedStore.id) !== this.tokenTiendaId;
+    },
   },
 
   actions: {

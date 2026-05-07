@@ -29,6 +29,13 @@
                     <div class="text-right">
                       <p class="text-gray-300 text-sm font-medium">
                         {{ authStore.selectedStore?.name || 'Sin tienda' }}
+                        <span
+                          v-if="authStore.tokenTiendaId != null"
+                          :class="authStore.tokenStoreMismatch ? 'text-red-400 font-bold' : 'text-gray-500'"
+                          :title="authStore.tokenStoreMismatch ? 'El token JWT apunta a una tienda distinta a la seleccionada' : 'tienda_id activo en el token'"
+                        >
+                          (#{{ authStore.tokenTiendaId }})
+                        </span>
                         <span v-if="authStore.user?.name" class="text-gray-400">• {{ authStore.user.name }}</span>
                       </p>
                       <!-- Cajero activo en POS -->
@@ -76,6 +83,27 @@
           </div>
         </div>
       </nav>
+
+      <!-- Banner de sesión cruzada: el JWT apunta a una tienda distinta -->
+      <div
+        v-if="authStore.tokenStoreMismatch"
+        class="bg-red-600 text-white px-4 py-3 flex items-center justify-between"
+        role="alert"
+      >
+        <div class="text-sm">
+          <strong>⚠️ Sesión cruzada detectada.</strong>
+          La tienda seleccionada es
+          <strong>{{ authStore.selectedStore?.name }} (#{{ authStore.selectedStore?.id }})</strong>
+          pero el token activo pertenece a la tienda <strong>#{{ authStore.tokenTiendaId }}</strong>.
+          Las ventas se procesarán contra la tienda del token. Cierra sesión y vuelve a entrar.
+        </div>
+        <button
+          @click="authStore.logout"
+          class="ml-4 bg-white text-red-700 hover:bg-red-50 px-3 py-1 rounded-md text-sm font-medium whitespace-nowrap"
+        >
+          Cerrar sesión
+        </button>
+      </div>
     </template>
 
     <!-- Loading Overlay -->
