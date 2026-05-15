@@ -4,15 +4,23 @@
     <div class="mb-6">
       <h1 class="text-3xl font-bold text-gray-900">Sucursales - NetSuite</h1>
       <p class="mt-2 text-gray-600">
-        Configure los IDs de NetSuite para cada sucursal: Location ID (inventario + facturación), series boleta/factura y cliente genérico. Series y generic customer son opcionales: si los dejas vacíos, la sucursal usa la configuración general de la tienda.
+        Cada sucursal debe tener su Location ID. Series boleta/factura y Generic Customer
+        son override por sucursal: si los dejas vacíos se usa el valor de la tienda
+        configurado en
+        <router-link to="/settings/netsuite/general" class="text-primary underline">
+          Configuración general
+        </router-link>.
       </p>
 
-      <!-- Defaults info -->
-      <div v-if="defaults" class="mt-3 inline-flex items-center gap-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
-        <span class="font-medium">Defaults de la tienda:</span>
-        <span>Boleta: <code class="font-mono">{{ defaults.serie_boleta_netsuite_id || '—' }}</code></span>
-        <span>Factura: <code class="font-mono">{{ defaults.serie_factura_netsuite_id || '—' }}</code></span>
-        <span>Customer: <code class="font-mono">{{ defaults.generic_customer_id || '—' }}</code></span>
+      <!-- Validation banner -->
+      <div
+        v-if="branchIssues.length"
+        class="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
+      >
+        <p class="font-medium">
+          {{ branchIssues.length }} sucursal(es) sin Location ID — el sync NetSuite no
+          puede operar hasta corregir.
+        </p>
       </div>
     </div>
 
@@ -70,7 +78,7 @@
               </span>
             </td>
 
-            <!-- NetSuite Location ID - Inline Editable -->
+            <!-- NetSuite Location ID - obligatorio si la sucursal tiene POS -->
             <td class="px-4 py-3">
               <InlineEditField
                 :model-value="branch.tiendadireccion_netsuite_location_id"
@@ -78,48 +86,42 @@
                 :maxlength="50"
                 :on-save="(value) => updateNetsuiteLocationId(branch.tiendadireccion_id, value)"
               />
+              <div
+                v-if="branchHasMissingLocation(branch.tiendadireccion_id)"
+                class="text-xs text-red-600 mt-1"
+              >
+                Falta Location ID — sync bloqueado.
+              </div>
             </td>
 
             <!-- Serie Boleta override -->
             <td class="px-4 py-3">
               <InlineEditField
                 :model-value="getOverrideValue(branch.tiendadireccion_id, 'serie_boleta')"
-                :placeholder="branchPlaceholder('serie_boleta_netsuite_id')"
+                placeholder="Override (opcional)"
                 :maxlength="20"
                 :on-save="(value) => updateNetsuiteConfig(branch.tiendadireccion_id, { serie_boleta_netsuite_id: value || null })"
               />
-              <div v-if="!getOverrideValue(branch.tiendadireccion_id, 'serie_boleta') && defaults?.serie_boleta_netsuite_id"
-                   class="text-xs text-gray-400 mt-1">
-                de tienda: {{ defaults.serie_boleta_netsuite_id }}
-              </div>
             </td>
 
             <!-- Serie Factura override -->
             <td class="px-4 py-3">
               <InlineEditField
                 :model-value="getOverrideValue(branch.tiendadireccion_id, 'serie_factura')"
-                :placeholder="branchPlaceholder('serie_factura_netsuite_id')"
+                placeholder="Override (opcional)"
                 :maxlength="20"
                 :on-save="(value) => updateNetsuiteConfig(branch.tiendadireccion_id, { serie_factura_netsuite_id: value || null })"
               />
-              <div v-if="!getOverrideValue(branch.tiendadireccion_id, 'serie_factura') && defaults?.serie_factura_netsuite_id"
-                   class="text-xs text-gray-400 mt-1">
-                de tienda: {{ defaults.serie_factura_netsuite_id }}
-              </div>
             </td>
 
             <!-- Generic Customer override -->
             <td class="px-4 py-3">
               <InlineEditField
                 :model-value="getOverrideValue(branch.tiendadireccion_id, 'generic_customer')"
-                :placeholder="branchPlaceholder('generic_customer_id')"
+                placeholder="Override (opcional)"
                 :maxlength="20"
                 :on-save="(value) => updateNetsuiteConfig(branch.tiendadireccion_id, { generic_customer_id: value || null })"
               />
-              <div v-if="!getOverrideValue(branch.tiendadireccion_id, 'generic_customer') && defaults?.generic_customer_id"
-                   class="text-xs text-gray-400 mt-1">
-                de tienda: {{ defaults.generic_customer_id }}
-              </div>
             </td>
           </tr>
         </tbody>
@@ -154,6 +156,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { branchesApi } from '../services/branchesApi';
+import { netsuiteConfigApi } from '../services/netsuiteConfigApi';
 import InlineEditField from '../components/InlineEditField.vue';
 
 const authStore = useAuthStore();
@@ -163,24 +166,35 @@ const successMessage = ref('');
 
 // NetSuite branch-level overrides (series + generic customer + location)
 const branchesNetsuiteConfig = ref([]);
-const defaults = ref(null);
+const validationIssues = ref([]);
 
 const currentStoreId = computed(() => authStore.selectedStore?.id || null);
+
+// Issues from /netsuite-config/validate that affect branches
+const branchIssues = computed(() =>
+  validationIssues.value.filter(i => i.category === 'branches')
+);
+
+const branchHasMissingLocation = (branchId) =>
+  branchIssues.value.some(
+    i => i.code === 'missing_branch_location' && Number(i.tiendadireccion_id) === Number(branchId)
+  );
 
 // Fetch branches y config NetSuite
 const fetchBranches = async () => {
   try {
     loading.value = true;
-    const [branchesResp, nsResp] = await Promise.all([
+    const [branchesResp, nsResp, validateResp] = await Promise.all([
       branchesApi.getAll(currentStoreId.value),
       branchesApi.getNetsuiteConfig(currentStoreId.value).catch(err => {
         console.error('Error fetching NetSuite branch config:', err);
-        return { success: false, data: [], defaults: null };
-      })
+        return { success: false, data: [] };
+      }),
+      netsuiteConfigApi.validate(currentStoreId.value).catch(() => null),
     ]);
     branches.value = branchesResp.data || [];
     branchesNetsuiteConfig.value = nsResp?.data || [];
-    defaults.value = nsResp?.defaults || null;
+    validationIssues.value = validateResp?.data?.issues || [];
   } catch (error) {
     console.error('Error fetching branches:', error);
     alert('Error al cargar las sucursales');
@@ -204,19 +218,12 @@ const getOverrideValue = (branchId, field) => {
   return null;
 };
 
-const branchPlaceholder = (defaultKey) => {
-  const v = defaults.value?.[defaultKey];
-  return v ? `Default: ${v}` : 'Sin configurar';
-};
-
 // Guardar override (series o generic customer) por sucursal
 const updateNetsuiteConfig = async (branchId, payload) => {
   try {
     await branchesApi.updateNetsuiteConfig(currentStoreId.value, branchId, payload);
-    // Refrescar para obtener flags is_override actualizados
     const nsResp = await branchesApi.getNetsuiteConfig(currentStoreId.value);
     branchesNetsuiteConfig.value = nsResp?.data || [];
-    defaults.value = nsResp?.defaults || null;
     showSuccessMessage('Configuración NetSuite actualizada');
   } catch (error) {
     console.error('Error updating branch NetSuite config:', error);
@@ -224,20 +231,21 @@ const updateNetsuiteConfig = async (branchId, payload) => {
   }
 };
 
-// Update NetSuite Location ID
+// Update NetSuite Location ID + revalidate
 const updateNetsuiteLocationId = async (branchId, netsuiteLocationId) => {
   try {
     await branchesApi.update(branchId, {
       tiendadireccion_netsuite_location_id: netsuiteLocationId || null
     });
 
-    // Update local data
     const branchIndex = branches.value.findIndex(b => b.tiendadireccion_id === branchId);
     if (branchIndex !== -1) {
       branches.value[branchIndex].tiendadireccion_netsuite_location_id = netsuiteLocationId;
     }
 
-    // Show success message
+    const validateResp = await netsuiteConfigApi.validate(currentStoreId.value).catch(() => null);
+    validationIssues.value = validateResp?.data?.issues || [];
+
     showSuccessMessage('NetSuite Location ID actualizado correctamente');
   } catch (error) {
     console.error('Error updating NetSuite Location ID:', error);

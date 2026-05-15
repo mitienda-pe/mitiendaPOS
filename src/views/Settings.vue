@@ -56,6 +56,19 @@
             </div>
             <div class="ml-4 space-y-1 mt-1">
               <router-link
+                to="/settings/netsuite/general"
+                class="flex items-center px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+                active-class="bg-blue-50 text-blue-700 font-medium"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 13.255V8a2 2 0 0 0-1-1.732l-7-4.04a2 2 0 0 0-2 0l-7 4.04A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.732l7 4.04a2 2 0 0 0 2 0l3-1.732"></path>
+                  <path d="M3.27 6.96 12 12.01l8.73-5.05"></path>
+                  <path d="M12 22.08V12"></path>
+                </svg>
+                Configuración general
+              </router-link>
+
+              <router-link
                 to="/settings/netsuite/preferences"
                 class="flex items-center px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
                 active-class="bg-blue-50 text-blue-700 font-medium"

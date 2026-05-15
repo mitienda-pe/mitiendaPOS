@@ -22,6 +22,7 @@ const Settings = () => import('../views/Settings.vue');
 const CashierAccountsHierarchy = () => import('../views/CashierAccountsHierarchy.vue');
 const NetsuiteBranches = () => import('../views/NetsuiteBranches.vue');
 const NetsuiteUsers = () => import('../views/NetsuiteUsers.vue');
+const NetsuiteGeneralConfig = () => import('../views/NetsuiteGeneralConfig.vue');
 const Help = () => import('../views/Help.vue');
 
 const routes = [
@@ -161,6 +162,11 @@ const routes = [
         path: 'netsuite/preferences',
         name: 'Preferences',
         component: Preferences
+      },
+      {
+        path: 'netsuite/general',
+        name: 'NetsuiteGeneralConfig',
+        component: NetsuiteGeneralConfig
       },
       {
         path: 'netsuite/branches',

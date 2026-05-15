@@ -4,8 +4,26 @@
     <div class="mb-6">
       <h1 class="text-3xl font-bold text-gray-900">Usuarios - NetSuite</h1>
       <p class="mt-2 text-gray-600">
-        Configure el ID de NetSuite para cada usuario. Esta información se utiliza para la sincronización con el sistema NetSuite.
+        Cada cajero activo debe tener su <code>empleado_netsuite_id</code> mapeado para que
+        las facturas se asignen al sales rep correcto. Sin este ID, la venta intenta usar el
+        sales rep por defecto configurado en
+        <router-link to="/settings/netsuite/general" class="text-primary underline">
+          Configuración general
+        </router-link>; si tampoco existe, NetSuite usará el del customer.
       </p>
+    </div>
+
+    <!-- Validation banner -->
+    <div
+      v-if="employeeIssues.length"
+      class="mb-4 rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800"
+    >
+      <p class="font-medium">
+        {{ employeeIssues.length }} cajero(s) activo(s) sin NetSuite ID.
+      </p>
+      <ul class="mt-2 space-y-1 list-disc list-inside text-red-700">
+        <li v-for="(issue, idx) in employeeIssues" :key="idx">{{ issue.message }}</li>
+      </ul>
     </div>
 
     <!-- Loading State -->
@@ -134,21 +152,31 @@
 import { ref, onMounted, computed } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { posEmpleadosApi } from '../services/posEmpleadosApi';
+import { netsuiteConfigApi } from '../services/netsuiteConfigApi';
 import InlineEditField from '../components/InlineEditField.vue';
 
 const authStore = useAuthStore();
 const loading = ref(true);
 const users = ref([]);
+const validationIssues = ref([]);
 const successMessage = ref('');
 
 const currentStoreId = computed(() => authStore.selectedStore?.id || null);
 
-// Fetch users
+const employeeIssues = computed(() =>
+  validationIssues.value.filter(i => i.category === 'employees')
+);
+
+// Fetch users + validation
 const fetchUsers = async () => {
   try {
     loading.value = true;
-    const response = await posEmpleadosApi.getAll(currentStoreId.value);
-    users.value = response.data || [];
+    const [usersResp, validateResp] = await Promise.all([
+      posEmpleadosApi.getAll(currentStoreId.value),
+      netsuiteConfigApi.validate(currentStoreId.value).catch(() => null),
+    ]);
+    users.value = usersResp.data || [];
+    validationIssues.value = validateResp?.data?.issues || [];
   } catch (error) {
     console.error('Error fetching users:', error);
     alert('Error al cargar los usuarios');
@@ -157,20 +185,21 @@ const fetchUsers = async () => {
   }
 };
 
-// Update NetSuite ID
+// Update NetSuite ID + revalidate
 const updateNetsuiteId = async (empleadoId, netsuiteId) => {
   try {
     await posEmpleadosApi.update(empleadoId, {
       empleado_netsuite_id: netsuiteId || null
     });
 
-    // Update local data
     const userIndex = users.value.findIndex(u => u.empleado_id === empleadoId);
     if (userIndex !== -1) {
       users.value[userIndex].empleado_netsuite_id = netsuiteId;
     }
 
-    // Show success message
+    const validateResp = await netsuiteConfigApi.validate(currentStoreId.value).catch(() => null);
+    validationIssues.value = validateResp?.data?.issues || [];
+
     showSuccessMessage('NetSuite ID actualizado correctamente');
   } catch (error) {
     console.error('Error updating NetSuite ID:', error);

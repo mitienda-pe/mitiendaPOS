@@ -20,6 +20,22 @@
         </button>
       </div>
 
+      <!-- Validation banner: missing payment accounts surfaced by the backend validator -->
+      <div
+        v-if="cashierAccountIssues.length"
+        class="mb-4 rounded-md border border-red-200 bg-red-50 p-4"
+      >
+        <p class="text-sm font-medium text-red-800">
+          {{ cashierAccountIssues.length }} cuenta(s) NetSuite faltante(s). El sync va a
+          fallar para órdenes que usen estos métodos.
+        </p>
+        <ul class="mt-2 space-y-1 text-sm text-red-700 list-disc list-inside">
+          <li v-for="(issue, idx) in cashierAccountIssues" :key="idx">
+            {{ issue.message }}
+          </li>
+        </ul>
+      </div>
+
       <!-- Loading State -->
       <div v-if="loading" class="bg-white shadow rounded-lg p-8 flex justify-center">
         <div class="text-gray-500">Cargando configuraciones...</div>
@@ -286,15 +302,21 @@
 import { ref, onMounted, computed } from 'vue';
 import { cashierAccountsApi } from '../services/cashierAccountsApi';
 import { branchesApi } from '../services/branchesApi';
+import { netsuiteConfigApi } from '../services/netsuiteConfigApi';
 import { useAuthStore } from '../stores/auth';
 
 const authStore = useAuthStore();
 
 const branches = ref([]);
 const allAccounts = ref([]);
+const validationIssues = ref([]);
 const loading = ref(true);
 const error = ref(null);
 const saving = ref(false);
+
+const cashierAccountIssues = computed(() =>
+  validationIssues.value.filter(i => i.category === 'cashier_accounts')
+);
 
 const showCreateModal = ref(false);
 const showEditModal = ref(false);
@@ -446,6 +468,7 @@ const saveAccount = async () => {
     }
 
     await loadAccounts();
+    await loadValidation();
     closeModal();
   } catch (err) {
     console.error('Error guardando configuración:', err);
@@ -469,6 +492,7 @@ const deleteAccount = async () => {
     saving.value = true;
     await cashierAccountsApi.delete(accountToDelete.value.id);
     await loadAccounts();
+    await loadValidation();
     showDeleteModal.value = false;
     accountToDelete.value = null;
   } catch (err) {
@@ -529,8 +553,20 @@ const getPaymentMethodBadgeClass = (method) => {
   return classes[method] || 'bg-gray-100 text-gray-800';
 };
 
+const loadValidation = async () => {
+  if (!currentStoreId.value) return;
+  try {
+    const resp = await netsuiteConfigApi.validate(currentStoreId.value);
+    validationIssues.value = resp?.data?.issues || [];
+  } catch (e) {
+    // Ignore — banner just stays empty when validate API is unreachable.
+    validationIssues.value = [];
+  }
+};
+
 onMounted(async () => {
   await loadBranches();
   await loadAccounts();
+  await loadValidation();
 });
 </script>
