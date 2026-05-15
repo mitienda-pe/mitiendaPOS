@@ -12,14 +12,23 @@
         </router-link>.
       </p>
 
-      <!-- Validation banner -->
+      <!-- Validation banner (rojo solo críticos, amarillo warnings) -->
       <div
-        v-if="branchIssues.length"
+        v-if="branchCriticalIssues.length"
         class="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
       >
         <p class="font-medium">
-          {{ branchIssues.length }} sucursal(es) sin Location ID — el sync NetSuite no
-          puede operar hasta corregir.
+          {{ branchCriticalIssues.length }} sucursal(es) con ventas POS recientes sin
+          Location ID. El sync está bloqueado para esas sucursales.
+        </p>
+      </div>
+      <div
+        v-if="branchWarningIssues.length"
+        class="mt-3 rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-sm text-yellow-800"
+      >
+        <p class="font-medium">
+          {{ branchWarningIssues.length }} sucursal(es) sin Location ID y sin
+          ventas POS recientes (info, no bloquea).
         </p>
       </div>
     </div>
@@ -174,9 +183,16 @@ const currentStoreId = computed(() => authStore.selectedStore?.id || null);
 const branchIssues = computed(() =>
   validationIssues.value.filter(i => i.category === 'branches')
 );
+const branchCriticalIssues = computed(() =>
+  branchIssues.value.filter(i => (i.severity || 'critical') === 'critical')
+);
+const branchWarningIssues = computed(() =>
+  branchIssues.value.filter(i => i.severity === 'warning')
+);
 
+// Only critical missing-location issues highlight the row in red.
 const branchHasMissingLocation = (branchId) =>
-  branchIssues.value.some(
+  branchCriticalIssues.value.some(
     i => i.code === 'missing_branch_location' && Number(i.tiendadireccion_id) === Number(branchId)
   );
 

@@ -10,23 +10,51 @@
     </div>
 
     <!-- Validation summary -->
-    <div v-if="validation" class="mb-6">
+    <div v-if="validation" class="mb-6 space-y-3">
+      <!-- Critical -->
       <div
-        v-if="validation.is_complete"
-        class="rounded-md bg-green-50 border border-green-200 p-4 text-sm text-green-800"
+        v-if="criticalIssues.length"
+        class="rounded-md bg-red-50 border border-red-200 p-4"
       >
-        ✅ Configuración completa. Esta tienda puede sincronizar a NetSuite sin fallbacks.
-      </div>
-      <div v-else class="rounded-md bg-red-50 border border-red-200 p-4">
         <p class="text-sm font-medium text-red-800">
-          {{ validation.issue_count }} configuración(es) faltante(s). Corrige antes de
-          activar el sync.
+          {{ criticalIssues.length }} configuración(es) crítica(s) faltante(s). El
+          sync NetSuite está bloqueado para datos en uso.
         </p>
         <ul class="mt-3 space-y-1 text-sm text-red-700 list-disc list-inside">
-          <li v-for="(issue, idx) in validation.issues" :key="idx">
-            {{ issue.message }}
-          </li>
+          <li v-for="(issue, idx) in criticalIssues" :key="idx">{{ issue.message }}</li>
         </ul>
+      </div>
+
+      <!-- Warnings -->
+      <div
+        v-if="warningIssues.length"
+        class="rounded-md bg-yellow-50 border border-yellow-200 p-4"
+      >
+        <p class="text-sm font-medium text-yellow-800">
+          {{ warningIssues.length }} aviso(s) — config aspiracional sin impacto en
+          ventas activas.
+        </p>
+        <details class="mt-2 text-sm text-yellow-700">
+          <summary class="cursor-pointer underline">Ver detalle</summary>
+          <ul class="mt-2 space-y-1 list-disc list-inside">
+            <li v-for="(issue, idx) in warningIssues" :key="idx">{{ issue.message }}</li>
+          </ul>
+        </details>
+      </div>
+
+      <!-- Operative / complete -->
+      <div
+        v-if="!criticalIssues.length && !warningIssues.length"
+        class="rounded-md bg-green-50 border border-green-200 p-4 text-sm text-green-800"
+      >
+        ✅ Configuración completa. La tienda puede sincronizar a NetSuite sin
+        observaciones.
+      </div>
+      <div
+        v-else-if="!criticalIssues.length"
+        class="rounded-md bg-green-50 border border-green-200 p-4 text-sm text-green-800"
+      >
+        ✅ Tienda operativa. Los avisos de arriba son opcionales.
       </div>
     </div>
 
@@ -213,10 +241,13 @@ const fieldToColumn = {
   default_salesrep_id: 'tiendacredencialerp_default_salesrep_id',
 };
 
+// Only credential-level critical issues map to the individual field
+// red borders; warnings (aspirational) don't paint inputs.
 const missingFields = computed(() => {
   if (!validation.value) return new Set();
   const set = new Set();
   for (const issue of validation.value.issues || []) {
+    if (issue.severity === 'warning') continue;
     if (issue.field) set.add(issue.field);
   }
   return set;
@@ -225,6 +256,13 @@ const missingFields = computed(() => {
 function missing(column) {
   return missingFields.value.has(column);
 }
+
+const criticalIssues = computed(() =>
+  (validation.value?.issues || []).filter(i => i.severity !== 'warning')
+);
+const warningIssues = computed(() =>
+  (validation.value?.issues || []).filter(i => i.severity === 'warning')
+);
 
 async function loadAll() {
   if (!tiendaId.value) return;

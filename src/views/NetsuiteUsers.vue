@@ -13,17 +13,33 @@
       </p>
     </div>
 
-    <!-- Validation banner -->
+    <!-- Validation banners (rojo: con ventas recientes; amarillo: cajero fantasma) -->
     <div
-      v-if="employeeIssues.length"
+      v-if="employeeCriticalIssues.length"
       class="mb-4 rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800"
     >
       <p class="font-medium">
-        {{ employeeIssues.length }} cajero(s) activo(s) sin NetSuite ID.
+        {{ employeeCriticalIssues.length }} cajero(s) con ventas recientes sin
+        NetSuite ID. Los invoices están saliendo sin sales rep.
       </p>
       <ul class="mt-2 space-y-1 list-disc list-inside text-red-700">
-        <li v-for="(issue, idx) in employeeIssues" :key="idx">{{ issue.message }}</li>
+        <li v-for="(issue, idx) in employeeCriticalIssues" :key="idx">{{ issue.message }}</li>
       </ul>
+    </div>
+    <div
+      v-if="employeeWarningIssues.length"
+      class="mb-4 rounded-md border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800"
+    >
+      <p class="font-medium">
+        {{ employeeWarningIssues.length }} cajero(s) activo(s) sin ventas recientes
+        ni NetSuite ID. Considere desactivarlos.
+      </p>
+      <details class="mt-2 text-sm text-yellow-700">
+        <summary class="cursor-pointer underline">Ver detalle</summary>
+        <ul class="mt-2 space-y-1 list-disc list-inside">
+          <li v-for="(issue, idx) in employeeWarningIssues" :key="idx">{{ issue.message }}</li>
+        </ul>
+      </details>
     </div>
 
     <!-- Loading State -->
@@ -165,6 +181,12 @@ const currentStoreId = computed(() => authStore.selectedStore?.id || null);
 
 const employeeIssues = computed(() =>
   validationIssues.value.filter(i => i.category === 'employees')
+);
+const employeeCriticalIssues = computed(() =>
+  employeeIssues.value.filter(i => (i.severity || 'critical') === 'critical')
+);
+const employeeWarningIssues = computed(() =>
+  employeeIssues.value.filter(i => i.severity === 'warning')
 );
 
 // Fetch users + validation

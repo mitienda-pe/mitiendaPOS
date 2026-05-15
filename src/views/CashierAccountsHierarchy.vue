@@ -20,20 +20,37 @@
         </button>
       </div>
 
-      <!-- Validation banner: missing payment accounts surfaced by the backend validator -->
+      <!-- Validation banners (rojo: cuentas en uso sin config; amarillo: aspiracional) -->
       <div
-        v-if="cashierAccountIssues.length"
+        v-if="cashierAccountCriticalIssues.length"
         class="mb-4 rounded-md border border-red-200 bg-red-50 p-4"
       >
         <p class="text-sm font-medium text-red-800">
-          {{ cashierAccountIssues.length }} cuenta(s) NetSuite faltante(s). El sync va a
-          fallar para órdenes que usen estos métodos.
+          {{ cashierAccountCriticalIssues.length }} cuenta(s) NetSuite faltante(s) en
+          datos en uso — el sync está fallando para esas combinaciones.
         </p>
         <ul class="mt-2 space-y-1 text-sm text-red-700 list-disc list-inside">
-          <li v-for="(issue, idx) in cashierAccountIssues" :key="idx">
+          <li v-for="(issue, idx) in cashierAccountCriticalIssues" :key="idx">
             {{ issue.message }}
           </li>
         </ul>
+      </div>
+      <div
+        v-if="cashierAccountWarningIssues.length"
+        class="mb-4 rounded-md border border-yellow-200 bg-yellow-50 p-4"
+      >
+        <p class="text-sm font-medium text-yellow-800">
+          {{ cashierAccountWarningIssues.length }} cuenta(s) aspiracional(es) sin
+          configurar (no afectan ventas activas).
+        </p>
+        <details class="mt-2 text-sm text-yellow-700">
+          <summary class="cursor-pointer underline">Ver detalle</summary>
+          <ul class="mt-2 space-y-1 list-disc list-inside">
+            <li v-for="(issue, idx) in cashierAccountWarningIssues" :key="idx">
+              {{ issue.message }}
+            </li>
+          </ul>
+        </details>
       </div>
 
       <!-- Loading State -->
@@ -316,6 +333,12 @@ const saving = ref(false);
 
 const cashierAccountIssues = computed(() =>
   validationIssues.value.filter(i => i.category === 'cashier_accounts')
+);
+const cashierAccountCriticalIssues = computed(() =>
+  cashierAccountIssues.value.filter(i => (i.severity || 'critical') === 'critical')
+);
+const cashierAccountWarningIssues = computed(() =>
+  cashierAccountIssues.value.filter(i => i.severity === 'warning')
 );
 
 const showCreateModal = ref(false);
