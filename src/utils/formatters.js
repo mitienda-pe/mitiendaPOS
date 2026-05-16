@@ -2,23 +2,47 @@
  * Utilidades de formateo para el POS
  */
 
+// Config de moneda y locale a nivel módulo. Se inicializa con defaults PE y se
+// actualiza al login del cajero (cuando ya conocemos la tienda) mediante
+// `setCurrencyConfig()`. Mantener un single-source aquí permite que las miles
+// de llamadas `formatCurrency(price)` distribuidas no necesiten conocer la
+// config — algo crítico en POS donde cada milisegundo de UX importa.
+const currencyConfig = {
+  locale: 'es-PE',
+  currency: 'PEN',
+  symbol: 'S/',
+  decimals: 2,
+}
+
 /**
- * Formatear moneda (Soles peruanos)
- * Muestra 2-3 decimales según precisión del valor
+ * Setea la config de moneda/locale global para todos los formatters.
+ * Llamar después del login del cajero pasando el countryConfig de la tienda.
+ *
+ * @param {{ locale?: string, currency?: string, symbol?: string, decimals?: number }} config
+ */
+export function setCurrencyConfig(config) {
+  if (config.locale) currencyConfig.locale = config.locale
+  if (config.currency) currencyConfig.currency = config.currency
+  if (config.symbol) currencyConfig.symbol = config.symbol
+  if (typeof config.decimals === 'number') currencyConfig.decimals = config.decimals
+}
+
+/**
+ * Formatear moneda. Por default usa la config global (Soles PE).
  *
  * @param {number} amount - Monto a formatear
- * @returns {string} Monto formateado con símbolo de moneda (2-3 decimales)
+ * @returns {string} Monto formateado con símbolo de moneda
  */
 export function formatCurrency(amount) {
   if (isNaN(amount) || amount === null || amount === undefined) {
-    return 'S/ 0.00'
+    return `${currencyConfig.symbol} 0.${'0'.repeat(currencyConfig.decimals)}`
   }
 
-  return new Intl.NumberFormat('es-PE', {
+  return new Intl.NumberFormat(currencyConfig.locale, {
     style: 'currency',
-    currency: 'PEN',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 3
+    currency: currencyConfig.currency,
+    minimumFractionDigits: currencyConfig.decimals,
+    maximumFractionDigits: currencyConfig.decimals + 1
   }).format(amount)
 }
 
@@ -33,7 +57,7 @@ export function formatNumber(num) {
     return '0'
   }
 
-  return new Intl.NumberFormat('es-PE').format(num)
+  return new Intl.NumberFormat(currencyConfig.locale).format(num)
 }
 
 /**

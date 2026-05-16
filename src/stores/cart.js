@@ -685,14 +685,13 @@ export const useCartStore = defineStore('cart', {
     },
 
     /**
-     * Formatear moneda
+     * Formatear moneda — delega al formatter central que respeta la config
+     * global de moneda (seteada al login vía setCurrencyConfig).
      */
     formatCurrency(amount) {
-      if (isNaN(amount) || amount === null || amount === undefined) return 'S/ 0.00';
-      return new Intl.NumberFormat('es-PE', {
-        style: 'currency',
-        currency: 'PEN'
-      }).format(amount);
+      // Import lazy para evitar ciclos con el store al boot.
+      const { formatCurrency } = require('@/utils/formatters');
+      return formatCurrency(amount);
     }
   }
 });
