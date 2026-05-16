@@ -65,6 +65,7 @@
         <div v-if="items && items.length > 0">
           <div v-for="(item, index) in items" :key="item.id || index" class="mb-2">
             <div>{{ getItemName(item) }}</div>
+            <div v-if="getItemVariant(item)" class="text-xs text-gray-600">{{ getItemVariant(item) }}</div>
             <div class="flex justify-between">
               <span>{{ getItemQuantity(item) }} x S/ {{ formatUnitPrice(getItemPrice(item)) }}</span>
               <span>S/ {{ getItemTotal(item).toFixed(2) }}</span>
@@ -340,6 +341,10 @@ const totalAfterRounding = computed(() => {
 // Helpers para items (manejar diferentes formatos)
 const getItemName = (item) => {
   return item.nombre || item.name || item.tittle || item.product_name || 'Producto';
+};
+
+const getItemVariant = (item) => {
+  return item.variant || item.product_variant || item.tiendaproducto_atributonombre || '';
 };
 
 const getItemQuantity = (item) => {
