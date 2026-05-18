@@ -1,4 +1,19 @@
 import apiClient from './axios';
+import { useShiftStore } from '../stores/shift';
+
+// Sucursal del turno activo: se envía al backend como tiendadireccion_id para
+// que /products devuelva el stock de la sucursal (productos_stock_sucursal) en
+// lugar del agregado. Sin esto el inventario muestra el total cadena pero la
+// validación POS consulta NetSuite por sucursal y bloquea ventas.
+const getActiveTiendadireccionId = () => {
+  try {
+    const shiftStore = useShiftStore();
+    const id = shiftStore.activeShift?.tiendadireccion_id;
+    return id ? Number(id) : null;
+  } catch (e) {
+    return null;
+  }
+};
 
 /**
  * API service para gestión de inventario
@@ -27,6 +42,10 @@ export const inventoryApi = {
     if (filters.sort_by) {
       params.append('sort_by', filters.sort_by);
       params.append('sort_dir', filters.sort_dir || 'asc');
+    }
+    const tiendadireccionId = filters.tiendadireccion_id ?? getActiveTiendadireccionId();
+    if (tiendadireccionId) {
+      params.append('tiendadireccion_id', String(tiendadireccionId));
     }
 
     const response = await apiClient.get(`/products?${params.toString()}`);
