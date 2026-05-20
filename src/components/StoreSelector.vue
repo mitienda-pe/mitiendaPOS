@@ -177,7 +177,11 @@ const handleSelectStore = async (store) => {
     }
   } catch (error) {
     console.error('Error selecting store:', error);
-    alert('Error al seleccionar la tienda. Por favor, intenta nuevamente.');
+    if (error?.posAccessDenied) {
+      alert(error.message);
+    } else {
+      alert('Error al seleccionar la tienda. Por favor, intenta nuevamente.');
+    }
   }
 };
 

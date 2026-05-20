@@ -169,6 +169,10 @@ const handleLogin = async () => {
     localStorage.setItem('user', JSON.stringify(authStore.user));
     localStorage.setItem('selected_store', JSON.stringify(authStore.selectedStore));
 
+    // 2b. Validar que la tienda tenga mod_pos habilitado.
+    // assertPosAccess() lanza si la tienda no tiene PDV.
+    await authStore.assertPosAccess();
+
     // 3. Auto-autenticar en cashierStore
     cashierStore.cashier = {
       empleado_id: empleado.id,
@@ -192,6 +196,20 @@ const handleLogin = async () => {
 
   } catch (err) {
     console.error('❌ [CASHIER LOGIN] Error:', err);
+
+    // PDV no habilitado para esta tienda (validado por assertPosAccess)
+    if (err?.posAccessDenied) {
+      // Limpiar lo que se guardó antes de la validación
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('selected_store');
+      authStore.user = null;
+      authStore.selectedStore = null;
+      error.value = err.message;
+      pin.value = '';
+      pinInput.value?.focus();
+      return;
+    }
 
     // Detectar errores específicos del backend
     const response = err.response?.data;

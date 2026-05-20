@@ -58,6 +58,16 @@ export const useAuthStore = defineStore('auth', {
       if (!this.selectedStore?.id || this.tokenTiendaId == null) return false;
       return Number(this.selectedStore.id) !== this.tokenTiendaId;
     },
+    // true si el JWT corresponde a un cajero POS (login por PIN).
+    // El backend distingue: tokens de admin solo traen user_id; los de cajero traen empleado_id.
+    isCashierToken: (state) => {
+      const payload = decodeJwtPayload(state.accessToken);
+      return !!payload?.empleado_id;
+    },
+    // true si el JWT es de administrador (email+password, sin empleado_id).
+    isAdminToken() {
+      return !!this.accessToken && !this.isCashierToken;
+    },
   },
 
   actions: {
@@ -128,6 +138,10 @@ export const useAuthStore = defineStore('auth', {
           this.accessToken = access_token;
           localStorage.setItem('access_token', access_token);
 
+          // Validar que la tienda tenga mod_pos habilitado.
+          // Si no, abortar el login con error claro y limpiar sesión.
+          await this.assertPosAccess();
+
           // Guardar la tienda seleccionada
           const store = this.stores.find(s => s.id === storeId);
           this.selectedStore = store;
@@ -141,6 +155,27 @@ export const useAuthStore = defineStore('auth', {
         }
       } catch (error) {
         console.error('Error selecting store:', error);
+        throw error;
+      }
+    },
+
+    // Lanza un error si la tienda autenticada no tiene mod_pos habilitado.
+    // El llamador debe hacer logout o redirigir al login.
+    async assertPosAccess() {
+      try {
+        await authApi.checkPosAccess();
+      } catch (error) {
+        if (error.response?.status === 403) {
+          const message = error.response?.data?.message
+            || 'Esta tienda no tiene el Punto de Venta habilitado. Contacta a soporte para activarlo.';
+          // Limpiar token de tienda antes de propagar; el caller decide la UX.
+          this.accessToken = null;
+          localStorage.removeItem('access_token');
+          const err = new Error(message);
+          err.posAccessDenied = true;
+          throw err;
+        }
+        // Otros errores (red, 500, etc.) los propagamos tal cual.
         throw error;
       }
     },

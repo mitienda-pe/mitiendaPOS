@@ -85,5 +85,12 @@ export const authApi = {
       pin: pin
     });
     return response.data;
+  },
+
+  // Verifica que la tienda autenticada tenga mod_pos habilitado.
+  // Si responde 403, la tienda no tiene PDV y no debe entrar a la app.
+  async checkPosAccess() {
+    const response = await apiClient.get('/pos/access');
+    return response.data;
   }
 };
