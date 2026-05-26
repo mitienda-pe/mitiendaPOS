@@ -4,13 +4,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
+Package manager: **pnpm** (pinned to 11.1.1 via `packageManager` field in `package.json`).
+Use `corepack enable` so `pnpm` resolves to the project-pinned version automatically.
+
 ```bash
-npm run dev      # Start dev server (Vite) with API proxy to api2.mitienda.pe
-npm run build    # Production build
-npm run preview  # Preview production build locally
+pnpm install     # Install dependencies
+pnpm run dev     # Start dev server (Vite) with API proxy to api2.mitienda.pe
+pnpm run build   # Production build
+pnpm run preview # Preview production build locally
 ```
 
-Deploy: `git push origin main` (Netlify auto-deploys).
+Deploy: `git push origin main` triggers GitHub Actions (`.github/workflows/deploy.yml`):
+build with pnpm + rsync `dist/` to `/var/www/pos/` on the deploy server.
 
 No test runner or linter is configured in this project.
 
