@@ -48,6 +48,9 @@ const barcode = ref('');
 const barcodeInput = ref(null);
 const searchQuery = ref('');
 const searchResults = ref([]);
+const highlightedIndex = ref(-1);
+const resultsList = ref(null);
+let searchDebounce = null;
 const productSearchQuery = ref('');
 const productCategoryFilter = ref('');
 const productSearchResults = ref([]);
@@ -1292,34 +1295,82 @@ const fetchCustomers = async () => {
 };
 
 // Search methods
-const searchProducts = async () => {
+const searchProducts = () => {
+  if (searchDebounce) {
+    clearTimeout(searchDebounce);
+    searchDebounce = null;
+  }
+
   if (!barcode.value) {
     searchResults.value = [];
+    highlightedIndex.value = -1;
     return;
   }
 
-  try {
-    const response = await productsApi.getProducts({
-      search: barcode.value,
-      limit: 20,
-      published: true
-    });
+  const query = barcode.value;
+  searchDebounce = setTimeout(async () => {
+    try {
+      const response = await productsApi.getProducts({
+        search: query,
+        limit: 20,
+        published: true
+      });
 
-    if (response.success) {
-      searchResults.value = response.data.map(item => ({
-        id: item.id,
-        sku: item.sku ? String(item.sku) : '',
-        nombre: item.name,
-        precio: item.price,
-        stock: item.stock,
-        unlimited_stock: item.unlimited_stock,
-        categoria: item.category?.name || 'Sin categoría',
-        images: item.images || []
-      }));
+      if (barcode.value !== query) return; // input cambió mientras esperábamos
+
+      if (response.success) {
+        searchResults.value = response.data.map(item => ({
+          id: item.id,
+          sku: item.sku ? String(item.sku) : '',
+          nombre: item.name,
+          precio: item.price,
+          stock: item.stock,
+          unlimited_stock: item.unlimited_stock,
+          categoria: item.category?.name || 'Sin categoría',
+          images: item.images || []
+        }));
+        highlightedIndex.value = -1;
+      }
+    } catch (error) {
+      console.error('Error searching products:', error);
+      searchResults.value = [];
+      highlightedIndex.value = -1;
     }
-  } catch (error) {
-    console.error('Error searching products:', error);
+  }, 250);
+};
+
+const scrollHighlightedIntoView = () => {
+  nextTick(() => {
+    const el = resultsList.value?.children?.[highlightedIndex.value];
+    el?.scrollIntoView({ block: 'nearest' });
+  });
+};
+
+const onSearchKeydown = (e) => {
+  if (!searchResults.value.length) return;
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    highlightedIndex.value = (highlightedIndex.value + 1) % searchResults.value.length;
+    scrollHighlightedIntoView();
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    highlightedIndex.value = highlightedIndex.value <= 0
+      ? searchResults.value.length - 1
+      : highlightedIndex.value - 1;
+    scrollHighlightedIntoView();
+  } else if (e.key === 'Escape') {
     searchResults.value = [];
+    highlightedIndex.value = -1;
+  }
+};
+
+const onSearchEnter = (e) => {
+  if (highlightedIndex.value >= 0 && searchResults.value[highlightedIndex.value]) {
+    e.preventDefault();
+    selectProduct(searchResults.value[highlightedIndex.value]);
+  } else {
+    handleBarcodeInput();
   }
 };
 
@@ -1333,6 +1384,7 @@ const selectProduct = (product) => {
   if (safeProduct.unlimited_stock || safeProduct.stock > 0) {
     addToCart(safeProduct);
     searchResults.value = [];
+    highlightedIndex.value = -1;
     barcode.value = '';
     closeProductModal();
   } else {
@@ -1607,14 +1659,18 @@ const getPaymentMethodName = (method) => {
                 <input ref="barcodeInput" v-model="barcode" type="text"
                   placeholder="Escanear código de barras o buscar producto..."
                   class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
-                  @keyup.enter="handleBarcodeInput" @input="searchProducts">
+                  @keydown="onSearchKeydown"
+                  @keydown.enter="onSearchEnter"
+                  @input="searchProducts">
 
                 <!-- Search Results Dropdown -->
                 <div v-if="searchResults.length > 0"
                   class="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-lg max-h-60 overflow-auto border border-gray-200">
-                  <ul>
-                    <li v-for="product in searchResults" :key="product.id" class="p-2 hover:bg-gray-100 cursor-pointer"
-                      @click="selectProduct(product)">
+                  <ul ref="resultsList">
+                    <li v-for="(product, idx) in searchResults" :key="product.id"
+                      :class="['p-2 cursor-pointer', idx === highlightedIndex ? 'bg-primary-50' : 'hover:bg-gray-100']"
+                      @click="selectProduct(product)"
+                      @mouseenter="highlightedIndex = idx">
                       <div class="flex justify-between">
                         <span>{{ product.nombre }}</span>
                         <span class="text-gray-600">{{ formatCurrency(product.precio) }}</span>
