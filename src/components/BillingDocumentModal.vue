@@ -27,7 +27,7 @@
               <!-- Order Info -->
               <div class="mb-4 p-4 bg-gray-50 rounded-lg">
                 <div class="flex items-center gap-2 mb-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" viewBox="0 0 24 24" fill="none"
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary-600" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="9" cy="21" r="1"></circle>
                     <circle cx="20" cy="21" r="1"></circle>
@@ -53,20 +53,20 @@
                   <button type="button" @click="selectDocumentType(1)" :disabled="isEmitting" :class="[
                     'flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all',
                     selectedDocumentType === 1
-                      ? 'border-blue-600 bg-blue-50 shadow-md'
-                      : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50',
+                      ? 'border-primary-600 bg-primary-50 shadow-md'
+                      : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50',
                     isEmitting ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
                   ]">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none"
                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                      :class="selectedDocumentType === 1 ? 'text-blue-600' : 'text-gray-400'">
+                      :class="selectedDocumentType === 1 ? 'text-primary-600' : 'text-gray-400'">
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                       <polyline points="14 2 14 8 20 8"></polyline>
                       <line x1="16" y1="13" x2="8" y2="13"></line>
                       <line x1="16" y1="17" x2="8" y2="17"></line>
                       <polyline points="10 9 9 9 8 9"></polyline>
                     </svg>
-                    <span class="font-medium" :class="selectedDocumentType === 1 ? 'text-blue-700' : 'text-gray-700'">
+                    <span class="font-medium" :class="selectedDocumentType === 1 ? 'text-primary-700' : 'text-gray-700'">
                       Factura
                     </span>
                   </button>
@@ -94,16 +94,16 @@
               </div>
 
               <!-- Customer Info Warning (for Factura) -->
-              <div v-if="selectedDocumentType === 1" class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div v-if="selectedDocumentType === 1" class="mb-4 p-3 bg-primary-50 border border-primary-200 rounded-lg">
                 <div class="flex gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5"
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary-600 flex-shrink-0 mt-0.5"
                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                     stroke-linejoin="round">
                     <circle cx="12" cy="12" r="10"></circle>
                     <line x1="12" y1="16" x2="12" y2="12"></line>
                     <line x1="12" y1="8" x2="12.01" y2="8"></line>
                   </svg>
-                  <div class="text-sm text-blue-800">
+                  <div class="text-sm text-primary-800">
                     <p class="font-medium mb-1">Requisitos para Factura</p>
                     <p>Asegúrese de que el cliente tenga RUC registrado y los datos fiscales completos.</p>
                   </div>
@@ -116,7 +116,7 @@
                   Formato de impresión
                 </label>
                 <select v-model="pdfFormat" :disabled="isEmitting"
-                  class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                  class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed">
                   <option value="TICKET">Ticket (80mm) - Impresora térmica</option>
                   <option value="A4">A4 (Estándar)</option>
                 </select>
@@ -150,7 +150,7 @@
             'w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium text-white sm:ml-3 sm:w-auto sm:text-sm',
             !selectedDocumentType || isEmitting
               ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+              : 'bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500'
           ]">
             <svg v-if="isEmitting" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
               xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -162,7 +162,7 @@
             {{ isEmitting ? 'Emitiendo...' : 'Emitir Comprobante' }}
           </button>
           <button @click="handleCancel" :disabled="isEmitting"
-            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed">
             Cancelar
           </button>
         </div>

@@ -43,7 +43,7 @@
                         🧑‍💼 {{ cashierStore.cashierName }}
                       </p>
                       <!-- Sucursal y caja cuando hay turno abierto -->
-                      <p v-if="shiftStore.hasActiveShift" class="text-blue-400 text-xs">
+                      <p v-if="shiftStore.hasActiveShift" class="text-primary-400 text-xs">
                         <span v-if="sucursalNombre && sucursalNombre !== 'Sucursal'">📍 {{ sucursalNombre }} • </span>Caja {{ cajaNumero }}
                       </p>
                       <p v-else-if="!cashierStore.isCashierAuthenticated" class="text-gray-500 text-xs italic">Sin cajero autenticado</p>
@@ -109,7 +109,7 @@
     <!-- Loading Overlay -->
     <div v-if="isLoading" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
       <div class="bg-white p-4 rounded-lg shadow-lg flex items-center space-x-3">
-        <svg class="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none"
+        <svg class="animate-spin h-5 w-5 text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none"
           viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor"

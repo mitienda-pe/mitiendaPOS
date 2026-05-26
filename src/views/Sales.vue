@@ -6,7 +6,7 @@
           <h1 class="text-2xl font-semibold text-gray-900">Historial de Ventas</h1>
           <button
             @click="fetchOrders"
-            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
           >
             Actualizar
           </button>
@@ -22,7 +22,7 @@
                 v-model="searchQuery"
                 type="text"
                 placeholder="Cliente o número..."
-                class="w-full p-2 pr-8 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                class="w-full p-2 pr-8 border rounded-lg focus:ring-2 focus:ring-primary-500 text-sm"
                 @input="debouncedSearch"
               >
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 absolute right-2 top-9 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -36,7 +36,7 @@
               <label class="block text-xs font-medium text-gray-700 mb-1">Estado</label>
               <select
                 v-model="selectedStatus"
-                class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 text-sm"
                 @change="fetchOrders"
               >
                 <option value="">Todos</option>
@@ -53,7 +53,7 @@
               <label class="block text-xs font-medium text-gray-700 mb-1">Fuente</label>
               <select
                 v-model="selectedSource"
-                class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 text-sm"
                 @change="fetchOrders"
               >
                 <option value="">Todas</option>
@@ -69,7 +69,7 @@
               <input
                 v-model="dateFrom"
                 type="date"
-                class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 text-sm"
                 @change="fetchOrders"
               >
             </div>
@@ -80,7 +80,7 @@
               <input
                 v-model="dateTo"
                 type="date"
-                class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 text-sm"
                 @change="fetchOrders"
               >
             </div>
@@ -101,7 +101,7 @@
       <!-- Loading State -->
       <div v-if="loading" class="bg-white shadow overflow-hidden sm:rounded-lg p-6">
         <div class="flex flex-col items-center justify-center py-12">
-          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4"></div>
           <p class="text-gray-600">Cargando ventas...</p>
         </div>
       </div>
@@ -118,7 +118,7 @@
           <p class="text-gray-600 text-center max-w-md mb-4">{{ error }}</p>
           <button
             @click="fetchOrders"
-            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
           >
             Reintentar
           </button>
@@ -171,7 +171,7 @@
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <router-link
                     :to="`/sales/${order.id}`"
-                    class="text-blue-600 hover:text-blue-900 mr-3"
+                    class="text-primary-600 hover:text-primary-900 mr-3"
                   >
                     Ver Detalle
                   </router-link>
@@ -231,7 +231,7 @@
                   @click="goToPage(page)"
                   :class="[
                     page === currentPage
-                      ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                      ? 'z-10 bg-primary-50 border-primary-500 text-primary-600'
                       : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50',
                     'relative inline-flex items-center px-4 py-2 border text-sm font-medium'
                   ]"
@@ -486,10 +486,10 @@ const getSourceText = (source) => {
 const getSourceClass = (source) => {
   const classMap = {
     'pos': 'bg-purple-100 text-purple-800',
-    'web': 'bg-blue-100 text-blue-800',
+    'web': 'bg-primary-100 text-primary-800',
     'api': 'bg-indigo-100 text-indigo-800'
   };
-  return classMap[source] || 'bg-blue-100 text-blue-800';
+  return classMap[source] || 'bg-primary-100 text-primary-800';
 };
 
 const truncateText = (text, maxLength) => {

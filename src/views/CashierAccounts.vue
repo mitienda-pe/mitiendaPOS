@@ -17,7 +17,7 @@
         <select
           v-model="selectedBranchId"
           @change="loadCashierAccounts"
-          class="max-w-md px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          class="max-w-md px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
         >
           <option :value="null">Todas las sucursales</option>
           <option
@@ -50,7 +50,7 @@
           <button
             @click="openCreateModal"
             :disabled="!selectedBranchId"
-            class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             :title="!selectedBranchId ? 'Selecciona una sucursal primero' : 'Nueva configuración'"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -72,7 +72,7 @@
             <button
               v-if="selectedBranchId"
               @click="openCreateModal"
-              class="mt-4 text-indigo-600 hover:text-indigo-700"
+              class="mt-4 text-primary-600 hover:text-primary-700"
             >
               Crear primera configuración
             </button>
@@ -110,7 +110,7 @@
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="flex items-center">
                     <div class="flex-shrink-0 h-10 w-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                      <span class="text-indigo-600 font-semibold">{{ account.caja_numero }}</span>
+                      <span class="text-primary-600 font-semibold">{{ account.caja_numero }}</span>
                     </div>
                     <div class="ml-4">
                       <div class="text-sm font-medium text-gray-900">
@@ -141,7 +141,7 @@
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
                     @click="editAccount(account)"
-                    class="text-indigo-600 hover:text-indigo-900 mr-4"
+                    class="text-primary-600 hover:text-indigo-900 mr-4"
                     title="Editar"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" viewBox="0 0 20 20" fill="currentColor">
@@ -189,7 +189,7 @@
               min="1"
               max="50"
               required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="1"
             />
           </div>
@@ -202,7 +202,7 @@
               v-model="formData.caja_nombre"
               type="text"
               maxlength="100"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="Ej: Caja Principal, Caja Express"
             />
           </div>
@@ -214,7 +214,7 @@
             <select
               v-model="formData.payment_method"
               required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               <option value="">Selecciona un método</option>
               <option value="efectivo">Efectivo</option>
@@ -239,7 +239,7 @@
               type="text"
               maxlength="50"
               required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent font-mono"
               placeholder="Ej: 10100"
             />
             <p class="mt-1 text-xs text-gray-500">
@@ -254,7 +254,7 @@
                 type="checkbox"
                 :true-value="1"
                 :false-value="0"
-                class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
               />
               <span class="text-sm font-medium text-gray-700">Configuración activa</span>
             </label>
@@ -272,7 +272,7 @@
           <button
             type="submit"
             :disabled="saving"
-            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors disabled:opacity-50"
+            class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors disabled:opacity-50"
           >
             {{ saving ? 'Guardando...' : 'Guardar' }}
           </button>
@@ -481,7 +481,7 @@ const getPaymentMethodLabel = (method) => {
 const getPaymentMethodBadgeClass = (method) => {
   const classes = {
     'efectivo': 'bg-emerald-100 text-emerald-800',
-    'tarjeta': 'bg-blue-100 text-blue-800',
+    'tarjeta': 'bg-primary-100 text-primary-800',
     'banco': 'bg-green-100 text-green-800',
     'yape': 'bg-purple-100 text-purple-800',
     'plin': 'bg-pink-100 text-pink-800',

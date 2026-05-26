@@ -8,7 +8,7 @@
           <router-link
             to="/settings/branches"
             class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
-            active-class="bg-blue-50 text-blue-700 font-medium"
+            active-class="bg-primary-50 text-primary-700 font-medium"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
@@ -20,7 +20,7 @@
           <router-link
             to="/settings/users"
             class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
-            active-class="bg-blue-50 text-blue-700 font-medium"
+            active-class="bg-primary-50 text-primary-700 font-medium"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
@@ -34,7 +34,7 @@
           <router-link
             to="/settings/printer"
             class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
-            active-class="bg-blue-50 text-blue-700 font-medium"
+            active-class="bg-primary-50 text-primary-700 font-medium"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="6 9 6 2 18 2 18 9"></polyline>
@@ -58,7 +58,7 @@
               <router-link
                 to="/settings/netsuite/general"
                 class="flex items-center px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
-                active-class="bg-blue-50 text-blue-700 font-medium"
+                active-class="bg-primary-50 text-primary-700 font-medium"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M21 13.255V8a2 2 0 0 0-1-1.732l-7-4.04a2 2 0 0 0-2 0l-7 4.04A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.732l7 4.04a2 2 0 0 0 2 0l3-1.732"></path>
@@ -71,7 +71,7 @@
               <router-link
                 to="/settings/netsuite/preferences"
                 class="flex items-center px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
-                active-class="bg-blue-50 text-blue-700 font-medium"
+                active-class="bg-primary-50 text-primary-700 font-medium"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="3"></circle>
@@ -83,7 +83,7 @@
               <router-link
                 to="/settings/netsuite/branches"
                 class="flex items-center px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
-                active-class="bg-blue-50 text-blue-700 font-medium"
+                active-class="bg-primary-50 text-primary-700 font-medium"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
@@ -95,7 +95,7 @@
               <router-link
                 to="/settings/netsuite/users"
                 class="flex items-center px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
-                active-class="bg-blue-50 text-blue-700 font-medium"
+                active-class="bg-primary-50 text-primary-700 font-medium"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
@@ -109,7 +109,7 @@
               <router-link
                 to="/settings/netsuite/cashier-accounts"
                 class="flex items-center px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
-                active-class="bg-blue-50 text-blue-700 font-medium"
+                active-class="bg-primary-50 text-primary-700 font-medium"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>

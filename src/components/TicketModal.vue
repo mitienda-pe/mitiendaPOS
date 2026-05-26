@@ -41,7 +41,7 @@
 
                   <div v-if="billingDocument" class="flex justify-between items-center border-b pb-2">
                     <span class="text-sm font-medium text-gray-600">Comprobante:</span>
-                    <span class="text-base font-semibold text-blue-600">
+                    <span class="text-base font-semibold text-primary-600">
                       {{ billingDocument.serie }}-{{ billingDocument.correlative }}
                     </span>
                   </div>
@@ -82,7 +82,7 @@
         <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-2">
           <button
             @click="closeModal"
-            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:w-auto sm:text-sm"
+            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none sm:w-auto sm:text-sm"
           >
             Cerrar
           </button>

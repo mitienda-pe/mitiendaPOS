@@ -57,8 +57,8 @@
         </div>
         <button
           @click="handleToggleEnabled"
-          class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          :class="isEnabled ? 'bg-blue-600' : 'bg-gray-200'"
+          class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+          :class="isEnabled ? 'bg-primary-600' : 'bg-gray-200'"
           :disabled="isLoading"
         >
           <span
@@ -94,7 +94,7 @@
           :key="printer"
           class="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors"
           :class="selectedPrinter === printer
-            ? 'border-blue-500 bg-blue-50'
+            ? 'border-primary-500 bg-primary-50'
             : 'border-gray-200 hover:bg-gray-50'"
         >
           <input
@@ -103,14 +103,14 @@
             :value="printer"
             :checked="selectedPrinter === printer"
             @change="handleSelectPrinter(printer)"
-            class="h-4 w-4 text-blue-600"
+            class="h-4 w-4 text-primary-600"
           />
           <div class="flex-1">
             <span class="text-sm text-gray-800">{{ printer }}</span>
           </div>
           <span
             v-if="selectedPrinter === printer"
-            class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded"
+            class="text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded"
           >
             Seleccionada
           </span>
@@ -126,7 +126,7 @@
       </p>
       <button
         @click="handleTestPrint"
-        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+        class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm"
         :disabled="testPrinting"
       >
         {{ testPrinting ? 'Imprimiendo...' : 'Imprimir ticket de prueba' }}

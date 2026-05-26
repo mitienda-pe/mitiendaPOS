@@ -174,8 +174,8 @@ const canIncrement = computed(() => {
       @focus="onInputFocus"
       @blur="onInputBlur"
       @keydown="onInputKeydown"
-      class="w-12 text-center text-sm font-medium border border-gray-300 rounded px-1 py-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-      :class="{ 'bg-blue-50': isEditing }"
+      class="w-12 text-center text-sm font-medium border border-gray-300 rounded px-1 py-0.5 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+      :class="{ 'bg-primary-50': isEditing }"
     />
 
     <!-- Botón Incrementar -->

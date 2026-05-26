@@ -22,7 +22,7 @@
 
     <!-- Loading State -->
     <div v-if="loading" class="bg-white rounded-lg shadow-md p-8 text-center">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto"></div>
       <p class="text-gray-600 mt-4">Cargando historial de turnos...</p>
     </div>
 
@@ -91,7 +91,7 @@
               <!-- Total Sales -->
               <div>
                 <p class="text-xs text-gray-500 mb-1">💳 Ventas</p>
-                <p class="text-lg font-bold text-blue-900">S/ {{ shift.total_ventas.toFixed(2) }}</p>
+                <p class="text-lg font-bold text-primary-900">S/ {{ shift.total_ventas.toFixed(2) }}</p>
                 <p class="text-xs text-gray-600">{{ shift.numero_ventas }} ops</p>
               </div>
 
@@ -121,7 +121,7 @@
               <div v-if="shift.total_efectivo > 0" class="text-xs bg-green-50 px-2 py-1 rounded">
                 💵 Efectivo: S/ {{ shift.total_efectivo.toFixed(2) }}
               </div>
-              <div v-if="shift.total_tarjeta > 0" class="text-xs bg-blue-50 px-2 py-1 rounded">
+              <div v-if="shift.total_tarjeta > 0" class="text-xs bg-primary-50 px-2 py-1 rounded">
                 💳 Tarjeta: S/ {{ shift.total_tarjeta.toFixed(2) }}
               </div>
               <div v-if="shift.total_yape > 0" class="text-xs bg-purple-50 px-2 py-1 rounded">

@@ -31,7 +31,7 @@
                     v-model="selectedSucursal"
                     @change="loadCajasForSucursal"
                     required
-                    class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
                   >
                     <option value="">Seleccione una sucursal</option>
                     <option v-for="sucursal in sucursales" :key="sucursal.tiendadireccion_id" :value="sucursal.tiendadireccion_id">
@@ -51,7 +51,7 @@
                     v-model="cajaNumero"
                     :disabled="!selectedSucursal || availableCajas.length === 0"
                     required
-                    class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     <option value="">{{ selectedSucursal ? 'Seleccione una caja' : 'Primero seleccione una sucursal' }}</option>
                     <option v-for="caja in availableCajas" :key="caja" :value="caja">
@@ -72,7 +72,7 @@
                     <button
                       type="button"
                       @click="showBreakdown = !showBreakdown"
-                      class="text-xs text-blue-600 hover:text-blue-800 underline"
+                      class="text-xs text-primary-600 hover:text-primary-800 underline"
                     >
                       {{ showBreakdown ? 'Ocultar' : 'Desglosar' }} denominaciones
                     </button>
@@ -89,7 +89,7 @@
                       placeholder="0.00"
                       :readonly="showBreakdown"
                       :class="[
-                        'pl-10 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500',
+                        'pl-10 w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500',
                         showBreakdown ? 'bg-gray-100 cursor-not-allowed' : ''
                       ]"
                       @keyup.enter="handleOpen"
@@ -120,17 +120,17 @@
                     v-model="notas"
                     rows="3"
                     placeholder="Ej: Billetes de S/ 100 x 5, Monedas de S/ 1 x 20..."
-                    class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
                   ></textarea>
                 </div>
 
                 <!-- Info Box -->
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                <div class="bg-primary-50 border border-primary-200 rounded-lg p-3 mb-4">
                   <div class="flex">
-                    <svg class="h-5 w-5 text-blue-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg class="h-5 w-5 text-primary-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <div class="text-sm text-blue-700">
+                    <div class="text-sm text-primary-700">
                       <p class="font-medium">Importante:</p>
                       <p class="mt-1">El monto inicial debe coincidir con el efectivo real que tiene en caja. Este será el punto de partida para el arqueo al cierre del turno.</p>
                     </div>

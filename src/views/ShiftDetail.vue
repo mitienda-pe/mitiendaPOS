@@ -21,7 +21,7 @@
 
     <!-- Loading State -->
     <div v-if="loading" class="bg-white rounded-lg shadow-md p-8 text-center">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto"></div>
       <p class="text-gray-600 mt-4">Cargando detalles del turno...</p>
     </div>
 
@@ -67,10 +67,10 @@
           </div>
 
           <!-- Total Sales -->
-          <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
-            <p class="text-xs font-medium text-blue-700 mb-1">💳 Ventas Totales</p>
-            <p class="text-2xl font-bold text-blue-900">S/ {{ shift.total_ventas.toFixed(2) }}</p>
-            <p class="text-xs text-blue-600 mt-1">{{ shift.numero_ventas }} operaciones</p>
+          <div class="bg-primary-50 rounded-lg p-4 border border-primary-200">
+            <p class="text-xs font-medium text-primary-700 mb-1">💳 Ventas Totales</p>
+            <p class="text-2xl font-bold text-primary-900">S/ {{ shift.total_ventas.toFixed(2) }}</p>
+            <p class="text-xs text-primary-600 mt-1">{{ shift.numero_ventas }} operaciones</p>
           </div>
 
           <!-- Expected Amount -->
@@ -98,16 +98,16 @@
             <p class="text-xs font-medium text-green-700 mb-1">💵 Efectivo</p>
             <p class="text-xl font-bold text-green-900">S/ {{ shift.total_efectivo.toFixed(2) }}</p>
           </div>
-          <div v-if="shift.total_tarjeta > 0" class="bg-blue-50 rounded-lg p-4 border border-blue-200">
-            <p class="text-xs font-medium text-blue-700 mb-1">💳 Tarjeta</p>
-            <p class="text-xl font-bold text-blue-900">S/ {{ shift.total_tarjeta.toFixed(2) }}</p>
+          <div v-if="shift.total_tarjeta > 0" class="bg-primary-50 rounded-lg p-4 border border-primary-200">
+            <p class="text-xs font-medium text-primary-700 mb-1">💳 Tarjeta</p>
+            <p class="text-xl font-bold text-primary-900">S/ {{ shift.total_tarjeta.toFixed(2) }}</p>
           </div>
           <div v-if="shift.total_yape > 0" class="bg-purple-50 rounded-lg p-4 border border-purple-200">
             <p class="text-xs font-medium text-purple-700 mb-1">📱 Yape</p>
             <p class="text-xl font-bold text-purple-900">S/ {{ shift.total_yape.toFixed(2) }}</p>
           </div>
           <div v-if="shift.total_plin > 0" class="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
-            <p class="text-xs font-medium text-indigo-700 mb-1">📱 Plin</p>
+            <p class="text-xs font-medium text-primary-700 mb-1">📱 Plin</p>
             <p class="text-xl font-bold text-indigo-900">S/ {{ shift.total_plin.toFixed(2) }}</p>
           </div>
           <div v-if="shift.total_transferencia > 0" class="bg-cyan-50 rounded-lg p-4 border border-cyan-200">
@@ -136,7 +136,7 @@
             </button>
             <button
               @click="loadMovements"
-              class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+              class="text-sm text-primary-600 hover:text-primary-800 font-medium">
               🔄 Actualizar
             </button>
           </div>
@@ -144,7 +144,7 @@
 
         <!-- Loading Movements -->
         <div v-if="loadingMovements" class="text-center py-8">
-          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 mx-auto"></div>
           <p class="text-gray-600 text-sm mt-2">Cargando movimientos...</p>
         </div>
 
@@ -187,7 +187,7 @@
                   <div v-if="movement.tipo === 'venta' && movement.referencia">
                     <router-link
                       :to="`/sales/${movement.referencia.replace('VENTA-', '')}`"
-                      class="font-medium" :class="movement.eliminado ? 'text-gray-400 line-through' : 'text-blue-600 hover:text-blue-800'">
+                      class="font-medium" :class="movement.eliminado ? 'text-gray-400 line-through' : 'text-primary-600 hover:text-primary-800'">
                       🛒 Venta #{{ movement.referencia.replace('VENTA-', '') }}
                     </router-link>
                     <p class="text-xs text-gray-500 mt-1">{{ movement.concepto }}</p>
@@ -211,9 +211,9 @@
       <div v-if="shift.notas_apertura || shift.notas_cierre" class="bg-white rounded-lg shadow-md p-6">
         <h2 class="text-xl font-semibold text-gray-900 mb-4">Notas</h2>
         <div class="space-y-4">
-          <div v-if="shift.notas_apertura" class="bg-blue-50 rounded-lg p-4">
-            <p class="text-sm font-medium text-blue-900 mb-1">📝 Notas de Apertura</p>
-            <p class="text-sm text-blue-800">{{ shift.notas_apertura }}</p>
+          <div v-if="shift.notas_apertura" class="bg-primary-50 rounded-lg p-4">
+            <p class="text-sm font-medium text-primary-900 mb-1">📝 Notas de Apertura</p>
+            <p class="text-sm text-primary-800">{{ shift.notas_apertura }}</p>
           </div>
           <div v-if="shift.notas_cierre" class="bg-gray-50 rounded-lg p-4">
             <p class="text-sm font-medium text-gray-900 mb-1">📝 Notas de Cierre</p>
@@ -327,7 +327,7 @@ const getMovementTypeLabel = (tipo) => {
  */
 const getMovementTypeClass = (tipo) => {
   const classes = {
-    'venta': 'bg-blue-100 text-blue-800',
+    'venta': 'bg-primary-100 text-primary-800',
     'entrada': 'bg-green-100 text-green-800',
     'salida': 'bg-red-100 text-red-800',
     'ajuste': 'bg-yellow-100 text-yellow-800'

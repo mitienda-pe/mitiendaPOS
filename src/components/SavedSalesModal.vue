@@ -42,7 +42,7 @@
                         <div class="flex space-x-2">
                           <button
                             @click="resumeSale(sale)"
-                            class="text-indigo-600 hover:text-indigo-900 flex items-center"
+                            class="text-primary-600 hover:text-indigo-900 flex items-center"
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                               <polygon points="5 3 19 12 5 21 5 3"></polygon>
@@ -82,7 +82,7 @@
           <button
             type="button"
             @click="close"
-            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
           >
             Cerrar
           </button>

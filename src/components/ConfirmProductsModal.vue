@@ -16,7 +16,7 @@
               </h3>
               <div class="mt-2">
                 <p class="text-sm text-gray-700 mb-4">
-                  Tienes <strong class="text-blue-600">{{ productCount }} producto(s)</strong> en el carrito pero aún no has registrado el documento del cliente.
+                  Tienes <strong class="text-primary-600">{{ productCount }} producto(s)</strong> en el carrito pero aún no has registrado el documento del cliente.
                 </p>
                 <p class="text-sm text-gray-600 mb-3">
                   ¿Qué deseas hacer con estos productos?
@@ -36,7 +36,7 @@
           <button
             @click="handleKeep"
             type="button"
-            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm"
           >
             ✓ Mantener Productos
           </button>

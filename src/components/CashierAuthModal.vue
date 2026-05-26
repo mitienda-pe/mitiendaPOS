@@ -6,8 +6,8 @@
         <p class="text-gray-600 text-center mb-6">Seleccione el cajero e ingrese su PIN de 4 dígitos</p>
 
         <!-- Sucursal y Caja (info) -->
-        <div v-if="sucursalInfo" class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-          <div class="text-sm text-blue-800">
+        <div v-if="sucursalInfo" class="bg-primary-50 border border-primary-200 rounded-lg p-3 mb-4">
+          <div class="text-sm text-primary-800">
             <p class="font-medium">📍 {{ sucursalInfo.nombre }}</p>
             <p>🖥️ Caja {{ cajaNumero }}</p>
           </div>
@@ -24,7 +24,7 @@
               v-model="selectedEmpleado"
               @change="pinInput?.focus()"
               required
-              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               <option value="">Seleccione un cajero</option>
               <option
@@ -53,7 +53,7 @@
               :disabled="!selectedEmpleado"
               name="cashier-pin"
               autocomplete="off"
-              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-2xl text-center tracking-widest disabled:bg-gray-100"
+              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-2xl text-center tracking-widest disabled:bg-gray-100"
               placeholder="••••"
               @input="handlePinInput"
             />
@@ -93,7 +93,7 @@
             <button
               type="submit"
               :disabled="!isValid || loading"
-              class="flex-1 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              class="flex-1 px-4 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               <svg v-if="loading" class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>

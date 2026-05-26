@@ -68,15 +68,15 @@
                 </div>
 
                 <!-- Expected Cash -->
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <div class="bg-primary-50 border border-primary-200 rounded-lg p-4 mb-4">
                   <div class="flex justify-between items-center">
                     <div>
-                      <p class="text-sm font-medium text-blue-900">Efectivo Esperado en Caja</p>
-                      <p class="text-xs text-blue-700 mt-1">
+                      <p class="text-sm font-medium text-primary-900">Efectivo Esperado en Caja</p>
+                      <p class="text-xs text-primary-700 mt-1">
                         Inicial ({{ formatCurrency(shift.monto_inicial) }}) + Efectivo de ventas ({{ formatCurrency(shift.total_efectivo) }})
                       </p>
                     </div>
-                    <p class="text-2xl font-bold text-blue-900">
+                    <p class="text-2xl font-bold text-primary-900">
                       {{ formatCurrency(expectedCash) }}
                     </p>
                   </div>
@@ -91,7 +91,7 @@
                     <button
                       type="button"
                       @click="showBreakdown = !showBreakdown"
-                      class="text-xs text-blue-600 hover:text-blue-800 underline"
+                      class="text-xs text-primary-600 hover:text-primary-800 underline"
                     >
                       {{ showBreakdown ? 'Ocultar' : 'Desglosar' }} denominaciones
                     </button>
@@ -108,7 +108,7 @@
                       placeholder="0.00"
                       :readonly="showBreakdown"
                       :class="[
-                        'pl-10 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-lg font-medium',
+                        'pl-10 w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 text-lg font-medium',
                         showBreakdown ? 'bg-gray-100 cursor-not-allowed' : ''
                       ]"
                       @input="calculateDifference"
@@ -168,7 +168,7 @@
                     v-model="notas"
                     rows="3"
                     placeholder="Ej: Observaciones, incidencias, billetes dañados..."
-                    class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
                   ></textarea>
                 </div>
 
@@ -180,11 +180,11 @@
 
               <!-- Step 2: PIN Validation (after entering data) -->
               <div v-else-if="currentStep === 'pin'" class="mt-2">
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                  <p class="text-sm text-blue-800">
+                <div class="bg-primary-50 border border-primary-200 rounded-lg p-4 mb-4">
+                  <p class="text-sm text-primary-800">
                     🔐 Confirme el cierre ingresando su PIN
                   </p>
-                  <p v-if="cashierStore.cashier" class="text-xs text-blue-600 mt-1">
+                  <p v-if="cashierStore.cashier" class="text-xs text-primary-600 mt-1">
                     Cajero: {{ cashierStore.cashier.empleado_nombres}} {{ cashierStore.cashier.empleado_apellidos }}
                   </p>
                 </div>
@@ -203,7 +203,7 @@
                     required
                     name="close-shift-pin"
                     autocomplete="off"
-                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-2xl text-center tracking-widest"
+                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-2xl text-center tracking-widest"
                     placeholder="••••"
                   />
                   <p class="text-xs text-gray-500 mt-1 text-center">
@@ -226,7 +226,7 @@
             @click="handleClose"
             :disabled="processing || (currentStep === 'closing' && !isValid)"
             class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium text-white focus:outline-none sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            :class="currentStep === 'closing' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'"
+            :class="currentStep === 'closing' ? 'bg-primary-600 hover:bg-primary-700' : 'bg-red-600 hover:bg-red-700'"
           >
             <svg v-if="processing" class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -307,7 +307,7 @@ const isValid = computed(() => {
 const differenceClass = computed(() => {
   if (difference.value > 0) return 'bg-green-50 border border-green-200 text-green-700';
   if (difference.value < 0) return 'bg-red-50 border border-red-200 text-red-700';
-  return 'bg-blue-50 border border-blue-200 text-blue-700';
+  return 'bg-primary-50 border border-primary-200 text-primary-700';
 });
 
 const differenceLabel = computed(() => {

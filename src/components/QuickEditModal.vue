@@ -62,7 +62,7 @@
                   min="0"
                   :required="!readOnly"
                   :disabled="readOnly"
-                  :class="readOnly ? 'w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 cursor-not-allowed' : 'w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500'"
+                  :class="readOnly ? 'w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 cursor-not-allowed' : 'w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500'"
                   placeholder="0.00"
                 />
               </div>
@@ -79,18 +79,18 @@
                   min="0"
                   :required="!readOnly"
                   :disabled="readOnly"
-                  :class="readOnly ? 'w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 cursor-not-allowed' : 'w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500'"
+                  :class="readOnly ? 'w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 cursor-not-allowed' : 'w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500'"
                   placeholder="0"
                 />
               </div>
 
               <!-- Info adicional -->
-              <div class="bg-blue-50 border border-blue-200 rounded-md p-3">
+              <div class="bg-primary-50 border border-primary-200 rounded-md p-3">
                 <div class="flex items-start">
-                  <svg class="h-5 w-5 text-blue-400 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <svg class="h-5 w-5 text-primary-400 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
                   </svg>
-                  <div class="text-sm text-blue-700">
+                  <div class="text-sm text-primary-700">
                     <p class="font-medium">Stock mínimo: {{ product?.min_stock || 5 }} unidades</p>
                     <p v-if="form.stock <= (product?.min_stock || 5)" class="mt-1 text-red-600 font-semibold">
                       ⚠️ El stock está por debajo del mínimo
@@ -109,7 +109,7 @@
                 <button
                   type="button"
                   @click="closeModal"
-                  :class="readOnly ? 'w-full px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors' : 'flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors'"
+                  :class="readOnly ? 'w-full px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors' : 'flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors'"
                   :disabled="loading"
                 >
                   {{ readOnly ? 'Cerrar' : 'Cancelar' }}
@@ -117,7 +117,7 @@
                 <button
                   v-if="!readOnly"
                   type="submit"
-                  class="flex-1 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  class="flex-1 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   :disabled="loading"
                 >
                   <span v-if="!loading">Guardar Cambios</span>

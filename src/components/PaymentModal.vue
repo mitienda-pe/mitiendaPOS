@@ -67,8 +67,8 @@
                   <button @click="selectPaymentMethod('tarjeta')" :class="[
                     'btn flex items-center justify-center py-3 rounded-lg transition-colors duration-200',
                     paymentMethod === 'tarjeta'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-blue-100 hover:bg-blue-200 text-blue-800'
+                      ? 'bg-primary-600 text-white'
+                      : 'bg-primary-100 hover:bg-primary-200 text-primary-800'
                   ]">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none"
                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -189,8 +189,8 @@
                 <!-- Campos específicos según el método de pago -->
                 <div v-if="paymentMethod === 'efectivo'" class="mb-3">
                   <!-- Sugerencias de montos óptimos -->
-                  <div v-if="paymentSuggestions.length > 0" class="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div class="text-xs font-medium text-blue-900 mb-2 flex items-center">
+                  <div v-if="paymentSuggestions.length > 0" class="mb-3 p-2 bg-primary-50 border border-primary-200 rounded-lg">
+                    <div class="text-xs font-medium text-primary-900 mb-2 flex items-center">
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="10"></circle>
@@ -290,7 +290,7 @@
                     placeholder="Ej: 123456"
                     required
                     maxlength="100"
-                    class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                     :class="{'border-red-500': paymentMethod === 'tarjeta' && !cardCode && attemptedSubmit}"
                   />
                   <p v-if="paymentMethod === 'tarjeta' && !cardCode && attemptedSubmit" class="text-xs text-red-600 mt-1">
@@ -314,7 +314,7 @@
                     placeholder="Ej: 000123456789"
                     required
                     maxlength="100"
-                    class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                     :class="{'border-red-500': paymentMethod === 'banco' && !bankOperationNumber && attemptedSubmit}"
                   />
                   <p v-if="paymentMethod === 'banco' && !bankOperationNumber && attemptedSubmit" class="text-xs text-red-600 mt-1">
@@ -383,11 +383,11 @@
                 <div v-if="paymentMethod === 'giftcard'" class="mb-3">
                   <label class="block text-sm font-medium text-gray-700 mb-1">Monto a cargar</label>
                   <input type="number" v-model="paymentAmount"
-                    class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                     step="0.01" />
                   <label class="block text-sm font-medium text-gray-700 mb-1 mt-2">Código de Gift Card</label>
                   <input type="text" v-model="giftCardCode"
-                    class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" />
                 </div>
 
                 <!-- Nota de Crédito -->
@@ -403,7 +403,7 @@
                     placeholder="Ej: F001-00001234"
                     required
                     maxlength="50"
-                    class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                     :class="{'border-red-500': paymentMethod === 'nota_credito' && !creditNoteNumber && attemptedSubmit}"
                   />
                   <p v-if="paymentMethod === 'nota_credito' && !creditNoteNumber && attemptedSubmit" class="text-xs text-red-600 mt-1">
@@ -419,7 +419,7 @@
                 <button v-if="paymentMethod" @click="addPayment" :class="[
                   'btn py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center',
                   isPaymentValid
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                    ? 'bg-primary-600 hover:bg-primary-700 text-white'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 ]" :disabled="!isPaymentValid">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none"
@@ -517,7 +517,7 @@
               <!-- Botón Abrir PDF -->
               <button
                 v-if="displayBillingDocument?.files?.pdf"
-                class="w-full py-3 px-6 rounded-lg text-base font-medium transition-all duration-200 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl"
+                class="w-full py-3 px-6 rounded-lg text-base font-medium transition-all duration-200 bg-primary-600 hover:bg-primary-700 text-white shadow-lg hover:shadow-xl"
                 @click="printTicket">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 inline" viewBox="0 0 24 24" fill="none"
                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -565,7 +565,7 @@
                     <div class="mb-2">
                       <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
                       <input type="email" v-model="emailAddress"
-                        class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                         placeholder="ejemplo@correo.com" />
                     </div>
                     <button

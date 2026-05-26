@@ -11,7 +11,7 @@
         </div>
         <button
           @click="openCreateModal"
-          class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+          class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
@@ -73,7 +73,7 @@
             <p class="text-gray-500 mb-2">No hay configuraciones de cuentas</p>
             <button
               @click="openCreateModal"
-              class="mt-4 text-indigo-600 hover:text-indigo-700"
+              class="mt-4 text-primary-600 hover:text-primary-700"
             >
               Crear primera configuración
             </button>
@@ -129,7 +129,7 @@
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
                     @click="editAccount(account)"
-                    class="text-indigo-600 hover:text-indigo-900 mr-3"
+                    class="text-primary-600 hover:text-indigo-900 mr-3"
                     title="Editar"
                   >
                     Editar
@@ -172,7 +172,7 @@
               v-model="formData.tiendadireccion_id"
               @change="onBranchChange"
               required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               <option :value="null">Todas (Global)</option>
               <option
@@ -197,7 +197,7 @@
               v-model="formData.caja_numero"
               :disabled="!formData.tiendadireccion_id"
               required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
             >
               <option :value="null">Todas (Nivel Sucursal)</option>
               <option v-for="n in availableCashiers" :key="n" :value="n">{{ n }}</option>
@@ -215,7 +215,7 @@
             <select
               v-model="formData.payment_method"
               required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               <option value="">Selecciona un método</option>
               <option value="efectivo">Efectivo</option>
@@ -241,7 +241,7 @@
               type="text"
               maxlength="50"
               required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent font-mono"
               placeholder="Ej: 10100"
             />
             <p class="mt-1 text-xs text-gray-500">
@@ -257,7 +257,7 @@
               :true-value="1"
               :false-value="0"
               id="is_active"
-              class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+              class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
             />
             <label for="is_active" class="ml-2 block text-sm text-gray-700">
               Configuración activa
@@ -276,7 +276,7 @@
           <button
             type="submit"
             :disabled="saving"
-            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors disabled:opacity-50"
+            class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors disabled:opacity-50"
           >
             {{ saving ? 'Guardando...' : 'Guardar' }}
           </button>
@@ -563,7 +563,7 @@ const getPaymentMethodLabel = (method) => {
 const getPaymentMethodBadgeClass = (method) => {
   const classes = {
     'efectivo': 'bg-emerald-100 text-emerald-800',
-    'tarjeta': 'bg-blue-100 text-blue-800',
+    'tarjeta': 'bg-primary-100 text-primary-800',
     'banco': 'bg-green-100 text-green-800',
     'yape': 'bg-purple-100 text-purple-800',
     'plin': 'bg-pink-100 text-pink-800',

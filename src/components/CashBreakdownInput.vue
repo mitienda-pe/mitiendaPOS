@@ -16,7 +16,7 @@
             max="999"
             step="1"
             placeholder="0"
-            class="w-14 px-1 py-1 text-sm text-center border rounded focus:ring-1 focus:ring-blue-500"
+            class="w-14 px-1 py-1 text-sm text-center border rounded focus:ring-1 focus:ring-primary-500"
           />
           <span class="text-xs text-gray-500 min-w-[70px] text-right">
             S/ {{ (bill * (counts[bill] || 0)).toFixed(2) }}
@@ -39,7 +39,7 @@
             max="999"
             step="1"
             placeholder="0"
-            class="w-14 px-1 py-1 text-sm text-center border rounded focus:ring-1 focus:ring-blue-500"
+            class="w-14 px-1 py-1 text-sm text-center border rounded focus:ring-1 focus:ring-primary-500"
           />
           <span class="text-xs text-gray-500 min-w-[70px] text-right">
             S/ {{ (coin * (counts[coin] || 0)).toFixed(2) }}

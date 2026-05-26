@@ -44,7 +44,7 @@
 
     <!-- Loading State -->
     <div v-if="loading" class="flex justify-center items-center py-12">
-      <svg class="animate-spin h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <svg class="animate-spin h-8 w-8 text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
       </svg>
@@ -78,8 +78,8 @@
             <td class="px-6 py-4 whitespace-nowrap">
               <div class="flex items-center">
                 <div class="flex-shrink-0 h-10 w-10">
-                  <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                    <span class="text-blue-600 font-medium text-sm">
+                  <div class="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
+                    <span class="text-primary-600 font-medium text-sm">
                       {{ getUserInitials(user) }}
                     </span>
                   </div>
@@ -105,7 +105,7 @@
               <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
                 :class="{
                   'bg-purple-100 text-purple-800': user.empleado_rol === 'administrador',
-                  'bg-blue-100 text-blue-800': user.empleado_rol === 'supervisor',
+                  'bg-primary-100 text-primary-800': user.empleado_rol === 'supervisor',
                   'bg-green-100 text-green-800': user.empleado_rol === 'cajero'
                 }">
                 {{ getRoleLabel(user.empleado_rol) }}

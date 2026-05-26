@@ -6,7 +6,7 @@
         <h1 class="text-2xl font-semibold text-gray-900">Sucursales</h1>
         <button
           @click="showCreateModal = true"
-          class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+          class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
@@ -35,7 +35,7 @@
           <p class="text-gray-500">No hay sucursales registradas</p>
           <button
             @click="showCreateModal = true"
-            class="mt-4 text-indigo-600 hover:text-indigo-700"
+            class="mt-4 text-primary-600 hover:text-primary-700"
           >
             Crear primera sucursal
           </button>
@@ -70,7 +70,7 @@
               <div class="flex gap-2">
                 <button
                   @click="editBranch(branch)"
-                  class="p-2 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                  class="p-2 text-gray-600 hover:text-primary-600 hover:bg-indigo-50 rounded transition-colors"
                   title="Editar"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -115,7 +115,7 @@
               v-model="formData.tiendadireccion_nombresucursal"
               type="text"
               required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="Ej: Sucursal Centro"
             />
           </div>
@@ -128,7 +128,7 @@
               v-model="formData.tiendadireccion_direccion"
               type="text"
               required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="Calle y número"
             />
           </div>
@@ -140,7 +140,7 @@
             <input
               v-model="formData.tiendadireccion_interior"
               type="text"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="Ej: Piso 2, Of. 201"
             />
           </div>
@@ -153,7 +153,7 @@
               <input
                 v-model="formData.tiendadireccion_dist"
                 type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="Distrito"
               />
             </div>
@@ -164,7 +164,7 @@
               <input
                 v-model="formData.tiendadireccion_prov"
                 type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="Provincia"
               />
             </div>
@@ -175,7 +175,7 @@
               <input
                 v-model="formData.tiendadireccion_dpto"
                 type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="Departamento"
               />
             </div>
@@ -191,7 +191,7 @@
               min="1"
               max="50"
               required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
 
@@ -202,7 +202,7 @@
             <textarea
               v-model="formData.tiendadireccion_referencia"
               rows="2"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="Referencias adicionales para llegar"
             ></textarea>
           </div>
@@ -219,7 +219,7 @@
           <button
             type="submit"
             :disabled="saving"
-            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors disabled:opacity-50"
+            class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors disabled:opacity-50"
           >
             {{ saving ? 'Guardando...' : 'Guardar' }}
           </button>

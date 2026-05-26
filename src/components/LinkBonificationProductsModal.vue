@@ -19,8 +19,8 @@
                 </button>
               </div>
 
-              <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p class="text-sm text-blue-700">
+              <div class="mb-4 p-4 bg-primary-50 border border-primary-200 rounded-lg">
+                <p class="text-sm text-primary-700">
                   Estos son los productos que se regalarán cuando se cumplan las condiciones de la bonificación.
                 </p>
               </div>
@@ -32,13 +32,13 @@
                     v-model="searchQuery"
                     type="text"
                     placeholder="Buscar productos por nombre, SKU o código de barras..."
-                    class="flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    class="flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
                     @keyup.enter="searchProducts"
                   />
                   <button
                     @click="searchProducts"
                     :disabled="loading"
-                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                    class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
                   >
                     {{ loading ? 'Buscando...' : 'Buscar' }}
                   </button>
@@ -55,7 +55,7 @@
                               type="checkbox"
                               @change="toggleSelectAll"
                               :checked="allSelected"
-                              class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                             />
                           </th>
                           <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
@@ -68,7 +68,7 @@
                               type="checkbox"
                               :value="product.id"
                               v-model="selectedProductIds"
-                              class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                             />
                           </td>
                           <td class="px-4 py-4">
@@ -131,7 +131,7 @@
             @click="handleClose"
             :disabled="linking"
             type="button"
-            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancelar
           </button>

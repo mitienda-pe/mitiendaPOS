@@ -29,7 +29,7 @@
                     v-model="formData.tiendapromocion_nombre"
                     type="text"
                     placeholder="Ej: 2x1 en Coca Cola"
-                    class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
                     :class="{ 'border-red-500': errors.tiendapromocion_nombre }"
                     :disabled="loading"
                   />
@@ -47,7 +47,7 @@
                     v-model="formData.tiendapromocion_codigo"
                     type="text"
                     placeholder="Ej: 2X1-COCA"
-                    class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
                     :class="{ 'border-red-500': errors.tiendapromocion_codigo }"
                     :disabled="loading"
                   />
@@ -68,7 +68,7 @@
                     <input
                       v-model="startDate"
                       type="date"
-                      class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
                       :class="{ 'border-red-500': errors.tiendapromocion_fechainicio }"
                       :disabled="loading"
                     />
@@ -83,7 +83,7 @@
                     <input
                       v-model="endDate"
                       type="date"
-                      class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
                       :class="{ 'border-red-500': errors.tiendapromocion_fechacaducidad }"
                       :disabled="loading"
                     />
@@ -101,7 +101,7 @@
                     :true-value="1"
                     :false-value="0"
                     id="estado"
-                    class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                     :disabled="loading"
                   />
                   <label for="estado" class="text-sm font-medium text-gray-700">
@@ -110,15 +110,15 @@
                 </div>
 
                 <!-- Nota informativa -->
-                <div class="rounded-md bg-blue-50 p-4 border border-blue-200">
+                <div class="rounded-md bg-primary-50 p-4 border border-primary-200">
                   <div class="flex">
                     <div class="flex-shrink-0">
-                      <svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                      <svg class="h-5 w-5 text-primary-400" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
                       </svg>
                     </div>
                     <div class="ml-3">
-                      <p class="text-sm text-blue-700">
+                      <p class="text-sm text-primary-700">
                         Después de crear la bonificación básica, serás redirigido a la pantalla de configuración
                         donde podrás definir los productos base, productos bonificados y las reglas de la bonificación.
                       </p>
@@ -133,7 +133,7 @@
           <button
             @click="handleSave"
             :disabled="loading"
-            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span v-if="loading" class="flex items-center gap-2">
               <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
@@ -148,7 +148,7 @@
             @click="handleClose"
             :disabled="loading"
             type="button"
-            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancelar
           </button>

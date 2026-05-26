@@ -29,7 +29,7 @@
                     :class="[
                       'flex-1 px-4 py-3 rounded-lg border-2 transition-all',
                       selectedDocumentType === 'boleta'
-                        ? 'border-blue-500 bg-blue-50 text-blue-700'
+                        ? 'border-primary-500 bg-primary-50 text-primary-700'
                         : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
                     ]"
                   >
@@ -41,7 +41,7 @@
                     :class="[
                       'flex-1 px-4 py-3 rounded-lg border-2 transition-all',
                       selectedDocumentType === 'factura'
-                        ? 'border-blue-500 bg-blue-50 text-blue-700'
+                        ? 'border-primary-500 bg-primary-50 text-primary-700'
                         : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
                     ]"
                   >
@@ -61,7 +61,7 @@
                 <div class="flex gap-2 items-center">
                   <select
                     v-model="tipoDoc"
-                    class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-1/4"
+                    class="p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 w-1/4"
                     @change="handleDocumentChange"
                   >
                     <option value="DNI">DNI</option>
@@ -73,7 +73,7 @@
                     type="text"
                     :placeholder="tipoDoc === 'DNI' ? '8 dígitos' : '11 dígitos'"
                     :maxlength="tipoDoc === 'DNI' ? 8 : 11"
-                    class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 flex-1"
+                    class="p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 flex-1"
                     @input="handleDocumentInput"
                     @keyup.enter="searchCustomer"
                   />
@@ -81,7 +81,7 @@
                     v-if="numDoc"
                     @click="searchCustomer"
                     :disabled="searching"
-                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                    class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
                   >
                     {{ searching ? 'Buscando...' : 'Buscar' }}
                   </button>
@@ -152,14 +152,14 @@
                       v-model="newCustomer.nombres"
                       type="text"
                       placeholder="Nombres"
-                      class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
+                      class="p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 w-full text-sm"
                       required
                     />
                     <input
                       v-model="newCustomer.apellidos"
                       type="text"
                       placeholder="Apellidos"
-                      class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
+                      class="p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 w-full text-sm"
                       required
                     />
                   </template>
@@ -170,7 +170,7 @@
                       v-model="newCustomer.razonSocial"
                       type="text"
                       placeholder="Razón Social"
-                      class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
+                      class="p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 w-full text-sm"
                       required
                     />
 
@@ -179,7 +179,7 @@
                       v-model="newCustomer.direccion"
                       type="text"
                       placeholder="Dirección"
-                      class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
+                      class="p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 w-full text-sm"
                     />
 
                     <!-- Ubigeo (grid de 3 columnas) -->
@@ -188,19 +188,19 @@
                         v-model="newCustomer.departamento"
                         type="text"
                         placeholder="Departamento"
-                        class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
+                        class="p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 w-full text-sm"
                       />
                       <input
                         v-model="newCustomer.provincia"
                         type="text"
                         placeholder="Provincia"
-                        class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
+                        class="p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 w-full text-sm"
                       />
                       <input
                         v-model="newCustomer.distrito"
                         type="text"
                         placeholder="Distrito"
-                        class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
+                        class="p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 w-full text-sm"
                       />
                     </div>
                   </template>
@@ -210,13 +210,13 @@
                     v-model="newCustomer.correoElectronico"
                     type="email"
                     placeholder="Correo electrónico (opcional)"
-                    class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
+                    class="p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 w-full text-sm"
                   />
                   <input
                     v-model="newCustomer.telefono"
                     type="tel"
                     placeholder="Teléfono (opcional)"
-                    class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
+                    class="p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 w-full text-sm"
                   />
 
                   <button
@@ -240,7 +240,7 @@
                 <button
                   v-if="customerFound"
                   @click="startWithCustomer"
-                  class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  class="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
                 >
                   Iniciar Venta
                 </button>

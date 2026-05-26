@@ -31,7 +31,7 @@
                 :class="[
                   'w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors',
                   activeSection === section.id
-                    ? 'bg-blue-100 text-blue-700'
+                    ? 'bg-primary-100 text-primary-700'
                     : 'text-gray-700 hover:bg-gray-100'
                 ]"
               >
@@ -68,8 +68,8 @@
                   <li>Añade observaciones si es necesario</li>
                   <li>Confirma la apertura del turno</li>
                 </ol>
-                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mt-3">
-                  <p class="text-sm text-blue-700">
+                <div class="bg-primary-50 border-l-4 border-primary-400 p-4 mt-3">
+                  <p class="text-sm text-primary-700">
                     <strong>Importante:</strong> Debes tener un turno abierto para poder acceder al POS y realizar ventas.
                   </p>
                 </div>
@@ -126,12 +126,12 @@
                 <p class="text-gray-700">Al iniciar una venta, debes definir el cliente y tipo de documento:</p>
 
                 <div class="mt-3 space-y-4">
-                  <div class="bg-blue-50 border-l-4 border-blue-400 p-4">
-                    <p class="text-sm font-semibold text-blue-800 mb-2">Venta como Cliente General (por defecto)</p>
-                    <p class="text-sm text-blue-700 mb-2">
+                  <div class="bg-primary-50 border-l-4 border-primary-400 p-4">
+                    <p class="text-sm font-semibold text-primary-800 mb-2">Venta como Cliente General (por defecto)</p>
+                    <p class="text-sm text-primary-700 mb-2">
                       Si el cliente no proporciona documento de identidad, la venta se realiza como <strong>"Cliente General"</strong>:
                     </p>
-                    <ul class="list-disc list-inside text-sm text-blue-700 ml-4 space-y-1">
+                    <ul class="list-disc list-inside text-sm text-primary-700 ml-4 space-y-1">
                       <li>No es necesario buscar o registrar cliente</li>
                       <li>Solo se puede emitir <strong>Boleta</strong></li>
                       <li>No se requiere email ni teléfono</li>
@@ -204,7 +204,7 @@
 
                 <h4 class="font-semibold text-gray-900 mt-4">Boleta vs Factura</h4>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
-                  <div class="bg-gray-50 p-3 rounded border-l-4 border-blue-400">
+                  <div class="bg-gray-50 p-3 rounded border-l-4 border-primary-400">
                     <p class="font-semibold text-gray-900 mb-2">Boleta</p>
                     <ul class="list-disc list-inside text-sm text-gray-700 space-y-1">
                       <li>Para personas naturales</li>
@@ -224,8 +224,8 @@
                   </div>
                 </div>
 
-                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mt-4">
-                  <p class="text-sm text-blue-700">
+                <div class="bg-primary-50 border-l-4 border-primary-400 p-4 mt-4">
+                  <p class="text-sm text-primary-700">
                     <strong>Recuerda:</strong> Cada venta se guarda automáticamente, por lo que puedes pausarla y continuarla más tarde.
                   </p>
                 </div>
@@ -242,11 +242,11 @@
                 <p class="text-gray-700">El sistema permite gestionar múltiples ventas simultáneamente:</p>
 
                 <h4 class="font-semibold text-gray-900 mt-4">Guardado Automático</h4>
-                <div class="bg-blue-50 border-l-4 border-blue-400 p-4">
-                  <p class="text-sm text-blue-700">
+                <div class="bg-primary-50 border-l-4 border-primary-400 p-4">
+                  <p class="text-sm text-primary-700">
                     <strong>El sistema guarda automáticamente cada cambio:</strong>
                   </p>
-                  <ul class="list-disc list-inside text-sm text-blue-700 ml-4 mt-2 space-y-1">
+                  <ul class="list-disc list-inside text-sm text-primary-700 ml-4 mt-2 space-y-1">
                     <li>Cada producto agregado se guarda instantáneamente</li>
                     <li>Los cambios de cantidad o precio se guardan automáticamente</li>
                     <li>La información del cliente se guarda al seleccionarlo</li>
@@ -404,8 +404,8 @@
                   <li>Puedes agregar más métodos si es necesario</li>
                   <li>Una vez completado el total, confirma la transacción</li>
                 </ol>
-                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mt-3">
-                  <p class="text-sm text-blue-700">
+                <div class="bg-primary-50 border-l-4 border-primary-400 p-4 mt-3">
+                  <p class="text-sm text-primary-700">
                     <strong>Ejemplo:</strong> Si la venta es S/ 150 y el cliente paga S/ 100 en efectivo y S/ 50 con tarjeta, ingresa ambos métodos por separado.
                   </p>
                 </div>
@@ -457,8 +457,8 @@
                   <li>Haz clic en <strong>"Enviar"</strong></li>
                   <li>El sistema confirmará cuando el email haya sido enviado</li>
                 </ol>
-                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mt-3">
-                  <p class="text-sm text-blue-700">
+                <div class="bg-primary-50 border-l-4 border-primary-400 p-4 mt-3">
+                  <p class="text-sm text-primary-700">
                     <strong>Nota:</strong> Los comprobantes electrónicos son generados automáticamente por el sistema de facturación integrado.
                   </p>
                 </div>
@@ -503,11 +503,11 @@
                   </ul>
                 </div>
 
-                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mt-3">
-                  <p class="text-sm text-blue-700">
+                <div class="bg-primary-50 border-l-4 border-primary-400 p-4 mt-3">
+                  <p class="text-sm text-primary-700">
                     <strong>Cuándo usar el bloqueo:</strong>
                   </p>
-                  <ul class="list-disc list-inside text-sm text-blue-700 ml-4 mt-2 space-y-1">
+                  <ul class="list-disc list-inside text-sm text-primary-700 ml-4 mt-2 space-y-1">
                     <li>Cuando te alejas temporalmente de tu puesto de trabajo</li>
                     <li>Durante pausas cortas o recesos</li>
                     <li>Para prevenir acceso no autorizado</li>
@@ -626,8 +626,8 @@
                   <li>Los productos con stock ilimitado se omiten automáticamente</li>
                 </ol>
 
-                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mt-3">
-                  <p class="text-sm text-blue-700">
+                <div class="bg-primary-50 border-l-4 border-primary-400 p-4 mt-3">
+                  <p class="text-sm text-primary-700">
                     <strong>Cuándo usar la sincronización manual:</strong> cuando un cliente reporta que el stock mostrado no coincide con la realidad, cuando hubo un ingreso de mercadería y querés ver el stock actualizado sin esperar al cron, o para confirmar el stock antes de una venta grande.
                   </p>
                 </div>
@@ -708,7 +708,7 @@
                     <p class="font-semibold text-gray-900">Cajero</p>
                     <p class="text-sm text-gray-700">Acceso a POS, ventas, inventario básico y gestión de turno</p>
                   </div>
-                  <div class="bg-gray-50 p-3 rounded border-l-4 border-blue-400">
+                  <div class="bg-gray-50 p-3 rounded border-l-4 border-primary-400">
                     <p class="font-semibold text-gray-900">Supervisor</p>
                     <p class="text-sm text-gray-700">Permisos de cajero + acceso a reportes, dashboard y gestión de promociones</p>
                   </div>
@@ -761,8 +761,8 @@
                   <li>Esto permite que el sistema consulte el stock correcto al realizar ventas</li>
                 </ol>
 
-                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mt-3">
-                  <p class="text-sm text-blue-700">
+                <div class="bg-primary-50 border-l-4 border-primary-400 p-4 mt-3">
+                  <p class="text-sm text-primary-700">
                     <strong>Nota:</strong> Es fundamental vincular correctamente cada sucursal con su almacén para evitar inconsistencias en el inventario.
                   </p>
                 </div>
@@ -897,8 +897,8 @@
                   <li>Guardar el CSV como auditoría</li>
                 </ol>
 
-                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mt-3">
-                  <p class="text-sm text-blue-700">
+                <div class="bg-primary-50 border-l-4 border-primary-400 p-4 mt-3">
+                  <p class="text-sm text-primary-700">
                     <strong>Requisitos:</strong> la tienda debe tener credenciales NetSuite configuradas y <code class="text-sm bg-white px-1 rounded">location_id</code> asignado en <code class="text-sm bg-white px-1 rounded">tiendascredenciales_erp</code>. Los productos sin SKU no se pueden mapear y se omiten automáticamente.
                   </p>
                 </div>
@@ -1007,13 +1007,13 @@
 
             <div class="border-t pt-6">
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="bg-blue-50 p-6 rounded-lg border-l-4 border-blue-500">
-                  <h3 class="text-lg font-semibold text-blue-900 mb-3">Contacto</h3>
+                <div class="bg-primary-50 p-6 rounded-lg border-l-4 border-primary-500">
+                  <h3 class="text-lg font-semibold text-primary-900 mb-3">Contacto</h3>
                   <div class="space-y-2 text-sm">
-                    <p class="text-blue-800"><strong>Email:</strong> soporte@mitienda.pe</p>
-                    <p class="text-blue-800"><strong>Teléfono:</strong> (01) 123-4567</p>
-                    <p class="text-blue-800"><strong>WhatsApp:</strong> +51 999 888 777</p>
-                    <p class="text-blue-800"><strong>Horario:</strong> Lun-Vie 9:00 AM - 6:00 PM</p>
+                    <p class="text-primary-800"><strong>Email:</strong> soporte@mitienda.pe</p>
+                    <p class="text-primary-800"><strong>Teléfono:</strong> (01) 123-4567</p>
+                    <p class="text-primary-800"><strong>WhatsApp:</strong> +51 999 888 777</p>
+                    <p class="text-primary-800"><strong>Horario:</strong> Lun-Vie 9:00 AM - 6:00 PM</p>
                   </div>
                 </div>
 

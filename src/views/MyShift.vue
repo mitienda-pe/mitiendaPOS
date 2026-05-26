@@ -22,7 +22,7 @@
 
     <!-- Loading State -->
     <div v-if="loading" class="bg-white rounded-lg shadow-md p-8 text-center">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto"></div>
       <p class="text-gray-600 mt-4">Cargando información del turno...</p>
     </div>
 
@@ -56,7 +56,7 @@
       <!-- Active Shift Status -->
       <div v-else class="bg-white rounded-lg shadow-md p-6">
         <h2 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-primary-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="8" cy="8" r="6"/>
             <path d="M18.09 10.37A6 6 0 1 1 10.34 18"/>
             <path d="M7 6h1v4"/>
@@ -116,10 +116,10 @@
           </div>
 
           <!-- Total Sales -->
-          <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
-            <p class="text-xs font-medium text-blue-700 mb-1">💳 Ventas Total</p>
-            <p class="text-2xl font-bold text-blue-900">S/ {{ summary.totalVentas.toFixed(2) }}</p>
-            <p class="text-xs text-blue-600 mt-1">{{ summary.numeroVentas }} operaciones</p>
+          <div class="bg-primary-50 rounded-lg p-4 border border-primary-200">
+            <p class="text-xs font-medium text-primary-700 mb-1">💳 Ventas Total</p>
+            <p class="text-2xl font-bold text-primary-900">S/ {{ summary.totalVentas.toFixed(2) }}</p>
+            <p class="text-xs text-primary-600 mt-1">{{ summary.numeroVentas }} operaciones</p>
           </div>
 
           <!-- Cash Sales -->
@@ -153,7 +153,7 @@
       <div v-if="shiftStore.hasActiveShift" class="bg-white rounded-lg shadow-md p-6">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-primary-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M3 3v18h18"/>
               <path d="m19 9-5 5-4-4-3 3"/>
             </svg>
@@ -174,7 +174,7 @@
             </button>
             <button
               @click="loadMovements"
-              class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+              class="text-sm text-primary-600 hover:text-primary-800 font-medium">
               🔄 Actualizar
             </button>
           </div>
@@ -182,7 +182,7 @@
 
         <!-- Movements Loading -->
         <div v-if="loadingMovements" class="text-center py-8">
-          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 mx-auto"></div>
           <p class="text-gray-600 text-sm mt-2">Cargando movimientos...</p>
         </div>
 
@@ -225,7 +225,7 @@
                   <div v-if="movement.tipo === 'venta' && movement.referencia">
                     <router-link
                       :to="`/sales/${movement.referencia.replace('VENTA-', '')}`"
-                      class="font-medium" :class="movement.eliminado ? 'text-gray-400 line-through' : 'text-blue-600 hover:text-blue-800'">
+                      class="font-medium" :class="movement.eliminado ? 'text-gray-400 line-through' : 'text-primary-600 hover:text-primary-800'">
                       🛒 Venta #{{ movement.referencia.replace('VENTA-', '') }}
                     </router-link>
                     <p class="text-xs text-gray-500 mt-1">{{ movement.concepto }}</p>
@@ -249,7 +249,7 @@
       <div class="text-center">
         <router-link
           to="/shifts"
-          class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium">
+          class="inline-flex items-center text-primary-600 hover:text-primary-800 font-medium">
           📚 Ver historial de turnos anteriores
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -755,7 +755,7 @@ const getMovementTypeLabel = (tipo) => {
  */
 const getMovementTypeClass = (tipo) => {
   const classes = {
-    'venta': 'bg-blue-100 text-blue-800',
+    'venta': 'bg-primary-100 text-primary-800',
     'entrada': 'bg-green-100 text-green-800',
     'salida': 'bg-red-100 text-red-800',
     'ajuste': 'bg-yellow-100 text-yellow-800'

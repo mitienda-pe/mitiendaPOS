@@ -5,8 +5,8 @@
       <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
         <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
           <div class="sm:flex sm:items-start">
-            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
-              <svg class="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-primary-100 sm:mx-0 sm:h-10 sm:w-10">
+              <svg class="h-6 w-6 text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
@@ -16,7 +16,7 @@
               </h3>
               <div class="mt-2">
                 <p class="text-sm text-gray-700 mb-4">
-                  El cliente <strong class="text-blue-600">{{ customerName }}</strong> ya tiene una venta guardada.
+                  El cliente <strong class="text-primary-600">{{ customerName }}</strong> ya tiene una venta guardada.
                 </p>
                 <p class="text-sm text-gray-600 mb-4">
                   ¿Qué deseas hacer?
@@ -45,8 +45,8 @@
                   </div>
 
                   <!-- Venta Actual -->
-                  <div class="border rounded-lg p-3 bg-blue-50">
-                    <h4 class="font-medium text-sm text-blue-700 mb-2 flex items-center">
+                  <div class="border rounded-lg p-3 bg-primary-50">
+                    <h4 class="font-medium text-sm text-primary-700 mb-2 flex items-center">
                       <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                       </svg>
@@ -102,7 +102,7 @@
           <button
             @click="handleCreateNew"
             type="button"
-            class="mt-3 w-full inline-flex justify-center rounded-md border border-blue-300 shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:w-auto sm:text-sm"
+            class="mt-3 w-full inline-flex justify-center rounded-md border border-primary-300 shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:w-auto sm:text-sm"
           >
             ➕ Nueva Venta Independiente
           </button>

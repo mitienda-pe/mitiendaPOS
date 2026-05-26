@@ -6,7 +6,7 @@
         <h1 class="text-2xl font-semibold text-gray-900">Empleados POS</h1>
         <button
           @click="openCreateModal"
-          class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+          class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
@@ -34,7 +34,7 @@
           <p class="text-gray-500">No hay empleados registrados</p>
           <button
             @click="openCreateModal"
-            class="mt-4 text-indigo-600 hover:text-indigo-700"
+            class="mt-4 text-primary-600 hover:text-primary-700"
           >
             Crear primer empleado
           </button>
@@ -50,7 +50,7 @@
               <div class="flex items-center gap-4">
                 <!-- Avatar -->
                 <div class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center">
-                  <span class="text-indigo-600 font-semibold text-lg">
+                  <span class="text-primary-600 font-semibold text-lg">
                     {{ getInitials(empleado.empleado_nombres, empleado.empleado_apellidos) }}
                   </span>
                 </div>
@@ -97,7 +97,7 @@
               <div class="flex gap-2">
                 <button
                   @click="editEmpleado(empleado)"
-                  class="p-2 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                  class="p-2 text-gray-600 hover:text-primary-600 hover:bg-indigo-50 rounded transition-colors"
                   title="Editar"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -142,7 +142,7 @@
               v-model="formData.empleado_nombres"
               type="text"
               required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
 
@@ -155,7 +155,7 @@
               v-model="formData.empleado_apellidos"
               type="text"
               required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
 
@@ -168,7 +168,7 @@
               v-model="formData.empleado_documento"
               type="text"
               maxlength="20"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
 
@@ -180,7 +180,7 @@
             <input
               v-model="formData.empleado_telefono"
               type="tel"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
 
@@ -192,7 +192,7 @@
             <input
               v-model="formData.empleado_email"
               type="email"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
 
@@ -213,7 +213,7 @@
                 pinValidation.checking ? 'border-gray-300' :
                 pinValidation.isValid ? 'border-green-500 focus:ring-green-500' :
                 pinValidation.error ? 'border-red-500 focus:ring-red-500' :
-                'border-gray-300 focus:ring-indigo-500'
+                'border-gray-300 focus:ring-primary-500'
               ]"
               placeholder="0000"
             />
@@ -239,7 +239,7 @@
             <select
               v-model="formData.empleado_rol"
               required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               <option value="cajero">Cajero</option>
               <option value="supervisor">Supervisor</option>
@@ -255,7 +255,7 @@
             <input
               v-model="formData.empleado_horario_inicio"
               type="time"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
 
@@ -267,7 +267,7 @@
             <input
               v-model="formData.empleado_horario_fin"
               type="time"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
 
@@ -290,7 +290,7 @@
                   type="checkbox"
                   :value="Number(branch.tiendadireccion_id)"
                   v-model="formData.sucursales"
-                  class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                 />
                 <span class="text-sm text-gray-700">{{ branch.tiendadireccion_nombresucursal }}</span>
                 <span class="text-xs text-gray-500">({{ branch.tiendadireccion_numero_cajas }} cajas)</span>
@@ -306,7 +306,7 @@
                 type="checkbox"
                 :true-value="1"
                 :false-value="0"
-                class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
               />
               <span class="text-sm font-medium text-gray-700">Empleado activo</span>
             </label>
@@ -324,7 +324,7 @@
           <button
             type="submit"
             :disabled="saving"
-            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors disabled:opacity-50"
+            class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors disabled:opacity-50"
           >
             {{ saving ? 'Guardando...' : 'Guardar' }}
           </button>
@@ -665,7 +665,7 @@ const getInitials = (nombres, apellidos) => {
 
 const getRoleBadgeClass = (rol) => {
   const classes = {
-    'cajero': 'bg-blue-100 text-blue-800',
+    'cajero': 'bg-primary-100 text-primary-800',
     'supervisor': 'bg-purple-100 text-purple-800',
     'administrador': 'bg-red-100 text-red-800'
   };

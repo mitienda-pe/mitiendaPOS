@@ -6,7 +6,7 @@
         <div class="bg-white px-4 pt-5 pb-4 sm:p-6">
           <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg leading-6 font-medium text-gray-900 flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-primary-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 7V5a2 2 0 0 1 2-2h2"/>
                 <path d="M17 3h2a2 2 0 0 1 2 2v2"/>
                 <path d="M21 17v2a2 2 0 0 1-2 2h-2"/>
@@ -35,8 +35,8 @@
           </div>
 
           <!-- Instrucciones -->
-          <div class="mt-4 p-3 bg-blue-50 rounded-lg">
-            <p class="text-sm text-blue-800 text-center">
+          <div class="mt-4 p-3 bg-primary-50 rounded-lg">
+            <p class="text-sm text-primary-800 text-center">
               📸 Posiciona el código de barras dentro del área verde
             </p>
           </div>
@@ -77,7 +77,7 @@
         </div>
 
         <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-          <button @click="closeScanner" type="button" class="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+          <button @click="closeScanner" type="button" class="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm">
             Cerrar
           </button>
         </div>

@@ -5,11 +5,11 @@
     <!-- Tarjetas de resumen -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
       <!-- Ventas del día -->
-      <div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-blue-500">
+      <div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-primary-500">
         <div class="p-5">
           <div class="flex items-center">
             <div class="flex-shrink-0">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-primary-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="12" y1="1" x2="12" y2="23"></line>
                 <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
               </svg>
@@ -126,31 +126,31 @@
         <div class="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
           <div class="w-full h-full p-4 flex items-end justify-between space-x-2">
             <div class="flex flex-col items-center">
-              <div class="bg-blue-500 w-10 rounded-t-lg" style="height: 40%"></div>
+              <div class="bg-primary-500 w-10 rounded-t-lg" style="height: 40%"></div>
               <span class="text-xs mt-1">Lun</span>
             </div>
             <div class="flex flex-col items-center">
-              <div class="bg-blue-500 w-10 rounded-t-lg" style="height: 60%"></div>
+              <div class="bg-primary-500 w-10 rounded-t-lg" style="height: 60%"></div>
               <span class="text-xs mt-1">Mar</span>
             </div>
             <div class="flex flex-col items-center">
-              <div class="bg-blue-500 w-10 rounded-t-lg" style="height: 75%"></div>
+              <div class="bg-primary-500 w-10 rounded-t-lg" style="height: 75%"></div>
               <span class="text-xs mt-1">Mié</span>
             </div>
             <div class="flex flex-col items-center">
-              <div class="bg-blue-500 w-10 rounded-t-lg" style="height: 50%"></div>
+              <div class="bg-primary-500 w-10 rounded-t-lg" style="height: 50%"></div>
               <span class="text-xs mt-1">Jue</span>
             </div>
             <div class="flex flex-col items-center">
-              <div class="bg-blue-500 w-10 rounded-t-lg" style="height: 85%"></div>
+              <div class="bg-primary-500 w-10 rounded-t-lg" style="height: 85%"></div>
               <span class="text-xs mt-1">Vie</span>
             </div>
             <div class="flex flex-col items-center">
-              <div class="bg-blue-500 w-10 rounded-t-lg" style="height: 90%"></div>
+              <div class="bg-primary-500 w-10 rounded-t-lg" style="height: 90%"></div>
               <span class="text-xs mt-1">Sáb</span>
             </div>
             <div class="flex flex-col items-center">
-              <div class="bg-blue-500 w-10 rounded-t-lg" style="height: 30%"></div>
+              <div class="bg-primary-500 w-10 rounded-t-lg" style="height: 30%"></div>
               <span class="text-xs mt-1">Dom</span>
             </div>
           </div>

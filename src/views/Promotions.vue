@@ -10,7 +10,7 @@
           </div>
           <button
             @click="showCreateDialog = true"
-            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+            class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
           >
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5v15m7.5-7.5h-15" />
@@ -29,7 +29,7 @@
                 v-model="searchQuery"
                 type="text"
                 placeholder="Nombre de bonificación..."
-                class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 text-sm"
                 @input="debouncedSearch"
               >
             </div>
@@ -39,7 +39,7 @@
               <label class="block text-xs font-medium text-gray-700 mb-1">Estado</label>
               <select
                 v-model="statusFilter"
-                class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 text-sm"
                 @change="fetchPromotions"
               >
                 <option :value="undefined">Todos</option>
@@ -55,7 +55,7 @@
               <input
                 v-model="activeOnlyFilter"
                 type="checkbox"
-                class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                 @change="fetchPromotions"
               />
               <span class="ml-2 text-sm text-gray-700">Mostrar solo bonificaciones vigentes</span>
@@ -67,7 +67,7 @@
       <!-- Loading State -->
       <div v-if="loading" class="bg-white shadow overflow-hidden sm:rounded-lg p-6">
         <div class="flex flex-col items-center justify-center py-12">
-          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4"></div>
           <p class="text-gray-600">Cargando bonificaciones...</p>
         </div>
       </div>
@@ -84,7 +84,7 @@
           <p class="text-gray-600 text-center max-w-md mb-4">{{ error }}</p>
           <button
             @click="fetchPromotions"
-            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
           >
             Reintentar
           </button>
@@ -105,7 +105,7 @@
           </p>
           <button
             @click="showCreateDialog = true"
-            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+            class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
           >
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5v15m7.5-7.5h-15" />
@@ -184,7 +184,7 @@
                 <td class="px-6 py-4 text-sm font-medium">
                   <router-link
                     :to="`/promotions/${promotion.tiendapromocion_id}`"
-                    class="text-blue-600 hover:text-blue-900 mr-3"
+                    class="text-primary-600 hover:text-primary-900 mr-3"
                   >
                     Ver Detalle
                   </router-link>

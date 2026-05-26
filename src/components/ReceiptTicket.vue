@@ -494,10 +494,10 @@ const getSourceText = (source) => {
 const getSourceClass = (source) => {
   const classMap = {
     'pos': 'bg-purple-100 text-purple-800',
-    'web': 'bg-blue-100 text-blue-800',
-    'api': 'bg-indigo-100 text-indigo-800'
+    'web': 'bg-primary-100 text-primary-800',
+    'api': 'bg-primary-100 text-primary-800'
   };
-  return classMap[source] || 'bg-blue-100 text-blue-800';
+  return classMap[source] || 'bg-primary-100 text-primary-800';
 };
 </script>
 

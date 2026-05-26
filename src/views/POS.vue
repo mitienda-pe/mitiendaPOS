@@ -1606,7 +1606,7 @@ const getPaymentMethodName = (method) => {
               <div class="flex-grow relative">
                 <input ref="barcodeInput" v-model="barcode" type="text"
                   placeholder="Escanear código de barras o buscar producto..."
-                  class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
                   @keyup.enter="handleBarcodeInput" @input="searchProducts">
 
                 <!-- Search Results Dropdown -->
@@ -1633,7 +1633,7 @@ const getPaymentMethodName = (method) => {
                   <circle cx="12" cy="13" r="3"/>
                 </svg>
               </button>
-              <button @click="showProductList" class="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600 flex items-center justify-center" title="Buscar en catálogo">
+              <button @click="showProductList" class="bg-primary-500 text-white p-2 rounded-lg hover:bg-primary-600 flex items-center justify-center" title="Buscar en catálogo">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none"
                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="11" cy="11" r="8"></circle>
@@ -1715,7 +1715,7 @@ const getPaymentMethodName = (method) => {
 
           <div class="flex space-x-2 mb-4">
             <button @click="showSavedSalesModal = true"
-              class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
+              class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
@@ -1725,7 +1725,7 @@ const getPaymentMethodName = (method) => {
             </button>
 
             <button @click="saveSaleForLater" :disabled="!cartItems.length"
-              class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
+              class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 2v8" />
@@ -1816,7 +1816,7 @@ const getPaymentMethodName = (method) => {
                   <span>Pagado:</span>
                   <span>{{ formatCurrency(totalPaid) }}</span>
                 </div>
-                <div v-if="totalChange > 0" class="flex justify-between font-medium text-blue-600">
+                <div v-if="totalChange > 0" class="flex justify-between font-medium text-primary-600">
                   <span>Cambio:</span>
                   <span>{{ formatCurrency(totalChange) }}</span>
                 </div>
@@ -1833,7 +1833,7 @@ const getPaymentMethodName = (method) => {
           <div class="flex-shrink-0 mt-auto space-y-4">
             <button v-if="payments.length === 0 || remainingAmount > 0" @click="processPayment"
               :disabled="!cartItems.length"
-              class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors duration-200 flex items-center justify-center">
+              class="w-full bg-primary-600 text-white py-3 px-4 rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors duration-200 flex items-center justify-center">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
@@ -1884,8 +1884,8 @@ const getPaymentMethodName = (method) => {
               <!-- Search and Filters -->
               <div class="mb-4 grid grid-cols-2 gap-4">
                 <input v-model="productSearchQuery" type="text" placeholder="Buscar productos..."
-                  class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500" @input="searchProductList">
-                <select v-model="productCategoryFilter" class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  class="p-2 border rounded-lg focus:ring-2 focus:ring-primary-500" @input="searchProductList">
+                <select v-model="productCategoryFilter" class="p-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
                   @change="searchProductList">
                   <option value="">Todas las categorías</option>
                   <option v-for="category in categories" :key="category" :value="category">
@@ -1924,7 +1924,7 @@ const getPaymentMethodName = (method) => {
                       </td>
                       <td class="px-6 py-4 whitespace-nowrap text-sm">
                         <button @click="selectProduct(product)" :disabled="!product.unlimited_stock && product.stock === 0"
-                          class="text-indigo-600 hover:text-indigo-900 disabled:opacity-50 disabled:cursor-not-allowed">
+                          class="text-primary-600 hover:text-indigo-900 disabled:opacity-50 disabled:cursor-not-allowed">
                           Agregar
                         </button>
                       </td>
@@ -1937,7 +1937,7 @@ const getPaymentMethodName = (method) => {
         </div>
         <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
           <button type="button" @click="closeProductModal"
-            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
             Cerrar
           </button>
         </div>

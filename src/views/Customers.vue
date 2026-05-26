@@ -10,7 +10,7 @@
       <div class="mt-4 flex md:mt-0 md:ml-4">
         <button
           @click="openAddModal"
-          class="ml-3 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          class="ml-3 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
         >
           <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -31,7 +31,7 @@
               type="text"
               v-model="searchQuery"
               @input="onSearchInput"
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
               placeholder="Nombre, email, teléfono o documento..."
             />
           </div>
@@ -42,7 +42,7 @@
             <select
               v-model="customersStore.filters.limit"
               @change="loadCustomers"
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
             >
               <option :value="10">10</option>
               <option :value="20">20</option>
@@ -105,7 +105,7 @@
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <button
                   @click="editCustomer(customer)"
-                  class="text-indigo-600 hover:text-indigo-900"
+                  class="text-primary-600 hover:text-indigo-900"
                 >
                   Editar
                 </button>
@@ -161,7 +161,7 @@
                   @click="goToPage(page)"
                   :class="[
                     page === pagination.page
-                      ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'
+                      ? 'z-10 bg-indigo-50 border-primary-500 text-primary-600'
                       : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50',
                     'relative inline-flex items-center px-4 py-2 border text-sm font-medium'
                   ]"
@@ -195,7 +195,7 @@
                 </label>
                 <select
                   v-model="customerForm.document_type"
-                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                   required
                   :disabled="isEditing"
                 >
@@ -213,7 +213,7 @@
                     v-model="customerForm.document_number"
                     type="text"
                     :maxlength="customerForm.document_type === '1' ? 8 : 11"
-                    class="flex-1 px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    class="flex-1 px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                     required
                     :disabled="isEditing"
                   >
@@ -221,7 +221,7 @@
                     v-if="!isEditing"
                     type="button"
                     @click="consultarDocumento"
-                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-r-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-r-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
                     :disabled="!isValidDocument || consultingDocument"
                   >
                     {{ consultingDocument ? 'Consultando...' : 'Consultar' }}
@@ -237,7 +237,7 @@
                   <input
                     v-model="customerForm.nombres"
                     type="text"
-                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                     required
                   >
                 </div>
@@ -249,7 +249,7 @@
                   <input
                     v-model="customerForm.apellidos"
                     type="text"
-                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                     required
                   >
                 </div>
@@ -263,7 +263,7 @@
                   <input
                     v-model="customerForm.razonSocial"
                     type="text"
-                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                     required
                   >
                 </div>
@@ -276,7 +276,7 @@
                 <input
                   v-model="customerForm.email"
                   type="email"
-                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                 >
               </div>
 
@@ -287,7 +287,7 @@
                 <input
                   v-model="customerForm.phone"
                   type="tel"
-                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                 >
               </div>
             </div>
@@ -295,14 +295,14 @@
             <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
               <button
                 type="submit"
-                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm"
+                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm"
               >
                 {{ isEditing ? 'Actualizar' : 'Guardar' }}
               </button>
               <button
                 type="button"
                 @click="closeModal"
-                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
               >
                 Cancelar
               </button>

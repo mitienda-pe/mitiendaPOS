@@ -122,12 +122,12 @@
         </div>
 
         <!-- Decision prompt -->
-        <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <div class="mt-6 p-4 bg-primary-50 border border-primary-200 rounded-lg">
           <div class="flex gap-3">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary-600 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
             </svg>
-            <div class="text-sm text-blue-800">
+            <div class="text-sm text-primary-800">
               <p class="font-medium mb-2">¿Cómo desea proceder?</p>
               <ul class="list-disc list-inside space-y-1 ml-2">
                 <li v-if="availableBonifications && availableBonifications.length > 0">
@@ -154,7 +154,7 @@
           </button>
           <button
             @click="proceed"
-            class="px-6 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium transition flex items-center gap-2"
+            class="px-6 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition flex items-center gap-2"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
@@ -210,13 +210,3 @@ watch(() => props.isVisible, (newVal) => {
   }
 });
 </script>
-
-<style scoped>
-.bg-primary {
-  background-color: #00b2a6;
-}
-
-.bg-primary-dark {
-  background-color: #009688;
-}
-</style>

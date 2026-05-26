@@ -25,7 +25,7 @@
             type="text"
             inputmode="numeric"
             required
-            class="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-lg"
+            class="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-lg"
             :disabled="loading"
             @input="storeId = storeId.replace(/\D/g, '')"
           />
@@ -48,7 +48,7 @@
             required
             placeholder="••••"
             autocomplete="off"
-            class="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-2xl text-center tracking-widest font-bold"
+            class="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-2xl text-center tracking-widest font-bold"
             :disabled="loading"
             @input="pin = pin.replace(/\D/g, '')"
           />
@@ -69,7 +69,7 @@
         <button
           type="submit"
           :disabled="loading || !isValid"
-          class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-lg font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150"
+          class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-lg font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150"
         >
           <span v-if="loading" class="flex items-center">
             <svg class="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">

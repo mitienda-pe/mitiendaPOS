@@ -5,7 +5,7 @@
         <!-- Lock Icon -->
         <div class="flex justify-center mb-6">
           <div class="bg-indigo-100 rounded-full p-6">
-            <svg class="w-16 h-16 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="w-16 h-16 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
           </div>
@@ -16,11 +16,11 @@
         </h2>
 
         <!-- Cashier Info -->
-        <div v-if="cashierInfo" class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <p class="text-sm text-blue-800 text-center">
+        <div v-if="cashierInfo" class="bg-primary-50 border border-primary-200 rounded-lg p-4 mb-6">
+          <p class="text-sm text-primary-800 text-center">
             <strong>{{ cashierInfo.nombre }}</strong>
           </p>
-          <p class="text-xs text-blue-600 text-center mt-1">
+          <p class="text-xs text-primary-600 text-center mt-1">
             {{ cashierInfo.sucursal }} - Caja {{ cashierInfo.cajaNumero }}
           </p>
           <p v-if="lockReason" class="text-xs text-gray-600 text-center mt-2 italic">
@@ -45,7 +45,7 @@
             autofocus
             name="unlock-pin"
             autocomplete="off"
-            class="w-full p-4 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-3xl text-center tracking-[1em] font-bold"
+            class="w-full p-4 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-3xl text-center tracking-[1em] font-bold"
             :class="{ 'border-red-500 shake': error }"
             placeholder="••••"
             @keyup.enter="handleUnlock"
@@ -64,7 +64,7 @@
         <button
           @click="handleUnlock"
           :disabled="pin.length !== 4 || loading"
-          class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          class="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           <svg v-if="loading" class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>

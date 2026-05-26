@@ -58,7 +58,7 @@
               pattern="[0-9]"
               :name="`supervisor-pin-${i}`"
               autocomplete="off"
-              class="w-12 h-14 text-2xl font-bold text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
+              class="w-12 h-14 text-2xl font-bold text-center border-2 border-gray-300 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 focus:outline-none"
               @input="handleInput(i-1, $event)"
               @keydown="handleKeyDown(i-1, $event)"
               @paste="handlePaste"
@@ -86,7 +86,7 @@
           <button
             @click="authorize"
             :disabled="!isComplete || loading"
-            class="flex-1 px-4 py-3 text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition-colors"
+            class="flex-1 px-4 py-3 text-white bg-primary-600 rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition-colors"
           >
             <span v-if="loading" class="flex items-center justify-center">
               <svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

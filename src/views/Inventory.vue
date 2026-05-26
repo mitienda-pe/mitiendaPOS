@@ -4,14 +4,14 @@
       <!-- Header con estadísticas -->
       <div class="mb-6">
         <!-- Banner de solo lectura para cajeros -->
-        <div v-if="!canEdit" class="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div v-if="!canEdit" class="mb-4 bg-primary-50 border border-primary-200 rounded-lg p-4">
           <div class="flex items-center">
-            <svg class="h-5 w-5 text-blue-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+            <svg class="h-5 w-5 text-primary-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
             </svg>
             <div>
-              <p class="text-sm font-medium text-blue-800">Modo limitado</p>
-              <p class="text-sm text-blue-700">Puedes consultar y sincronizar stock desde el ERP, pero no editar precios ni stock manualmente</p>
+              <p class="text-sm font-medium text-primary-800">Modo limitado</p>
+              <p class="text-sm text-primary-700">Puedes consultar y sincronizar stock desde el ERP, pero no editar precios ni stock manualmente</p>
             </div>
           </div>
         </div>
@@ -68,7 +68,7 @@
             </button>
             <button
               @click="router.push('/menu')"
-              class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
             >
               <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -181,7 +181,7 @@
                 v-model="searchInput"
                 @input="debouncedSearch"
                 type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
                 placeholder="Nombre o SKU..."
               />
             </div>
@@ -192,7 +192,7 @@
               <select
                 v-model="inventoryStore.filters.stock_status"
                 @change="handleFilterChange"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
               >
                 <option value="all">Todos</option>
                 <option value="in_stock">En Stock</option>
@@ -207,7 +207,7 @@
               <select
                 v-model="inventoryStore.filters.limit"
                 @change="handleFilterChange"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
               >
                 <option :value="10">10</option>
                 <option :value="20">20</option>
@@ -220,7 +220,7 @@
             <div class="flex items-end">
               <button
                 @click="resetFilters"
-                class="w-full px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                class="w-full px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
               >
                 Limpiar Filtros
               </button>
@@ -234,7 +234,7 @@
         <!-- Loading State -->
         <div v-if="inventoryStore.loading" class="flex items-center justify-center py-12">
           <div class="text-center">
-            <svg class="animate-spin h-8 w-8 text-indigo-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24">
+            <svg class="animate-spin h-8 w-8 text-primary-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
@@ -355,7 +355,7 @@
                     <button
                       v-if="canEdit"
                       @click="openQuickEdit(product)"
-                      class="text-indigo-600 hover:text-indigo-900 transition-colors"
+                      class="text-primary-600 hover:text-indigo-900 transition-colors"
                     >
                       Editar Rápido
                     </button>
@@ -700,7 +700,7 @@ const formatCurrency = (value) => {
 
 const getStockBadgeClass = (product) => {
   if (product.unlimited_stock) {
-    return 'px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800';
+    return 'px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-primary-100 text-primary-800';
   }
   if (product.stock === 0) {
     return 'px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800';

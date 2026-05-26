@@ -28,8 +28,8 @@
           </div>
         </div>
 
-        <div v-if="fixable.length > 0" class="bg-blue-50 border border-blue-200 rounded p-3">
-          <p class="text-sm text-blue-900">
+        <div v-if="fixable.length > 0" class="bg-primary-50 border border-primary-200 rounded p-3">
+          <p class="text-sm text-primary-900">
             ¿Desea corregir los datos del cliente en NetSuite y continuar con la venta?
           </p>
         </div>

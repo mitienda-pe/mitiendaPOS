@@ -4,7 +4,7 @@
       <!-- Loading State -->
       <div v-if="loading" class="bg-white shadow overflow-hidden sm:rounded-lg p-6">
         <div class="flex flex-col items-center justify-center py-12">
-          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4"></div>
           <p class="text-gray-600">Cargando bonificación...</p>
         </div>
       </div>
@@ -21,7 +21,7 @@
           <p class="text-gray-600 text-center max-w-md mb-4">{{ error }}</p>
           <button
             @click="fetchPromotion"
-            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
           >
             Reintentar
           </button>
@@ -130,13 +130,13 @@
               <div class="flex flex-col gap-3">
                 <div
                   class="flex items-start gap-3 p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                  :class="{ 'border-blue-500 bg-blue-50': bonFormaGrupos === 0 }"
+                  :class="{ 'border-primary-500 bg-primary-50': bonFormaGrupos === 0 }"
                   @click="updateBonFormaGrupos(0)"
                 >
                   <input
                     type="radio"
                     :checked="bonFormaGrupos === 0"
-                    class="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                    class="mt-1 w-4 h-4 text-primary-600 focus:ring-primary-500"
                     @change="updateBonFormaGrupos(0)"
                   />
                   <div class="flex-1">
@@ -149,13 +149,13 @@
 
                 <div
                   class="flex items-start gap-3 p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                  :class="{ 'border-blue-500 bg-blue-50': bonFormaGrupos === 1 }"
+                  :class="{ 'border-primary-500 bg-primary-50': bonFormaGrupos === 1 }"
                   @click="updateBonFormaGrupos(1)"
                 >
                   <input
                     type="radio"
                     :checked="bonFormaGrupos === 1"
-                    class="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                    class="mt-1 w-4 h-4 text-primary-600 focus:ring-primary-500"
                     @change="updateBonFormaGrupos(1)"
                   />
                   <div class="flex-1">
@@ -181,7 +181,7 @@
                 </div>
                 <button
                   @click="showLinkProductsModal = true"
-                  class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                  class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
                 >
                   <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5v15m7.5-7.5h-15" />
@@ -224,7 +224,7 @@
                           min="1"
                           :value="product.productopromocion_cantidadproducto || 1"
                           @change="updateProductQuantity(product.producto_id, $event.target.value)"
-                          class="w-20 px-2 py-1 border rounded focus:ring-2 focus:ring-blue-500 text-sm"
+                          class="w-20 px-2 py-1 border rounded focus:ring-2 focus:ring-primary-500 text-sm"
                         />
                       </td>
                       <td class="px-4 py-4 text-center">

@@ -29,7 +29,7 @@
 
               <!-- Loading state -->
               <div v-if="authStore.loading" class="text-center py-8">
-                <svg class="animate-spin h-10 w-10 mx-auto text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg class="animate-spin h-10 w-10 mx-auto text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
@@ -43,12 +43,12 @@
                   :key="store.id"
                   @click="handleSelectStore(store)"
                   class="border rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow"
-                  :class="authStore.selectedStore?.id === store.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'"
+                  :class="authStore.selectedStore?.id === store.id ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-primary-300'"
                 >
                   <div class="flex items-center gap-4">
                     <!-- Logo de la tienda -->
-                    <div class="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <svg v-if="!store.logo" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <div class="w-16 h-16 bg-primary-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <svg v-if="!store.logo" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-primary-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                         <polyline points="9 22 9 12 15 12 15 22"></polyline>
                       </svg>
@@ -62,7 +62,7 @@
                       <div class="flex gap-2 mt-1">
                         <span
                           v-if="store.plan"
-                          class="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded"
+                          class="text-xs px-2 py-1 bg-primary-100 text-primary-800 rounded"
                         >
                           {{ store.plan }}
                         </span>

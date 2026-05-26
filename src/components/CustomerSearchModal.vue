@@ -22,7 +22,7 @@
               <div class="mb-4 flex gap-2 items-center">
                 <select
                   v-model="tipoDoc"
-                  class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-1/4"
+                  class="p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 w-1/4"
                   @change="handleDocTypeChange"
                 >
                   <option value="DNI">DNI</option>
@@ -34,7 +34,7 @@
                   type="text"
                   :placeholder="tipoDoc === 'DNI' ? '8 dígitos' : '11 dígitos'"
                   :maxlength="tipoDoc === 'DNI' ? 8 : 11"
-                  class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 flex-1"
+                  class="p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 flex-1"
                   @input="handleDocumentInput"
                   @keyup.enter="searchByDocument"
                 />
@@ -42,7 +42,7 @@
                   v-if="numDoc"
                   @click="searchByDocument"
                   :disabled="searching"
-                  class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
                 >
                   {{ searching ? 'Buscando...' : 'Buscar' }}
                 </button>
@@ -71,7 +71,7 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                           <button
                             @click="selectCustomer(customer)"
-                            class="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                            class="px-3 py-1 bg-primary-600 text-white text-xs rounded hover:bg-primary-700"
                           >
                             Seleccionar
                           </button>
@@ -103,7 +103,7 @@
                       v-model="newCustomer.nombres"
                       type="text"
                       placeholder="Nombres"
-                      class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
+                      class="p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 w-full text-sm"
                       required
                     />
                   </div>
@@ -113,7 +113,7 @@
                       v-model="newCustomer.apellidos"
                       type="text"
                       placeholder="Apellidos"
-                      class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
+                      class="p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 w-full text-sm"
                       required
                     />
                   </div>
@@ -123,7 +123,7 @@
                       v-model="newCustomer.razonSocial"
                       type="text"
                       placeholder="Razón Social"
-                      class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
+                      class="p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 w-full text-sm"
                       required
                     />
                   </div>
@@ -133,7 +133,7 @@
                       v-model="newCustomer.correoElectronico"
                       type="email"
                       placeholder="correo@ejemplo.com"
-                      class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
+                      class="p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 w-full text-sm"
                     />
                   </div>
                   <div>
@@ -142,7 +142,7 @@
                       v-model="newCustomer.telefono"
                       type="tel"
                       placeholder="987654321"
-                      class="p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 w-full text-sm"
+                      class="p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 w-full text-sm"
                     />
                   </div>
                   <button
