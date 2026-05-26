@@ -1,209 +1,216 @@
 <template>
-  <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-    <h1 class="text-2xl font-semibold text-gray-900 mb-6">Dashboard</h1>
-    
-    <!-- Tarjetas de resumen -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-      <!-- Ventas del día -->
-      <div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-primary-500">
-        <div class="p-5">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-primary-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="12" y1="1" x2="12" y2="23"></line>
-                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-              </svg>
-            </div>
-            <div class="ml-5 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-500 truncate">Ventas del día</dt>
-                <dd class="flex items-baseline">
-                  <div class="text-2xl font-semibold text-gray-900">S/ 2,450.50</div>
-                  <div class="ml-2 flex items-baseline text-sm font-semibold text-green-600">
-                    <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                    </svg>
-                    <span>12%</span>
-                  </div>
-                </dd>
-              </dl>
-            </div>
-          </div>
-        </div>
-      </div>
+  <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <h1 class="text-2xl font-semibold text-gray-900">Dashboard</h1>
+    </div>
 
-      <!-- Productos vendidos -->
-      <div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-green-500">
-        <div class="p-5">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-                <path d="M16 10a4 4 0 0 1-8 0"></path>
-              </svg>
-            </div>
-            <div class="ml-5 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-500 truncate">Productos vendidos</dt>
-                <dd class="flex items-baseline">
-                  <div class="text-2xl font-semibold text-gray-900">78</div>
-                  <div class="ml-2 flex items-baseline text-sm font-semibold text-green-600">
-                    <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                    </svg>
-                    <span>8%</span>
-                  </div>
-                </dd>
-              </dl>
-            </div>
-          </div>
-        </div>
-      </div>
+    <!-- Filtro de fechas -->
+    <div class="mb-6">
+      <DateRangePicker
+        :model-value="store.filters"
+        @preset="(p) => store.setPreset(p)"
+        @custom-range="(r) => store.setCustomRange(r.dateFrom, r.dateTo)"
+        @toggle-compare="() => store.toggleCompare()"
+      />
+    </div>
 
-      <!-- Clientes nuevos -->
-      <div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-purple-500">
-        <div class="p-5">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-purple-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-            </div>
-            <div class="ml-5 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-500 truncate">Clientes nuevos</dt>
-                <dd class="flex items-baseline">
-                  <div class="text-2xl font-semibold text-gray-900">12</div>
-                  <div class="ml-2 flex items-baseline text-sm font-semibold text-green-600">
-                    <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                    </svg>
-                    <span>5%</span>
-                  </div>
-                </dd>
-              </dl>
-            </div>
-          </div>
+    <!-- Error state -->
+    <div
+      v-if="store.error"
+      class="bg-white rounded-lg shadow p-6 border-l-4 border-red-500 mb-6"
+    >
+      <div class="flex items-center justify-between gap-4">
+        <div>
+          <h3 class="text-sm font-medium text-red-800">No se pudieron cargar las analíticas</h3>
+          <p class="text-sm text-gray-600 mt-1">{{ store.error }}</p>
         </div>
-      </div>
-
-      <!-- Productos con bajo stock -->
-      <div class="bg-white overflow-hidden shadow rounded-lg border-l-4 border-red-500">
-        <div class="p-5">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"></path>
-                <rect x="8" y="2" width="13" height="14" rx="2" ry="2"></rect>
-              </svg>
-            </div>
-            <div class="ml-5 w-0 flex-1">
-              <dl>
-                <dt class="text-sm font-medium text-gray-500 truncate">Productos con bajo stock</dt>
-                <dd class="flex items-baseline">
-                  <div class="text-2xl font-semibold text-gray-900">5</div>
-                  <div class="ml-2 flex items-baseline text-sm font-semibold text-red-600">
-                    <svg class="w-5 h-5 fill-current" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                    </svg>
-                    <span>2</span>
-                  </div>
-                </dd>
-              </dl>
-            </div>
-          </div>
-        </div>
+        <button
+          class="px-3 py-1.5 text-sm bg-red-500 text-white rounded-md hover:bg-red-600"
+          @click="store.fetchAnalytics()"
+        >
+          Reintentar
+        </button>
       </div>
     </div>
 
-    <!-- Gráficos -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <!-- Gráfico de ventas por día -->
-      <div class="bg-white rounded-lg shadow p-6">
-        <h2 class="text-lg font-medium text-gray-900 mb-4">Ventas de los últimos 7 días</h2>
-        <div class="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
-          <div class="w-full h-full p-4 flex items-end justify-between space-x-2">
-            <div class="flex flex-col items-center">
-              <div class="bg-primary-500 w-10 rounded-t-lg" style="height: 40%"></div>
-              <span class="text-xs mt-1">Lun</span>
-            </div>
-            <div class="flex flex-col items-center">
-              <div class="bg-primary-500 w-10 rounded-t-lg" style="height: 60%"></div>
-              <span class="text-xs mt-1">Mar</span>
-            </div>
-            <div class="flex flex-col items-center">
-              <div class="bg-primary-500 w-10 rounded-t-lg" style="height: 75%"></div>
-              <span class="text-xs mt-1">Mié</span>
-            </div>
-            <div class="flex flex-col items-center">
-              <div class="bg-primary-500 w-10 rounded-t-lg" style="height: 50%"></div>
-              <span class="text-xs mt-1">Jue</span>
-            </div>
-            <div class="flex flex-col items-center">
-              <div class="bg-primary-500 w-10 rounded-t-lg" style="height: 85%"></div>
-              <span class="text-xs mt-1">Vie</span>
-            </div>
-            <div class="flex flex-col items-center">
-              <div class="bg-primary-500 w-10 rounded-t-lg" style="height: 90%"></div>
-              <span class="text-xs mt-1">Sáb</span>
-            </div>
-            <div class="flex flex-col items-center">
-              <div class="bg-primary-500 w-10 rounded-t-lg" style="height: 30%"></div>
-              <span class="text-xs mt-1">Dom</span>
-            </div>
-          </div>
-        </div>
-      </div>
+    <!-- KPIs principales -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+      <MetricCard
+        label="Ventas netas"
+        :value="scorecards.net_sales?.value || 0"
+        :previous="scorecards.net_sales?.previous ?? null"
+        format="currency"
+        color="primary"
+        :is-loading="store.isLoading"
+      >
+        <template #icon>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-10 w-10 text-primary-500"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="12" y1="1" x2="12" y2="23"></line>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+          </svg>
+        </template>
+      </MetricCard>
 
-      <!-- Gráfico de productos más vendidos -->
-      <div class="bg-white rounded-lg shadow p-6">
-        <h2 class="text-lg font-medium text-gray-900 mb-4">Productos más vendidos</h2>
-        <div class="h-64 bg-gray-100 rounded-lg p-4">
-          <div class="space-y-4">
-            <div class="flex items-center">
-              <span class="w-24 text-sm text-gray-600">Producto A</span>
-              <div class="flex-1 ml-2">
-                <div class="h-4 bg-green-500 rounded-full" style="width: 85%"></div>
-              </div>
-              <span class="ml-2 text-sm font-medium">85%</span>
-            </div>
-            <div class="flex items-center">
-              <span class="w-24 text-sm text-gray-600">Producto B</span>
-              <div class="flex-1 ml-2">
-                <div class="h-4 bg-green-500 rounded-full" style="width: 70%"></div>
-              </div>
-              <span class="ml-2 text-sm font-medium">70%</span>
-            </div>
-            <div class="flex items-center">
-              <span class="w-24 text-sm text-gray-600">Producto C</span>
-              <div class="flex-1 ml-2">
-                <div class="h-4 bg-green-500 rounded-full" style="width: 60%"></div>
-              </div>
-              <span class="ml-2 text-sm font-medium">60%</span>
-            </div>
-            <div class="flex items-center">
-              <span class="w-24 text-sm text-gray-600">Producto D</span>
-              <div class="flex-1 ml-2">
-                <div class="h-4 bg-green-500 rounded-full" style="width: 45%"></div>
-              </div>
-              <span class="ml-2 text-sm font-medium">45%</span>
-            </div>
-            <div class="flex items-center">
-              <span class="w-24 text-sm text-gray-600">Producto E</span>
-              <div class="flex-1 ml-2">
-                <div class="h-4 bg-green-500 rounded-full" style="width: 30%"></div>
-              </div>
-              <span class="ml-2 text-sm font-medium">30%</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <MetricCard
+        label="Transacciones"
+        :value="scorecards.orders_count?.value || 0"
+        :previous="scorecards.orders_count?.previous ?? null"
+        format="number"
+        color="green"
+        :is-loading="store.isLoading"
+      >
+        <template #icon>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-10 w-10 text-green-500"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="9" cy="21" r="1"></circle>
+            <circle cx="20" cy="21" r="1"></circle>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+          </svg>
+        </template>
+      </MetricCard>
+
+      <MetricCard
+        label="Ticket promedio"
+        :value="scorecards.avg_ticket?.value || 0"
+        :previous="scorecards.avg_ticket?.previous ?? null"
+        format="currency"
+        color="purple"
+        :is-loading="store.isLoading"
+      >
+        <template #icon>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-10 w-10 text-purple-500"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"></path>
+            <path d="M4 6v12c0 1.1.9 2 2 2h14v-4"></path>
+            <path d="M18 12a2 2 0 0 0 0 4h4v-4Z"></path>
+          </svg>
+        </template>
+      </MetricCard>
+
+      <MetricCard
+        label="Productos bajo stock"
+        :value="analytics?.low_stock?.length || 0"
+        format="number"
+        color="red"
+        invert-delta
+        :is-loading="store.isLoading"
+      >
+        <template #icon>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-10 w-10 text-red-500"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+          </svg>
+        </template>
+      </MetricCard>
     </div>
+
+    <!-- KPIs secundarios -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+      <MetricCard
+        label="Ventas brutas (con IGV)"
+        :value="scorecards.gross_sales?.value || 0"
+        :previous="scorecards.gross_sales?.previous ?? null"
+        format="currency"
+        color="primary"
+        :is-loading="store.isLoading"
+      />
+      <MetricCard
+        label="Mayor venta"
+        :value="scorecards.max_ticket?.value || 0"
+        :previous="scorecards.max_ticket?.previous ?? null"
+        format="currency"
+        color="amber"
+        :is-loading="store.isLoading"
+      />
+      <MetricCard
+        label="Items por venta"
+        :value="scorecards.avg_items_per_order?.value || 0"
+        :previous="scorecards.avg_items_per_order?.previous ?? null"
+        format="decimal"
+        color="blue"
+        :is-loading="store.isLoading"
+      />
+    </div>
+
+    <!-- Gráficos: tendencia + métodos de pago -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <SalesTrendChart :data="trends.daily_sales || []" />
+      <PaymentMethodChart :data="distributions.payment_methods || []" />
+    </div>
+
+    <!-- Gráficos: hora del día + comprobantes -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <SalesByHourChart :data="distributions.by_hour || []" />
+      <DocumentTypeChart :data="distributions.document_types || []" />
+    </div>
+
+    <!-- Tablas: productos + cajeros -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <TopProductsTable :data="analytics?.top_products || []" />
+      <TopCashiersTable :data="analytics?.top_cashiers || []" />
+    </div>
+
+    <!-- Stock bajo (condicional) -->
+    <LowStockList :data="analytics?.low_stock || []" />
   </div>
 </template>
 
 <script setup>
-// En una implementación real, aquí se cargarían los datos desde la API
+import { computed, onMounted } from 'vue';
+import { useDashboardStore } from '../stores/dashboard';
+import DateRangePicker from '../components/dashboard/DateRangePicker.vue';
+import MetricCard from '../components/dashboard/MetricCard.vue';
+import SalesTrendChart from '../components/dashboard/SalesTrendChart.vue';
+import PaymentMethodChart from '../components/dashboard/PaymentMethodChart.vue';
+import SalesByHourChart from '../components/dashboard/SalesByHourChart.vue';
+import DocumentTypeChart from '../components/dashboard/DocumentTypeChart.vue';
+import TopProductsTable from '../components/dashboard/TopProductsTable.vue';
+import TopCashiersTable from '../components/dashboard/TopCashiersTable.vue';
+import LowStockList from '../components/dashboard/LowStockList.vue';
+
+const store = useDashboardStore();
+
+const analytics = computed(() => store.analytics);
+const scorecards = computed(() => store.analytics?.scorecards || {});
+const trends = computed(() => store.analytics?.trends || {});
+const distributions = computed(() => store.analytics?.distributions || {});
+
+onMounted(() => {
+  store.fetchAnalytics();
+});
 </script>
