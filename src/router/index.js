@@ -54,7 +54,7 @@ const routes = [
     path: '/dashboard',
     name: 'Dashboard',
     component: Dashboard,
-    meta: { requiresAuth: true, roles: ['supervisor', 'administrador'] }
+    meta: { requiresAuth: true, roles: ['cajero', 'supervisor', 'administrador'] }
   },
   {
     path: '/inventory',

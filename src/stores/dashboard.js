@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia';
 import { dashboardApi } from '../services/dashboardApi';
+import { useAuthStore } from './auth';
+import { useCashierStore } from './cashier';
 
 const toISODate = (d) => {
   const y = d.getFullYear();
@@ -42,10 +44,17 @@ export const useDashboardStore = defineStore('dashboard', {
       this.isLoading = true;
       this.error = null;
       try {
+        const authStore = useAuthStore();
+        const cashierStore = useCashierStore();
+        const empleadoId = authStore.isCashier && cashierStore.cashier?.empleado_id
+          ? cashierStore.cashier.empleado_id
+          : null;
+
         const res = await dashboardApi.getAnalytics({
           dateFrom: this.filters.dateFrom,
           dateTo: this.filters.dateTo,
-          compare: this.filters.compare
+          compare: this.filters.compare,
+          empleadoId
         });
         if (res?.success) {
           this.analytics = res.data;
