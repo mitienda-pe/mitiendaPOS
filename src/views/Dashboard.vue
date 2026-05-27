@@ -1,7 +1,14 @@
 <template>
   <div class="max-w-7xl mx-auto py-4 sm:py-6 px-3 sm:px-6 lg:px-8">
     <div class="flex flex-wrap items-center justify-between gap-3 mb-4 sm:mb-6">
-      <h1 class="text-xl sm:text-2xl font-semibold text-gray-900">Dashboard</h1>
+      <div>
+        <h1 class="text-xl sm:text-2xl font-semibold text-gray-900">
+          {{ authStore.isCashier ? 'Mi Desempeño' : 'Dashboard' }}
+        </h1>
+        <p v-if="authStore.isCashier && cashierStore.cashier" class="text-xs sm:text-sm text-gray-500 mt-1">
+          {{ cashierStore.cashierName }}
+        </p>
+      </div>
     </div>
 
     <!-- Filtro de fechas -->
@@ -113,6 +120,7 @@
       </MetricCard>
 
       <MetricCard
+        v-if="!authStore.isCashier"
         label="Productos bajo stock"
         :value="analytics?.low_stock?.length || 0"
         format="number"
@@ -182,17 +190,19 @@
     <!-- Tablas: productos + cajeros -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
       <TopProductsTable :data="analytics?.top_products || []" />
-      <TopCashiersTable :data="analytics?.top_cashiers || []" />
+      <TopCashiersTable v-if="!authStore.isCashier" :data="analytics?.top_cashiers || []" />
     </div>
 
-    <!-- Stock bajo (condicional) -->
-    <LowStockList :data="analytics?.low_stock || []" />
+    <!-- Stock bajo (solo admins) -->
+    <LowStockList v-if="!authStore.isCashier" :data="analytics?.low_stock || []" />
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted } from 'vue';
 import { useDashboardStore } from '../stores/dashboard';
+import { useAuthStore } from '../stores/auth';
+import { useCashierStore } from '../stores/cashier';
 import DateRangePicker from '../components/dashboard/DateRangePicker.vue';
 import MetricCard from '../components/dashboard/MetricCard.vue';
 import SalesTrendChart from '../components/dashboard/SalesTrendChart.vue';
@@ -204,6 +214,8 @@ import TopCashiersTable from '../components/dashboard/TopCashiersTable.vue';
 import LowStockList from '../components/dashboard/LowStockList.vue';
 
 const store = useDashboardStore();
+const authStore = useAuthStore();
+const cashierStore = useCashierStore();
 
 const analytics = computed(() => store.analytics);
 const scorecards = computed(() => store.analytics?.scorecards || {});
