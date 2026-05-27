@@ -11,10 +11,10 @@
       >
         <div
           class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-3 sm:p-6 h-full border-l-4"
-          :class="`border-${item.color}-500`"
+          :class="item.borderClass"
         >
           <div class="flex flex-col items-center justify-center h-full text-center">
-            <component :is="item.icon" :class="`h-10 w-10 sm:h-16 sm:w-16 text-${item.color}-500 mb-2 sm:mb-4`" />
+            <component :is="item.icon" class="h-10 w-10 sm:h-16 sm:w-16 mb-2 sm:mb-4" :class="item.iconClass" />
             <h2 class="text-sm sm:text-xl font-medium text-gray-900 mb-1 sm:mb-2">{{ item.label }}</h2>
             <p class="text-gray-600 text-center text-xs sm:text-base hidden sm:block">{{ item.description }}</p>
           </div>
@@ -119,18 +119,18 @@ const ALL = ['cajero', 'supervisor', 'administrador'];
 const ADMIN_ONLY = ['supervisor', 'administrador'];
 
 const menuItems = [
-  { to: '/dashboard',  label: 'Dashboard',    icon: IconDashboard,  color: 'orange', description: 'Visualiza indicadores y gráficos', roles: ALL },
-  { to: '/my-shift',   label: 'Mi Turno',     icon: IconShift,      color: 'green',  description: 'Gestiona tu caja y turnos',        roles: ALL },
-  { to: '/pos',        label: 'POS',          icon: IconPOS,        color: 'primary',description: 'Gestiona ventas y emite comprobantes', roles: ALL },
-  { to: '/sales',      label: 'Ventas',       icon: IconSales,      color: 'pink',   description: 'Consulta el historial de ventas',  roles: ALL },
-  { to: '/documents',  label: 'Documentos',   icon: IconDocuments,  color: 'yellow', description: 'Gestiona documentos y comprobantes', roles: ALL },
-  { to: '/inventory',  label: 'Inventario',   icon: IconInventory,  color: 'lime',   description: 'Gestiona productos, stock y categorías', roles: ALL },
-  { to: '/customers',  label: 'Clientes',     icon: IconCustomers,  color: 'purple', description: 'Administra tu cartera de clientes', roles: ALL },
-  { to: '/promotions', label: 'Descuentos y Promociones', icon: IconPromotions, color: 'rose', description: 'Gestiona ofertas y promociones', roles: ALL },
-  { to: '/vouchers',   label: 'Vales y Tarjetas de Regalo', icon: IconVouchers, color: 'amber', description: 'Gestiona vales de consumo y tarjetas de regalo', roles: ALL },
-  { to: '/returns',    label: 'Cambios y devoluciones', icon: IconReturns, color: 'cyan', description: 'Gestiona cambios y devoluciones de productos', roles: ALL },
-  { to: '/settings',   label: 'Configuración',icon: IconSettings,   color: 'gray',   description: 'Preferencias, sucursales y usuarios', roles: ADMIN_ONLY },
-  { to: '/help',       label: 'Ayuda',        icon: IconHelp,       color: 'sky',    description: 'Manuales de usuario y soporte',    roles: ALL },
+  { to: '/dashboard',  label: 'Dashboard',    icon: IconDashboard,  borderClass: 'border-orange-500',  iconClass: 'text-orange-500',  description: 'Visualiza indicadores y gráficos', roles: ALL },
+  { to: '/my-shift',   label: 'Mi Turno',     icon: IconShift,      borderClass: 'border-green-500',   iconClass: 'text-green-500',   description: 'Gestiona tu caja y turnos',        roles: ALL },
+  { to: '/pos',        label: 'POS',          icon: IconPOS,        borderClass: 'border-primary-500', iconClass: 'text-primary-500', description: 'Gestiona ventas y emite comprobantes', roles: ALL },
+  { to: '/sales',      label: 'Ventas',       icon: IconSales,      borderClass: 'border-pink-500',    iconClass: 'text-pink-500',    description: 'Consulta el historial de ventas',  roles: ALL },
+  { to: '/documents',  label: 'Documentos',   icon: IconDocuments,  borderClass: 'border-yellow-500',  iconClass: 'text-yellow-500',  description: 'Gestiona documentos y comprobantes', roles: ALL },
+  { to: '/inventory',  label: 'Inventario',   icon: IconInventory,  borderClass: 'border-lime-500',    iconClass: 'text-lime-500',    description: 'Gestiona productos, stock y categorías', roles: ALL },
+  { to: '/customers',  label: 'Clientes',     icon: IconCustomers,  borderClass: 'border-purple-500',  iconClass: 'text-purple-500',  description: 'Administra tu cartera de clientes', roles: ALL },
+  { to: '/promotions', label: 'Descuentos y Promociones', icon: IconPromotions, borderClass: 'border-rose-500', iconClass: 'text-rose-500', description: 'Gestiona ofertas y promociones', roles: ALL },
+  { to: '/vouchers',   label: 'Vales y Tarjetas de Regalo', icon: IconVouchers, borderClass: 'border-amber-500', iconClass: 'text-amber-500', description: 'Gestiona vales de consumo y tarjetas de regalo', roles: ALL },
+  { to: '/returns',    label: 'Cambios y devoluciones', icon: IconReturns, borderClass: 'border-cyan-500', iconClass: 'text-cyan-500', description: 'Gestiona cambios y devoluciones de productos', roles: ALL },
+  { to: '/settings',   label: 'Configuración',icon: IconSettings,   borderClass: 'border-gray-500',    iconClass: 'text-gray-500',    description: 'Preferencias, sucursales y usuarios', roles: ADMIN_ONLY },
+  { to: '/help',       label: 'Ayuda',        icon: IconHelp,       borderClass: 'border-sky-500',     iconClass: 'text-sky-500',     description: 'Manuales de usuario y soporte',    roles: ALL },
 ];
 
 const visibleItems = computed(() => {
