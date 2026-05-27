@@ -1,11 +1,11 @@
 <template>
   <div class="bg-white rounded-lg shadow p-3 flex flex-wrap items-center gap-2">
-    <div class="flex gap-1">
+    <div class="flex gap-1 flex-shrink-0">
       <button
         v-for="opt in presets"
         :key="opt.value"
         type="button"
-        class="px-3 py-1.5 text-sm rounded-md transition-colors"
+        class="px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm rounded-md transition-colors"
         :class="
           modelValue.preset === opt.value
             ? 'bg-primary-500 text-white'
@@ -17,32 +17,32 @@
       </button>
     </div>
 
-    <div class="flex items-center gap-1 ml-2">
+    <div class="flex items-center gap-1 w-full sm:w-auto">
       <input
         type="date"
         :value="modelValue.dateFrom"
         :max="modelValue.dateTo"
-        class="px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+        class="px-1.5 sm:px-2 py-1.5 text-xs sm:text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-0 flex-1 sm:flex-none"
         @change="onFromChange"
       />
-      <span class="text-gray-400 text-sm">—</span>
+      <span class="text-gray-400 text-xs sm:text-sm">—</span>
       <input
         type="date"
         :value="modelValue.dateTo"
         :min="modelValue.dateFrom"
-        class="px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+        class="px-1.5 sm:px-2 py-1.5 text-xs sm:text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-0 flex-1 sm:flex-none"
         @change="onToChange"
       />
     </div>
 
-    <label class="flex items-center gap-2 ml-auto text-sm text-gray-700 cursor-pointer select-none">
+    <label class="flex items-center gap-2 w-full sm:w-auto sm:ml-auto text-xs sm:text-sm text-gray-700 cursor-pointer select-none">
       <input
         type="checkbox"
         :checked="!!modelValue.compare"
         class="w-4 h-4 text-primary-500 rounded focus:ring-primary-500"
         @change="$emit('toggle-compare')"
       />
-      <span>Comparar con período anterior</span>
+      <span>Comparar período anterior</span>
     </label>
   </div>
 </template>

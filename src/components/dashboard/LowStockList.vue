@@ -1,5 +1,5 @@
 <template>
-  <div v-if="data && data.length > 0" class="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
+  <div v-if="data && data.length > 0" class="bg-white rounded-lg shadow p-3 sm:p-6 border-l-4 border-red-500">
     <h2 class="text-lg font-medium text-gray-900 mb-3 flex items-center gap-2">
       <svg
         xmlns="http://www.w3.org/2000/svg"
