@@ -3,9 +3,9 @@
     class="bg-white overflow-hidden shadow rounded-lg border-l-4"
     :class="borderClass"
   >
-    <div class="p-5">
+    <div class="p-3 sm:p-5">
       <div class="flex items-center">
-        <div class="flex-shrink-0">
+        <div class="flex-shrink-0 hidden sm:block">
           <slot name="icon">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -22,14 +22,14 @@
             </svg>
           </slot>
         </div>
-        <div class="ml-5 w-0 flex-1">
+        <div class="sm:ml-5 w-0 flex-1">
           <dl>
-            <dt class="text-sm font-medium text-gray-500 truncate">{{ label }}</dt>
+            <dt class="text-xs sm:text-sm font-medium text-gray-500 truncate">{{ label }}</dt>
             <dd v-if="isLoading" class="mt-1">
               <div class="h-7 w-24 bg-gray-200 rounded animate-pulse"></div>
             </dd>
             <dd v-else class="flex items-baseline flex-wrap">
-              <div class="text-2xl font-semibold text-gray-900">{{ formattedValue }}</div>
+              <div class="text-lg sm:text-2xl font-semibold text-gray-900">{{ formattedValue }}</div>
               <div
                 v-if="delta !== null"
                 class="ml-2 flex items-baseline text-sm font-semibold"

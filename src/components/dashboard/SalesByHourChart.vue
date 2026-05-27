@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white rounded-lg shadow p-6">
+  <div class="bg-white rounded-lg shadow p-3 sm:p-6">
     <h2 class="text-lg font-medium text-gray-900 mb-4">Ventas por hora del día</h2>
     <div v-if="!data || data.length === 0" class="h-64 flex items-center justify-center text-gray-400 text-sm">
       Sin ventas en este período

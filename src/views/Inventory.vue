@@ -1,8 +1,8 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto py-4 sm:py-6 px-3 sm:px-6 lg:px-8">
       <!-- Header con estadísticas -->
-      <div class="mb-6">
+      <div class="mb-4 sm:mb-6">
         <!-- Banner de solo lectura para cajeros -->
         <div v-if="!canEdit" class="mb-4 bg-primary-50 border border-primary-200 rounded-lg p-4">
           <div class="flex items-center">
@@ -16,10 +16,10 @@
           </div>
         </div>
 
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div>
-            <h1 class="text-3xl font-bold text-gray-900">Inventario</h1>
-            <p class="mt-1 text-sm text-gray-500">
+            <h1 class="text-xl sm:text-3xl font-bold text-gray-900">Inventario</h1>
+            <p class="mt-1 text-xs sm:text-sm text-gray-500">
               Gestión de productos y stock
             </p>
           </div>

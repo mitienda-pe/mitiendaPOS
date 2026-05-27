@@ -1,9 +1,9 @@
 <template>
-  <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-    <div class="px-4 py-6 sm:px-0">
+  <div class="max-w-7xl mx-auto py-4 sm:py-6 px-3 sm:px-6 lg:px-8">
+    <div class="py-4 sm:py-6">
       <!-- Header -->
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-semibold text-gray-900">Documentos Emitidos</h1>
+      <div class="flex justify-between items-center mb-4 sm:mb-6">
+        <h1 class="text-xl sm:text-2xl font-semibold text-gray-900">Documentos Emitidos</h1>
         <button
           @click="refreshDocuments"
           :disabled="loading"

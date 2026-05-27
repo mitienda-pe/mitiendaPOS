@@ -1,10 +1,30 @@
 <template>
-  <div class="flex h-screen bg-gray-100">
+  <div class="flex flex-col md:flex-row h-screen bg-gray-100">
+    <!-- Mobile header -->
+    <div class="md:hidden bg-white shadow-sm px-3 py-3 flex items-center justify-between">
+      <h2 class="text-lg font-bold text-gray-800">Configuración</h2>
+      <div class="flex items-center gap-2">
+        <router-link
+          to="/menu"
+          class="text-xs text-gray-600 bg-gray-100 px-2 py-1.5 rounded-md hover:bg-gray-200">
+          Menú
+        </router-link>
+        <button
+          @click="sidebarOpen = !sidebarOpen"
+          class="p-1.5 rounded-md text-gray-600 hover:bg-gray-100">
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path v-if="!sidebarOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
     <!-- Sidebar -->
-    <aside class="w-64 bg-white shadow-md">
-      <div class="p-6">
-        <h2 class="text-2xl font-bold text-gray-800 mb-6">Configuración</h2>
-        <nav class="space-y-2">
+    <aside :class="['bg-white shadow-md overflow-y-auto', sidebarOpen ? 'block' : 'hidden', 'md:block md:w-64 md:flex-shrink-0']">
+      <div class="p-4 md:p-6">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6 hidden md:block">Configuración</h2>
+        <nav class="space-y-1 md:space-y-2">
           <router-link
             to="/settings/branches"
             class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
@@ -122,8 +142,8 @@
         </nav>
       </div>
 
-      <!-- Back to menu button -->
-      <div class="absolute bottom-0 left-0 right-0 p-6 border-t">
+      <!-- Back to menu button (desktop only) -->
+      <div class="hidden md:block absolute bottom-0 left-0 right-0 p-6 border-t">
         <router-link
           to="/menu"
           class="flex items-center justify-center px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
@@ -139,7 +159,7 @@
 
     <!-- Main content -->
     <main class="flex-1 overflow-y-auto">
-      <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <div class="max-w-7xl mx-auto py-4 sm:py-6 px-3 sm:px-6 lg:px-8">
         <router-view />
       </div>
     </main>
@@ -147,5 +167,11 @@
 </template>
 
 <script setup>
-// Settings layout with sidebar navigation
+import { ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
+
+const sidebarOpen = ref(false);
+const route = useRoute();
+
+watch(() => route.path, () => { sidebarOpen.value = false; });
 </script>

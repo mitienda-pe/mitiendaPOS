@@ -1,7 +1,7 @@
 <template>
-  <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
-      <h1 class="text-2xl font-semibold text-gray-900">Dashboard</h1>
+  <div class="max-w-7xl mx-auto py-4 sm:py-6 px-3 sm:px-6 lg:px-8">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-4 sm:mb-6">
+      <h1 class="text-xl sm:text-2xl font-semibold text-gray-900">Dashboard</h1>
     </div>
 
     <!-- Filtro de fechas -->
@@ -34,7 +34,7 @@
     </div>
 
     <!-- KPIs principales -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+    <div class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-4 sm:mb-6">
       <MetricCard
         label="Ventas netas"
         :value="scorecards.net_sales?.value || 0"
@@ -140,7 +140,7 @@
     </div>
 
     <!-- KPIs secundarios -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-5 mb-4 sm:mb-6">
       <MetricCard
         label="Ventas brutas (con IGV)"
         :value="scorecards.gross_sales?.value || 0"
@@ -168,19 +168,19 @@
     </div>
 
     <!-- Gráficos: tendencia + métodos de pago -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
       <SalesTrendChart :data="trends.daily_sales || []" />
       <PaymentMethodChart :data="distributions.payment_methods || []" />
     </div>
 
     <!-- Gráficos: hora del día + comprobantes -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
       <SalesByHourChart :data="distributions.by_hour || []" />
       <DocumentTypeChart :data="distributions.document_types || []" />
     </div>
 
     <!-- Tablas: productos + cajeros -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
       <TopProductsTable :data="analytics?.top_products || []" />
       <TopCashiersTable :data="analytics?.top_cashiers || []" />
     </div>
