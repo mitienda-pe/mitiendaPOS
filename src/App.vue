@@ -3,12 +3,13 @@
     <template v-if="authStore.isAuthenticated">
       <!-- Navigation -->
       <nav class="bg-gray-800 flex-shrink-0">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="flex items-center justify-between h-16">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div class="flex items-center justify-between h-14 md:h-16">
             <div class="flex items-center">
               <div class="flex-shrink-0">
-                <img src="@/assets/logo-mitiendapos.svg" alt="MiTiendaPOS Logo" class="h-8" />
+                <img src="@/assets/logo-mitiendapos.svg" alt="MiTiendaPOS Logo" class="h-7 md:h-8" />
               </div>
+              <!-- Desktop menu link -->
               <div class="hidden md:block">
                 <div class="ml-10 flex items-baseline space-x-4">
                   <router-link
@@ -21,65 +22,125 @@
                 </div>
               </div>
             </div>
-            <div class="hidden md:block">
-              <div class="ml-4 flex items-center md:ml-6">
-                <div class="ml-3 relative">
-                  <div class="flex items-center space-x-4">
-                    <!-- Store and User Info -->
-                    <div class="text-right">
-                      <p class="text-gray-300 text-sm font-medium">
-                        {{ authStore.selectedStore?.name || 'Sin tienda' }}
-                        <span
-                          v-if="authStore.tokenTiendaId != null"
-                          :class="authStore.tokenStoreMismatch ? 'text-red-400 font-bold' : 'text-gray-500'"
-                          :title="authStore.tokenStoreMismatch ? 'El token JWT apunta a una tienda distinta a la seleccionada' : 'tienda_id activo en el token'"
-                        >
-                          (#{{ authStore.tokenTiendaId }})
-                        </span>
-                        <span v-if="authStore.user?.name" class="text-gray-400">• {{ authStore.user.name }}</span>
-                      </p>
-                      <!-- Cajero activo en POS -->
-                      <p v-if="cashierStore.isCashierAuthenticated" class="text-green-400 text-xs">
-                        🧑‍💼 {{ cashierStore.cashierName }}
-                      </p>
-                      <!-- Sucursal y caja cuando hay turno abierto -->
-                      <p v-if="shiftStore.hasActiveShift" class="text-primary-400 text-xs">
-                        <span v-if="sucursalNombre && sucursalNombre !== 'Sucursal'">📍 {{ sucursalNombre }} • </span>Caja {{ cajaNumero }}
-                      </p>
-                      <p v-else-if="!cashierStore.isCashierAuthenticated" class="text-gray-500 text-xs italic">Sin cajero autenticado</p>
-                    </div>
-                    <!-- Open/Close Shift Button (only if cashier is authenticated) -->
-                    <button
-                      v-if="cashierStore.isCashierAuthenticated && !shiftStore.hasActiveShift"
-                      @click="handleOpenShift"
-                      class="bg-green-600 text-white hover:bg-green-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                      title="Abrir turno">
-                      ✅ Abrir Turno
-                    </button>
-                    <button
-                      v-else-if="cashierStore.isCashierAuthenticated && shiftStore.hasActiveShift"
-                      @click="handleCloseShift"
-                      class="bg-red-600 text-white hover:bg-red-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                      title="Cerrar turno">
-                      🔒 Cerrar Turno
-                    </button>
-                    <!-- Lock Button (only if cashier is authenticated) -->
-                    <button
-                      v-if="cashierStore.isCashierAuthenticated"
-                      @click="handleLock"
-                      class="bg-gray-700 text-gray-300 hover:bg-yellow-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                      title="Bloquear caja">
-                      🔒 Bloquear
-                    </button>
-                    <!-- Logout Button -->
-                    <button @click="authStore.logout"
-                      class="bg-gray-700 text-gray-300 hover:bg-red-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                      Cerrar Sesión
-                    </button>
-                  </div>
-                </div>
-              </div>
+
+            <!-- Mobile: compact action buttons -->
+            <div class="flex items-center space-x-2 md:hidden">
+              <!-- Open/Close Shift -->
+              <button
+                v-if="cashierStore.isCashierAuthenticated && !shiftStore.hasActiveShift"
+                @click="handleOpenShift"
+                class="bg-green-600 text-white hover:bg-green-700 px-3 py-1.5 rounded-md text-xs font-medium transition-colors"
+                title="Abrir turno">
+                Abrir Turno
+              </button>
+              <button
+                v-else-if="cashierStore.isCashierAuthenticated && shiftStore.hasActiveShift"
+                @click="handleCloseShift"
+                class="bg-red-600 text-white hover:bg-red-700 px-2 py-1.5 rounded-md text-xs font-medium transition-colors"
+                title="Cerrar turno">
+                Cerrar
+              </button>
+              <!-- Mobile hamburger -->
+              <button
+                @click="mobileMenuOpen = !mobileMenuOpen"
+                class="text-gray-300 hover:text-white p-1.5 rounded-md"
+                title="Menú">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path v-if="!mobileMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                  <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
+
+            <!-- Desktop: full action bar -->
+            <div class="hidden md:flex items-center space-x-4">
+              <!-- Store and User Info -->
+              <div class="text-right">
+                <p class="text-gray-300 text-sm font-medium">
+                  {{ authStore.selectedStore?.name || 'Sin tienda' }}
+                  <span
+                    v-if="authStore.tokenTiendaId != null"
+                    :class="authStore.tokenStoreMismatch ? 'text-red-400 font-bold' : 'text-gray-500'"
+                    :title="authStore.tokenStoreMismatch ? 'El token JWT apunta a una tienda distinta a la seleccionada' : 'tienda_id activo en el token'"
+                  >
+                    (#{{ authStore.tokenTiendaId }})
+                  </span>
+                  <span v-if="authStore.user?.name" class="text-gray-400">• {{ authStore.user.name }}</span>
+                </p>
+                <p v-if="cashierStore.isCashierAuthenticated" class="text-green-400 text-xs">
+                  {{ cashierStore.cashierName }}
+                </p>
+                <p v-if="shiftStore.hasActiveShift" class="text-primary-400 text-xs">
+                  <span v-if="sucursalNombre && sucursalNombre !== 'Sucursal'">{{ sucursalNombre }} • </span>Caja {{ cajaNumero }}
+                </p>
+                <p v-else-if="!cashierStore.isCashierAuthenticated" class="text-gray-500 text-xs italic">Sin cajero autenticado</p>
+              </div>
+              <!-- Open/Close Shift Button -->
+              <button
+                v-if="cashierStore.isCashierAuthenticated && !shiftStore.hasActiveShift"
+                @click="handleOpenShift"
+                class="bg-green-600 text-white hover:bg-green-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                title="Abrir turno">
+                Abrir Turno
+              </button>
+              <button
+                v-else-if="cashierStore.isCashierAuthenticated && shiftStore.hasActiveShift"
+                @click="handleCloseShift"
+                class="bg-red-600 text-white hover:bg-red-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                title="Cerrar turno">
+                Cerrar Turno
+              </button>
+              <!-- Lock Button -->
+              <button
+                v-if="cashierStore.isCashierAuthenticated"
+                @click="handleLock"
+                class="bg-gray-700 text-gray-300 hover:bg-yellow-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                title="Bloquear caja">
+                Bloquear
+              </button>
+              <!-- Logout Button -->
+              <button @click="authStore.logout"
+                class="bg-gray-700 text-gray-300 hover:bg-red-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                Cerrar Sesión
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mobile dropdown menu -->
+        <div v-if="mobileMenuOpen" class="md:hidden border-t border-gray-700">
+          <div class="px-3 py-3 space-y-2">
+            <!-- Store info -->
+            <div class="text-sm text-gray-300 px-2 pb-2 border-b border-gray-700">
+              <p class="font-medium">{{ authStore.selectedStore?.name || 'Sin tienda' }}</p>
+              <p v-if="cashierStore.isCashierAuthenticated" class="text-green-400 text-xs mt-0.5">
+                {{ cashierStore.cashierName }}
+              </p>
+              <p v-if="shiftStore.hasActiveShift" class="text-primary-400 text-xs mt-0.5">
+                <span v-if="sucursalNombre && sucursalNombre !== 'Sucursal'">{{ sucursalNombre }} • </span>Caja {{ cajaNumero }}
+              </p>
+            </div>
+            <!-- Menu link -->
+            <router-link
+              v-if="showMenuButton && ['cajero', 'supervisor', 'administrador'].includes(authStore.userRole)"
+              to="/menu"
+              @click="mobileMenuOpen = false"
+              class="block text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+              Menú Principal
+            </router-link>
+            <!-- Lock -->
+            <button
+              v-if="cashierStore.isCashierAuthenticated"
+              @click="handleLock(); mobileMenuOpen = false"
+              class="w-full text-left text-gray-300 hover:bg-yellow-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+              Bloquear Caja
+            </button>
+            <!-- Logout -->
+            <button
+              @click="authStore.logout(); mobileMenuOpen = false"
+              class="w-full text-left text-gray-300 hover:bg-red-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+              Cerrar Sesión
+            </button>
           </div>
         </div>
       </nav>
@@ -181,6 +242,7 @@ const showLockScreen = ref(false);
 const showOpenShiftModal = ref(false);
 const showCloseShiftModal = ref(false);
 const pendingShiftData = ref(null);
+const mobileMenuOpen = ref(false);
 
 // Configuración de inactividad
 const INACTIVITY_TIMEOUT = 3 * 60 * 1000; // 3 minutos en milisegundos
@@ -199,6 +261,9 @@ const lockScreenInfo = computed(() => {
 
 // Computed para ocultar botón "Menú Principal" cuando ya estás en el menú
 const showMenuButton = computed(() => route.path !== '/menu');
+
+// Close mobile menu on navigation
+watch(() => route.path, () => { mobileMenuOpen.value = false; });
 
 // Computed para mostrar sucursal y caja del turno activo
 const sucursalNombre = computed(() => {

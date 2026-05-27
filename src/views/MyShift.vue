@@ -1,22 +1,22 @@
 <template>
-  <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+  <div class="max-w-7xl mx-auto py-4 px-3 sm:px-6 lg:px-8">
     <!-- Header -->
-    <div class="flex justify-between items-center mb-6">
-      <div>
-        <h1 class="text-3xl font-bold text-gray-900">Mi Turno</h1>
-        <p v-if="cashierStore.cashier" class="text-sm text-gray-600 mt-1">
-          🧑‍💼 {{ cashierStore.cashier.empleado_nombres }} {{ cashierStore.cashier.empleado_apellidos }}
-          • {{ cashierStore.workLocation }}
+    <div class="flex justify-between items-center mb-4 sm:mb-6">
+      <div class="min-w-0 flex-1">
+        <h1 class="text-xl sm:text-3xl font-bold text-gray-900">Mi Turno</h1>
+        <p v-if="cashierStore.cashier" class="text-xs sm:text-sm text-gray-600 mt-1 truncate">
+          {{ cashierStore.cashier.empleado_nombres }} {{ cashierStore.cashier.empleado_apellidos }}
+          <span class="hidden sm:inline">• {{ cashierStore.workLocation }}</span>
         </p>
       </div>
       <router-link
         to="/menu"
-        class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        class="inline-flex items-center px-2 sm:px-4 py-1.5 sm:py-2 border border-gray-300 rounded-md shadow-sm text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 ml-2 flex-shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 sm:mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="19" y1="12" x2="5" y2="12"></line>
           <polyline points="12 19 5 12 12 5"></polyline>
         </svg>
-        Volver al Menú
+        <span class="hidden sm:inline">Volver al Menú</span>
       </router-link>
     </div>
 
@@ -39,24 +39,30 @@
     <!-- Main Content -->
     <div v-else class="space-y-6">
       <!-- No Active Shift Message -->
-      <div v-if="!shiftStore.hasActiveShift" class="bg-white rounded-lg shadow-md p-6">
-        <div class="text-center py-12">
-          <div class="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-8 mb-4 inline-block">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 text-yellow-500 mx-auto mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <div v-if="!shiftStore.hasActiveShift" class="bg-white rounded-lg shadow-md p-4 sm:p-6">
+        <div class="text-center py-6 sm:py-12">
+          <div class="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4 sm:p-8 mb-4 inline-block">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 sm:h-20 sm:w-20 text-yellow-500 mx-auto mb-3 sm:mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10"/>
               <line x1="12" y1="8" x2="12" y2="12"/>
               <line x1="12" y1="16" x2="12.01" y2="16"/>
             </svg>
-            <p class="text-xl font-medium text-yellow-800 mb-2">No hay turno activo</p>
-            <p class="text-sm text-yellow-600">Usa el botón "✅ Abrir Turno" en el encabezado para comenzar</p>
+            <p class="text-lg sm:text-xl font-medium text-yellow-800 mb-2">No hay turno activo</p>
+            <p class="text-sm text-yellow-600 mb-4">Presiona el botón para comenzar tu turno</p>
+            <button
+              v-if="cashierStore.isCashierAuthenticated"
+              @click="handleOpenShift"
+              class="bg-green-600 text-white hover:bg-green-700 px-6 py-2.5 rounded-lg text-sm font-medium transition-colors">
+              Abrir Turno
+            </button>
           </div>
         </div>
       </div>
 
       <!-- Active Shift Status -->
-      <div v-else class="bg-white rounded-lg shadow-md p-6">
-        <h2 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-primary-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <div v-else class="bg-white rounded-lg shadow-md p-4 sm:p-6">
+        <h2 class="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6 mr-2 text-primary-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="8" cy="8" r="6"/>
             <path d="M18.09 10.37A6 6 0 1 1 10.34 18"/>
             <path d="M7 6h1v4"/>
@@ -65,74 +71,70 @@
           Estado del Turno
         </h2>
 
-        <div class="bg-green-50 border-2 border-green-200 rounded-lg p-4">
-          <div class="flex items-center justify-between">
+        <div class="bg-green-50 border-2 border-green-200 rounded-lg p-3 sm:p-4">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
             <div class="flex-1">
-              <p class="text-sm font-medium text-green-800 mb-1">✅ Turno Abierto</p>
+              <p class="text-sm font-medium text-green-800 mb-1">Turno Abierto</p>
               <p class="text-xs text-green-600">
                 Inicio: {{ formatDateTime(shiftStore.activeShift.fecha_apertura) }}
               </p>
               <p class="text-xs text-green-600 mt-1">
-                ⏱️ {{ elapsedTime }}
+                {{ elapsedTime }}
               </p>
             </div>
-            <div class="text-right">
-              <p class="text-xs text-green-700 font-medium mb-1">Monto Inicial</p>
-              <p class="text-2xl font-bold text-green-900">
-                S/ {{ shiftStore.activeShift.monto_inicial.toFixed(2) }}
-              </p>
-            </div>
-            <div class="ml-4">
+            <div class="flex items-center justify-between sm:block sm:text-right">
+              <div>
+                <p class="text-xs text-green-700 font-medium mb-0.5">Monto Inicial</p>
+                <p class="text-xl sm:text-2xl font-bold text-green-900">
+                  S/ {{ shiftStore.activeShift.monto_inicial.toFixed(2) }}
+                </p>
+              </div>
               <button
                 @click="handleForceRefresh"
-                class="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded border border-gray-300"
+                class="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded border border-gray-300 sm:mt-2 sm:ml-0 ml-3"
                 title="Si ves datos incorrectos, usa esto para forzar recarga">
-                🔄 Verificar
+                Verificar
               </button>
             </div>
           </div>
         </div>
-
-        <p class="text-xs text-gray-500 mt-4 text-center">
-          Usa el botón "🔒 Cerrar Turno" en el encabezado para finalizar tu jornada
-        </p>
       </div>
 
       <!-- Real-time Summary Section (only if shift is active) -->
-      <div v-if="shiftStore.hasActiveShift" class="bg-white rounded-lg shadow-md p-6">
-        <h2 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-purple-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <div v-if="shiftStore.hasActiveShift" class="bg-white rounded-lg shadow-md p-4 sm:p-6">
+        <h2 class="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6 mr-2 text-purple-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="1" x2="12" y2="23"></line>
             <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
           </svg>
           Resumen en Tiempo Real
         </h2>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
           <!-- Initial Amount -->
-          <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <p class="text-xs font-medium text-gray-600 mb-1">💰 Inicial</p>
-            <p class="text-2xl font-bold text-gray-900">S/ {{ summary.montoInicial.toFixed(2) }}</p>
+          <div class="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200">
+            <p class="text-xs font-medium text-gray-600 mb-1">Inicial</p>
+            <p class="text-lg sm:text-2xl font-bold text-gray-900">S/ {{ summary.montoInicial.toFixed(2) }}</p>
           </div>
 
           <!-- Total Sales -->
-          <div class="bg-primary-50 rounded-lg p-4 border border-primary-200">
-            <p class="text-xs font-medium text-primary-700 mb-1">💳 Ventas Total</p>
-            <p class="text-2xl font-bold text-primary-900">S/ {{ summary.totalVentas.toFixed(2) }}</p>
-            <p class="text-xs text-primary-600 mt-1">{{ summary.numeroVentas }} operaciones</p>
+          <div class="bg-primary-50 rounded-lg p-3 sm:p-4 border border-primary-200">
+            <p class="text-xs font-medium text-primary-700 mb-1">Ventas Total</p>
+            <p class="text-lg sm:text-2xl font-bold text-primary-900">S/ {{ summary.totalVentas.toFixed(2) }}</p>
+            <p class="text-xs text-primary-600 mt-1">{{ summary.numeroVentas }} ops</p>
           </div>
 
           <!-- Cash Sales -->
-          <div class="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
-            <p class="text-xs font-medium text-emerald-700 mb-1">💵 Efectivo</p>
-            <p class="text-2xl font-bold text-emerald-900">S/ {{ summary.totalVentasEfectivo.toFixed(2) }}</p>
+          <div class="bg-emerald-50 rounded-lg p-3 sm:p-4 border border-emerald-200">
+            <p class="text-xs font-medium text-emerald-700 mb-1">Efectivo</p>
+            <p class="text-lg sm:text-2xl font-bold text-emerald-900">S/ {{ summary.totalVentasEfectivo.toFixed(2) }}</p>
             <p class="text-xs text-emerald-600 mt-1">Ventas en caja</p>
           </div>
 
           <!-- Card Payments -->
-          <div class="bg-purple-50 rounded-lg p-4 border border-purple-200">
-            <p class="text-xs font-medium text-purple-700 mb-1">💳 Pagos con Tarjeta</p>
-            <p class="text-2xl font-bold text-purple-900">
+          <div class="bg-purple-50 rounded-lg p-3 sm:p-4 border border-purple-200">
+            <p class="text-xs font-medium text-purple-700 mb-1">Tarjeta</p>
+            <p class="text-lg sm:text-2xl font-bold text-purple-900">
               S/ {{ summary.totalVentasTarjeta.toFixed(2) }}
             </p>
             <p class="text-xs text-purple-600 mt-1">
@@ -141,41 +143,41 @@
           </div>
 
           <!-- Expected Cash -->
-          <div class="bg-green-50 rounded-lg p-4 border border-green-200">
-            <p class="text-xs font-medium text-green-700 mb-1">🎯 Esperado en Caja</p>
-            <p class="text-2xl font-bold text-green-900">S/ {{ summary.efectivoEsperado.toFixed(2) }}</p>
+          <div class="bg-green-50 rounded-lg p-3 sm:p-4 border border-green-200 col-span-2 sm:col-span-1">
+            <p class="text-xs font-medium text-green-700 mb-1">Esperado en Caja</p>
+            <p class="text-lg sm:text-2xl font-bold text-green-900">S/ {{ summary.efectivoEsperado.toFixed(2) }}</p>
             <p class="text-xs text-green-600 mt-1">Solo efectivo</p>
           </div>
         </div>
       </div>
 
       <!-- Cash Movements Section (only if shift is active) -->
-      <div v-if="shiftStore.hasActiveShift" class="bg-white rounded-lg shadow-md p-6">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-primary-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <div v-if="shiftStore.hasActiveShift" class="bg-white rounded-lg shadow-md p-4 sm:p-6">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
+          <h2 class="text-lg sm:text-xl font-semibold text-gray-900 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6 mr-2 text-primary-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M3 3v18h18"/>
               <path d="m19 9-5 5-4-4-3 3"/>
             </svg>
-            Movimientos de Hoy
+            Movimientos
           </h2>
-          <div class="flex gap-2">
+          <div class="flex gap-2 flex-wrap">
             <button
               @click="downloadCsvReport"
-              class="inline-flex items-center px-3 py-1 text-sm text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded font-medium"
+              class="inline-flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded font-medium"
               title="Descargar reporte en CSV">
-              📥 Descargar CSV
+              CSV
             </button>
             <button
               @click="downloadPdfReport"
-              class="inline-flex items-center px-3 py-1 text-sm text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded font-medium"
+              class="inline-flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded font-medium"
               title="Descargar reporte en PDF">
-              📄 Descargar PDF
+              PDF
             </button>
             <button
               @click="loadMovements"
-              class="text-sm text-primary-600 hover:text-primary-800 font-medium">
-              🔄 Actualizar
+              class="text-xs sm:text-sm text-primary-600 hover:text-primary-800 font-medium px-2 py-1">
+              Actualizar
             </button>
           </div>
         </div>
