@@ -14,9 +14,93 @@ const getActiveTiendadireccionId = () => {
   }
 };
 
+// Feature flag: cuando es 'true' las búsquedas pasan al endpoint
+// /products/search (Meilisearch). Rollout gradual: arrancar en una tienda
+// piloto antes de habilitarlo global. Apagado por default.
+const useMeiliSearch = () =>
+  String(import.meta.env.VITE_USE_MEILI_SEARCH || '').toLowerCase() === 'true';
+
+// Adapta la respuesta del endpoint /products/search al shape que ya
+// consumen los componentes POS (camelCase del endpoint nuevo → snake_case del legacy).
+const adaptMeiliHit = (hit) => ({
+  id: hit.id,
+  sku: hit.sku || '',
+  name: hit.title || hit.name || '',
+  description: '',
+  price: parseFloat(hit.price || 0),
+  original_price: hit.originalPrice != null ? parseFloat(hit.originalPrice) : null,
+  promotion: null,
+  stock: hit.stock || 0,
+  unlimited_stock: hit.unlimitedStock === true,
+  published: hit.published === true,
+  featured: false,
+  images: hit.image
+    ? [{ id: 0, url: hit.image, thumbnail: hit.image, position: 0, is_main: true }]
+    : [],
+  category: hit.category || null,
+  brand: hit.brand || null,
+  barcode: hit.barcode || null,
+  variants: Array.isArray(hit.variants) ? hit.variants : [],
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+});
+
+// Construye los query params de /products/search a partir de filtros del POS.
+const buildMeiliSearchParams = (filters, tiendadireccionId) => {
+  const params = new URLSearchParams();
+  if (filters.search) params.append('q', filters.search);
+  if (filters.limit) params.append('limit', String(filters.limit));
+  if (filters.page) {
+    const offset = (Number(filters.page) - 1) * Number(filters.limit || 20);
+    if (offset > 0) params.append('offset', String(offset));
+  }
+  if (filters.category_id) params.append('category_id', String(filters.category_id));
+  if (filters.brand_id) params.append('brand_id', String(filters.brand_id));
+  if (tiendadireccionId) params.append('tiendadireccion_id', String(tiendadireccionId));
+
+  // El POS muestra todo el catálogo (con badges visuales).
+  // Solo si el caller explícitamente pidió `published=1` o filtró stock,
+  // restringimos.
+  if (filters.published === true || filters.published === 1 || filters.published === '1') {
+    params.append('include_unpublished', 'false');
+  }
+  if (filters.stock_status === 'in_stock') {
+    params.append('include_out_of_stock', 'false');
+  }
+
+  return params;
+};
+
 export const productsApi = {
   // Listar productos con filtros y paginación
   async getProducts(filters = {}) {
+    // Multi-sucursal: si hay turno activo, el backend filtra por stock de la sucursal
+    const tiendadireccionId = filters.tiendadireccion_id ?? getActiveTiendadireccionId();
+
+    // Cuando el feature flag está prendido y hay un texto de búsqueda activo,
+    // pegamos al endpoint Meilisearch. Para listados sin texto seguimos usando
+    // /products (que sigue siendo más eficiente para catálogos paginados sin q).
+    if (useMeiliSearch() && filters.search) {
+      const meiliParams = buildMeiliSearchParams(filters, tiendadireccionId);
+      const meiliResponse = await apiClient.get(`/products/search?${meiliParams.toString()}`);
+      const meiliBody = meiliResponse.data || {};
+      const meiliHits = Array.isArray(meiliBody.data) ? meiliBody.data : [];
+      const meiliPagination = meiliBody.pagination || {};
+
+      return {
+        success: true,
+        data: meiliHits.map(adaptMeiliHit),
+        meta: {
+          page: meiliPagination.page || filters.page || 1,
+          limit: meiliPagination.perPage || filters.limit || 20,
+          total: meiliPagination.total || meiliHits.length,
+          totalPages: meiliPagination.totalPages || 1,
+          hasMore: meiliPagination.hasMore || false,
+          source: meiliBody.meta?.source || 'meilisearch',
+        },
+      };
+    }
+
     const params = new URLSearchParams();
 
     if (filters.page) params.append('page', filters.page.toString());
@@ -31,8 +115,6 @@ export const productsApi = {
       params.append('stock_status', filters.stock_status);
     }
 
-    // Multi-sucursal: si hay turno activo, el backend filtra por stock de la sucursal
-    const tiendadireccionId = filters.tiendadireccion_id ?? getActiveTiendadireccionId();
     if (tiendadireccionId) {
       params.append('tiendadireccion_id', String(tiendadireccionId));
     }
@@ -190,6 +272,22 @@ export const productsApi = {
 
   // Buscar productos por código de barras o SKU
   async searchByCode(code) {
+    // Con Meilisearch usamos /products/search. El controller detecta automáticamente
+    // si `code` es un barcode (8-14 dígitos) y rutea al filter exacto.
+    if (useMeiliSearch()) {
+      const tiendadireccionId = getActiveTiendadireccionId();
+      const params = new URLSearchParams({ q: code, limit: '1' });
+      if (tiendadireccionId) params.append('tiendadireccion_id', String(tiendadireccionId));
+
+      const meiliResponse = await apiClient.get(`/products/search?${params.toString()}`);
+      const meiliHits = meiliResponse.data?.data || [];
+
+      if (meiliHits.length > 0) {
+        return { success: true, data: adaptMeiliHit(meiliHits[0]) };
+      }
+      return { success: false, data: null, message: 'Producto no encontrado' };
+    }
+
     const response = await apiClient.get(`/products?search=${encodeURIComponent(code)}`);
     const rawData = response.data;
 
