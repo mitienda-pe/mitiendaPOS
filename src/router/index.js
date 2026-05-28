@@ -23,6 +23,7 @@ const CashierAccountsHierarchy = () => import('../views/CashierAccountsHierarchy
 const NetsuiteBranches = () => import('../views/NetsuiteBranches.vue');
 const NetsuiteUsers = () => import('../views/NetsuiteUsers.vue');
 const NetsuiteGeneralConfig = () => import('../views/NetsuiteGeneralConfig.vue');
+const NetsuiteSync = () => import('../views/NetsuiteSync.vue');
 const Help = () => import('../views/Help.vue');
 
 const routes = [
@@ -182,6 +183,12 @@ const routes = [
         path: 'netsuite/cashier-accounts',
         name: 'CashierAccounts',
         component: CashierAccountsHierarchy
+      },
+      {
+        path: 'netsuite/sync',
+        name: 'NetsuiteSync',
+        component: NetsuiteSync,
+        meta: { adminOnly: true }
       }
     ]
   },

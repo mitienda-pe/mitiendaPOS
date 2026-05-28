@@ -137,6 +137,20 @@
                 </svg>
                 Cuentas por Caja
               </router-link>
+
+              <router-link
+                v-if="authStore.isAdminToken"
+                to="/settings/netsuite/sync"
+                class="flex items-center px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+                active-class="bg-primary-50 text-primary-700 font-medium"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <polyline points="1 20 1 14 7 14"></polyline>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+                Sincronización
+              </router-link>
             </div>
           </div>
         </nav>
@@ -169,9 +183,11 @@
 <script setup>
 import { ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import { useAuthStore } from '../stores/auth';
 
 const sidebarOpen = ref(false);
 const route = useRoute();
+const authStore = useAuthStore();
 
 watch(() => route.path, () => { sidebarOpen.value = false; });
 </script>

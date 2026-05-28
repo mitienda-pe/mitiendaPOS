@@ -186,5 +186,30 @@ export const netsuiteStockApi = {
       }
       throw error;
     }
+  },
+
+  /**
+   * Importar productos NUEVOS desde NetSuite (equivale a `php spark netsuite:import-products`).
+   * Aplica filtros multi-capa (itemtype + class + location + stock + precio).
+   *
+   * @param {boolean} dryRun  default true (devuelve preview, no escribe)
+   * @param {number|null} limit opcional, tope al número de items a procesar
+   * @returns {Promise<Object>}
+   */
+  async syncTiendaProducts(dryRun = true, limit = null) {
+    try {
+      const params = new URLSearchParams();
+      params.append('dry_run', dryRun ? '1' : '0');
+      if (limit && Number(limit) > 0) params.append('limit', String(limit));
+      const url = `/tienda/sync-products?${params.toString()}`;
+      const response = await apiClient.post(url, {}, { timeout: 600000 });
+      return response.data;
+    } catch (error) {
+      console.error('❌ [netsuiteStockApi] Error syncTiendaProducts:', error);
+      if (error.response?.data) {
+        throw new Error(error.response.data.message || JSON.stringify(error.response.data));
+      }
+      throw error;
+    }
   }
 };
