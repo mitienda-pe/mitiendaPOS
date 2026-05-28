@@ -67,6 +67,7 @@ const buildMeiliSearchParams = (filters, tiendadireccionId) => {
   if (filters.stock_status === 'in_stock') {
     params.append('include_out_of_stock', 'false');
   }
+  if (filters.sort) params.append('sort', filters.sort);
 
   return params;
 };
@@ -114,6 +115,7 @@ export const productsApi = {
     if (filters.stock_status && filters.stock_status !== 'all') {
       params.append('stock_status', filters.stock_status);
     }
+    if (filters.sort) params.append('sort', filters.sort);
 
     if (tiendadireccionId) {
       params.append('tiendadireccion_id', String(tiendadireccionId));

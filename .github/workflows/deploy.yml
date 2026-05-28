@@ -31,6 +31,7 @@ jobs:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
           VITE_APISNET_TOKEN: ${{ secrets.VITE_APISNET_TOKEN }}
           VITE_DEFAULT_STORE_ID: ${{ vars.VITE_DEFAULT_STORE_ID }}
+          VITE_USE_MEILI_SEARCH: ${{ vars.VITE_USE_MEILI_SEARCH }}
 
       - name: Setup SSH key
         run: |

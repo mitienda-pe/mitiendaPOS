@@ -26,8 +26,12 @@ import NetsuiteCustomerIssueModal from '../components/NetsuiteCustomerIssueModal
 import BonificationWarningModal from '../components/BonificationWarningModal.vue';
 import { customersApi } from '../services/customersApi';
 import QuantityStepperInput from '../components/QuantityStepperInput.vue';
+import ToastNotification from '../components/ToastNotification.vue';
 import { useBillingStore } from '../stores/billing.js';
+import { useToast } from '../composables/useToast';
 import { formatCurrency } from '../utils/formatters.js';
+
+const { showToast } = useToast();
 
 // Stores
 const authStore = useAuthStore();
@@ -54,6 +58,9 @@ let searchDebounce = null;
 const productSearchQuery = ref('');
 const productCategoryFilter = ref('');
 const productSearchResults = ref([]);
+const searchLoading = ref(false);
+const searchAttempted = ref(false);
+const searchSource = ref(null);
 
 // Sale state tracking
 const saleHasUnsavedChanges = ref(false);
@@ -190,17 +197,17 @@ const handleBarcodeInput = async () => {
       if (product.unlimited_stock || product.stock > 0) {
         addToCart(product);
       } else {
-        alert('Este producto está agotado');
+        showToast('warning', 'Este producto está agotado');
       }
     } else {
-      alert('Producto no encontrado');
+      showToast('warning', 'Producto no encontrado');
     }
 
     barcode.value = '';
     barcodeInput.value.focus();
   } catch (error) {
     console.error('Error searching product:', error);
-    alert('Error al buscar el producto');
+    showToast('error', 'Error al buscar el producto');
   }
 };
 
@@ -1295,6 +1302,8 @@ const fetchCustomers = async () => {
 };
 
 // Search methods
+const BARCODE_PATTERN = /^\d{8,14}$/;
+
 const searchProducts = () => {
   if (searchDebounce) {
     clearTimeout(searchDebounce);
@@ -1304,10 +1313,25 @@ const searchProducts = () => {
   if (!barcode.value) {
     searchResults.value = [];
     highlightedIndex.value = -1;
+    searchLoading.value = false;
+    searchAttempted.value = false;
+    return;
+  }
+
+  // Barcode: match exacto sin debounce. El backend detecta el patrón
+  // y aplica filtro exacto sobre `barcodes` (sin typo tolerance).
+  if (BARCODE_PATTERN.test(barcode.value)) {
+    searchResults.value = [];
+    highlightedIndex.value = -1;
+    searchLoading.value = false;
+    searchAttempted.value = false;
+    handleBarcodeInput();
     return;
   }
 
   const query = barcode.value;
+  searchLoading.value = true;
+  searchAttempted.value = false;
   searchDebounce = setTimeout(async () => {
     try {
       const response = await productsApi.getProducts({
@@ -1327,14 +1351,21 @@ const searchProducts = () => {
           stock: item.stock,
           unlimited_stock: item.unlimited_stock,
           categoria: item.category?.name || 'Sin categoría',
+          barcode: item.barcode || null,
           images: item.images || []
         }));
         highlightedIndex.value = -1;
+        searchSource.value = response.meta?.source || null;
       }
     } catch (error) {
       console.error('Error searching products:', error);
       searchResults.value = [];
       highlightedIndex.value = -1;
+    } finally {
+      if (barcode.value === query) {
+        searchLoading.value = false;
+        searchAttempted.value = true;
+      }
     }
   }, 250);
 };
@@ -1388,7 +1419,7 @@ const selectProduct = (product) => {
     barcode.value = '';
     closeProductModal();
   } else {
-    alert('Este producto está agotado');
+    showToast('warning', 'Este producto está agotado');
   }
 };
 
@@ -1416,7 +1447,7 @@ const showProductList = async () => {
     showProductModal.value = true;
   } catch (error) {
     console.error('Error loading product list:', error);
-    alert('Error al cargar la lista de productos');
+    showToast('error', 'Error al cargar la lista de productos');
   }
 };
 
@@ -1663,20 +1694,85 @@ const getPaymentMethodName = (method) => {
                   @keydown.enter="onSearchEnter"
                   @input="searchProducts">
 
+                <!-- Indicador fallback MySQL -->
+                <div v-if="searchSource === 'mysql'"
+                  class="absolute -bottom-5 left-0 text-[11px] text-amber-600 flex items-center gap-1">
+                  <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4a2 2 0 00-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />
+                  </svg>
+                  Búsqueda limitada
+                </div>
+
                 <!-- Search Results Dropdown -->
-                <div v-if="searchResults.length > 0"
-                  class="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-lg max-h-60 overflow-auto border border-gray-200">
-                  <ul ref="resultsList">
+                <div v-if="barcode && (searchResults.length > 0 || searchLoading || searchAttempted)"
+                  class="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-lg max-h-80 overflow-auto border border-gray-200">
+                  <!-- Loading -->
+                  <div v-if="searchLoading && searchResults.length === 0" class="p-4 flex items-center justify-center text-gray-500 text-sm">
+                    <svg class="animate-spin h-4 w-4 mr-2 text-primary-500" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    Buscando...
+                  </div>
+
+                  <!-- Empty state -->
+                  <div v-else-if="searchAttempted && searchResults.length === 0" class="p-4 text-center text-gray-500 text-sm">
+                    <svg class="h-8 w-8 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    No se encontraron productos
+                  </div>
+
+                  <!-- Results -->
+                  <ul v-else ref="resultsList">
                     <li v-for="(product, idx) in searchResults" :key="product.id"
-                      :class="['p-2 cursor-pointer', idx === highlightedIndex ? 'bg-primary-50' : 'hover:bg-gray-100']"
+                      :class="['p-2 cursor-pointer flex gap-3 items-center', idx === highlightedIndex ? 'bg-primary-50' : 'hover:bg-gray-100']"
                       @click="selectProduct(product)"
                       @mouseenter="highlightedIndex = idx">
-                      <div class="flex justify-between">
-                        <span>{{ product.nombre }}</span>
-                        <span class="text-gray-600">{{ formatCurrency(product.precio) }}</span>
+                      <!-- Thumbnail -->
+                      <div class="flex-shrink-0 w-10 h-10 rounded bg-gray-100 overflow-hidden flex items-center justify-center">
+                        <img v-if="product.images && product.images[0]?.thumbnail"
+                          :src="product.images[0].thumbnail"
+                          :alt="product.nombre"
+                          class="w-full h-full object-cover"
+                          loading="lazy"
+                          @error="$event.target.style.display='none'">
+                        <svg v-else class="h-5 w-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
                       </div>
-                      <div class="text-sm text-gray-500">
-                        SKU: {{ product.sku }} | Stock: {{ product.unlimited_stock ? '∞ Ilimitado' : product.stock }}
+
+                      <!-- Info -->
+                      <div class="flex-grow min-w-0">
+                        <div class="flex justify-between items-start gap-2">
+                          <span class="font-medium text-gray-900 truncate">{{ product.nombre }}</span>
+                          <span class="text-gray-700 flex-shrink-0">{{ formatCurrency(product.precio) }}</span>
+                        </div>
+                        <div class="text-xs text-gray-500 flex items-center gap-2 mt-0.5 flex-wrap">
+                          <span v-if="product.sku">SKU: {{ product.sku }}</span>
+                          <span v-if="product.barcode">· {{ product.barcode }}</span>
+                          <span v-if="product.categoria && product.categoria !== 'Sin categoría'"
+                            class="px-1.5 py-0.5 bg-gray-100 rounded text-gray-600">
+                            {{ product.categoria }}
+                          </span>
+                          <!-- Stock badge con color -->
+                          <span v-if="product.unlimited_stock"
+                            class="px-1.5 py-0.5 bg-primary-100 text-primary-700 rounded font-medium">
+                            ∞ Ilimitado
+                          </span>
+                          <span v-else-if="product.stock === 0"
+                            class="px-1.5 py-0.5 bg-red-100 text-red-700 rounded font-medium">
+                            Agotado
+                          </span>
+                          <span v-else-if="product.stock <= 5"
+                            class="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded font-medium">
+                            Stock: {{ product.stock }}
+                          </span>
+                          <span v-else
+                            class="px-1.5 py-0.5 bg-green-100 text-green-700 rounded font-medium">
+                            Stock: {{ product.stock }}
+                          </span>
+                        </div>
                       </div>
                     </li>
                   </ul>
@@ -2100,4 +2196,7 @@ const getPaymentMethodName = (method) => {
     @proceed="handleBonificationWarningProceed"
     @cancel="handleBonificationWarningCancel"
   />
+
+  <!-- Toast Notification -->
+  <ToastNotification />
 </template>
