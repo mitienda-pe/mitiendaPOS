@@ -36,7 +36,7 @@
               <button
                 v-else-if="cashierStore.isCashierAuthenticated && shiftStore.hasActiveShift"
                 @click="handleCloseShift"
-                class="bg-red-600 text-white hover:bg-red-700 px-2 py-1.5 rounded-md text-xs font-medium transition-colors"
+                class="bg-red-600 text-white hover:bg-red-700 px-2.5 py-1 rounded-md text-xs font-medium transition-colors"
                 title="Cerrar turno">
                 Cerrar
               </button>

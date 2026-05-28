@@ -82,6 +82,7 @@ const showNetsuiteCustomerIssue = ref(false);
 const netsuiteCustomerIssue = ref({ customer: null, issues: [], documentNumber: '' });
 const showBonificationWarning = ref(false);
 const validatingStock = ref(false);
+const showMobileSummary = ref(false);
 
 // Datos para el modal de fusión
 const existingSaleForMerge = ref(null);
@@ -503,6 +504,8 @@ const processPayment = async () => {
     return;
   }
 
+  showMobileSummary.value = false;
+
   // 🔧 FIX: Asegurar que los totales vienen del backend (no cálculo local impreciso)
   // Esto previene discrepancias entre lo que el cliente paga y lo que NetSuite recibe
   if (!cartStore.hasBackendTotals) {
@@ -822,6 +825,7 @@ const handlePaymentCompleted = async () => {
     return;
   }
 
+  showMobileSummary.value = false;
   processingOrder.value = true;
 
   try {
@@ -1249,6 +1253,7 @@ const handlePaymentCompleted = async () => {
 
 const cancelSale = () => {
   if (confirm('¿Está seguro de cancelar la venta?')) {
+    showMobileSummary.value = false;
     resetSale();
   }
 };
@@ -1256,6 +1261,7 @@ const cancelSale = () => {
 const resetSale = (orderData = null) => {
   // Desbloquear el botón de cobrar al limpiar la venta
   processingOrder.value = false;
+  showMobileSummary.value = false;
 
   // If we have order data, store it for billing and show billing modal
   if (orderData && orderData.order_id) {
@@ -1672,17 +1678,40 @@ const getPaymentMethodName = (method) => {
 <template>
   <div class="h-[calc(100dvh-4rem)] flex flex-col">
     <!-- Main Content -->
-    <div class="flex-1 flex overflow-hidden">
+    <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
       <!-- Left Panel - Cart -->
-      <div class="w-2/3 bg-white flex flex-col overflow-hidden">
+      <div class="w-full md:w-2/3 bg-white flex flex-col overflow-hidden">
         <!-- Header -->
-        <header class="bg-white shadow px-6 py-4 flex-shrink-0 flex justify-between items-center">
-          <h1 class="text-2xl font-bold text-gray-900">Ventas</h1>
-
+        <header class="bg-white shadow px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0 flex justify-between items-center gap-2">
+          <h1 class="text-lg sm:text-2xl font-bold text-gray-900">Ventas</h1>
+          <!-- Mobile action buttons (icons only) -->
+          <div class="flex md:hidden items-center gap-1">
+            <button @click="newSale" class="p-2 text-green-600 hover:bg-green-50 rounded-md" title="Nueva venta" aria-label="Nueva venta">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </button>
+            <button @click="saveSaleForLater" :disabled="!cartItems.length" class="p-2 text-primary-600 hover:bg-primary-50 rounded-md disabled:opacity-40 disabled:hover:bg-transparent" title="Guardar venta" aria-label="Guardar venta">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2v8" />
+                <path d="m16 6-4 4-4-4" />
+                <rect width="20" height="8" x="2" y="14" rx="2" />
+                <path d="M6 18h.01" />
+                <path d="M10 18h.01" />
+              </svg>
+            </button>
+            <button @click="showSavedSalesModal = true" class="p-2 text-primary-600 hover:bg-primary-50 rounded-md" title="Ventas guardadas" aria-label="Ventas guardadas">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+              </svg>
+            </button>
+          </div>
         </header>
 
         <!-- Content -->
-        <div class="flex-1 overflow-auto p-6">
+        <div class="flex-1 overflow-auto p-4 sm:p-6 pb-24 md:pb-6">
           <!-- Barcode Scanner -->
           <div class="mb-6 search-container relative">
             <div class="flex gap-2">
@@ -1795,8 +1824,8 @@ const getPaymentMethodName = (method) => {
             </div>
           </div>
 
-          <!-- Cart Items -->
-          <div class="overflow-x-auto">
+          <!-- Cart Items: desktop table -->
+          <div class="hidden md:block overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
                 <tr>
@@ -1857,11 +1886,55 @@ const getPaymentMethodName = (method) => {
               </tbody>
             </table>
           </div>
+
+          <!-- Cart Items: mobile cards -->
+          <div class="md:hidden space-y-2">
+            <div v-for="item in cartItems" :key="item.id" class="bg-white rounded-lg border border-gray-200 p-3">
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0 flex-1">
+                  <div class="text-sm font-medium text-gray-900 truncate">{{ item.nombre }}</div>
+                  <div class="text-xs text-gray-500">SKU: {{ item.sku }}</div>
+                  <div class="mt-1 text-sm">
+                    <div v-if="item.precio_original" class="flex items-center gap-2 flex-wrap">
+                      <span class="text-gray-400 line-through text-xs">{{ formatCurrency(item.precio_original) }}</span>
+                      <span class="font-semibold text-green-600">{{ formatCurrency(item.precio) }}</span>
+                      <span v-if="item.promocion" class="text-xs font-semibold bg-red-500 text-white px-1.5 py-0.5 rounded">
+                        {{ item.promocion.value }}
+                      </span>
+                    </div>
+                    <span v-else class="text-gray-700">{{ formatCurrency(item.precio) }}</span>
+                  </div>
+                </div>
+                <button @click="removeItem(item)" class="text-red-600 hover:text-red-900 p-1 -m-1 flex-shrink-0" aria-label="Eliminar producto">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 6h18"></path>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                </button>
+              </div>
+              <div class="mt-2 flex items-center justify-between gap-2">
+                <QuantityStepperInput
+                  v-model="item.quantity"
+                  :min="1"
+                  :max="item.unlimited_stock ? 9999 : item.stock"
+                  :disabled="false"
+                  :confirm-on-zero="true"
+                  @update:modelValue="(newQuantity) => updateQuantity(item, newQuantity)"
+                  @confirm-remove="handleConfirmRemove(item)"
+                />
+                <div class="text-sm font-medium text-gray-900">{{ formatCurrency(calculateSubtotal(item)) }}</div>
+              </div>
+            </div>
+            <div v-if="cartItems.length === 0" class="bg-white rounded-lg border border-dashed border-gray-300 px-4 py-8 text-center text-sm text-gray-500">
+              No hay productos en el carrito
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Right Panel - Totals and Actions -->
-      <div class="w-1/3 bg-gray-50 flex flex-col overflow-hidden">
+      <!-- Right Panel - Totals and Actions (desktop only) -->
+      <div class="hidden md:flex md:w-1/3 bg-gray-50 flex-col overflow-hidden">
         <div class="p-6 flex flex-col h-full">
 
 
@@ -2011,6 +2084,129 @@ const getPaymentMethodName = (method) => {
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sticky bottom bar (mobile only) -->
+  <div v-if="cartItems.length > 0" class="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-gray-200 shadow-lg z-30 px-4 py-3 flex items-center justify-between gap-3">
+    <button @click="showMobileSummary = true" class="flex-1 text-left min-w-0">
+      <div class="text-xs text-gray-500">{{ cartItems.length }} {{ cartItems.length === 1 ? 'item' : 'items' }} · ver resumen</div>
+      <div class="text-lg font-semibold text-gray-900">{{ formatCurrency(total) }}</div>
+    </button>
+    <button
+      v-if="payments.length > 0 && remainingAmount === 0"
+      @click="handlePaymentCompleted"
+      :disabled="processingOrder"
+      class="bg-green-600 text-white px-5 py-3 rounded-lg font-medium disabled:opacity-50">
+      Completar
+    </button>
+    <button
+      v-else
+      @click="processPayment"
+      :disabled="!cartItems.length"
+      class="bg-primary-600 text-white px-6 py-3 rounded-lg font-medium disabled:opacity-50">
+      Cobrar
+    </button>
+  </div>
+
+  <!-- Bottom-sheet del resumen (mobile only) -->
+  <div v-if="showMobileSummary" class="md:hidden fixed inset-0 z-40">
+    <div class="absolute inset-0 bg-black/40" @click="showMobileSummary = false"></div>
+    <div class="absolute bottom-0 inset-x-0 bg-white rounded-t-2xl max-h-[90vh] overflow-auto p-4 pb-6">
+      <div class="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-4"></div>
+
+      <!-- Customer info -->
+      <div v-if="selectedCustomer" class="mb-3 text-sm text-gray-700">
+        <strong>Cliente:</strong>
+        {{ selectedCustomer.name }}
+        <span v-if="selectedCustomer.document_number" class="text-gray-500">
+          ({{ selectedCustomer.document_type === '1' ? 'DNI' : 'RUC' }}: {{ selectedCustomer.document_number }})
+        </span>
+      </div>
+
+      <!-- Order Summary -->
+      <div class="bg-gray-50 rounded-lg p-4 mb-4">
+        <h2 class="text-base font-medium mb-3">Resumen de la Orden</h2>
+        <div class="space-y-2">
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-600">Subtotal</span>
+            <span>{{ formatCurrency(subtotal) }}</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-600">IGV (18%)</span>
+            <span>{{ formatCurrency(tax) }}</span>
+          </div>
+          <div class="border-t pt-2 mt-2 flex justify-between font-semibold">
+            <span>Total</span>
+            <span>{{ formatCurrency(total) }}</span>
+          </div>
+
+          <!-- Pagos Parciales -->
+          <div v-if="payments.length > 0" class="mt-4">
+            <div class="border-t pt-3 mb-2">
+              <h3 class="font-medium text-gray-700 text-sm">Pagos Realizados:</h3>
+            </div>
+            <div class="space-y-2">
+              <div v-for="(payment, index) in payments" :key="index"
+                class="flex justify-between items-center p-2 bg-white rounded border border-gray-200 text-sm">
+                <div class="flex items-center min-w-0">
+                  <span class="font-medium truncate">{{ payment.methodName }}</span>
+                  <span v-if="payment.reference" class="ml-2 text-xs text-gray-500 truncate">{{ payment.reference }}</span>
+                </div>
+                <div class="flex items-center flex-shrink-0">
+                  <span class="font-medium">{{ formatCurrency(payment.amount) }}</span>
+                  <button @click="removePayment(index)" class="ml-2 text-red-600 hover:text-red-800" aria-label="Eliminar pago">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M18 6L6 18M6 6l12 12"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="flex justify-between mt-3 font-medium text-green-700 text-sm">
+              <span>Pagado:</span>
+              <span>{{ formatCurrency(totalPaid) }}</span>
+            </div>
+            <div v-if="totalChange > 0" class="flex justify-between font-medium text-primary-600 text-sm">
+              <span>Cambio:</span>
+              <span>{{ formatCurrency(totalChange) }}</span>
+            </div>
+            <div class="flex justify-between font-medium text-sm"
+              :class="remainingAmount === 0 ? 'text-green-700' : 'text-red-600'">
+              <span>Saldo pendiente:</span>
+              <span>{{ formatCurrency(remainingAmount) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payment Actions -->
+      <div class="space-y-3">
+        <button v-if="payments.length === 0 || remainingAmount > 0" @click="processPayment"
+          :disabled="!cartItems.length"
+          class="w-full bg-primary-600 text-white py-3 px-4 rounded-lg hover:bg-primary-700 disabled:opacity-50 flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+            <line x1="1" y1="10" x2="23" y2="10"></line>
+          </svg>
+          Añadir Pago
+        </button>
+        <button v-if="payments.length > 0 && remainingAmount === 0" @click="handlePaymentCompleted"
+          :disabled="processingOrder"
+          class="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          Completar Venta
+        </button>
+        <button @click="cancelSale" :disabled="!cartItems.length"
+          class="w-full bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 disabled:opacity-50">
+          Cancelar
+        </button>
       </div>
     </div>
   </div>
