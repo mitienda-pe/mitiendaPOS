@@ -53,9 +53,40 @@
       </div>
     </div>
 
-    <!-- Customers Table -->
+    <!-- Customers List -->
     <div class="bg-white shadow rounded-lg overflow-hidden">
-      <div class="overflow-x-auto">
+      <!-- Mobile cards -->
+      <div class="md:hidden">
+        <div v-if="loading" class="px-4 py-8 text-center text-sm text-gray-500">Cargando...</div>
+        <div v-else-if="displayedCustomers.length === 0" class="px-4 py-8 text-center text-sm text-gray-500">No se encontraron clientes</div>
+        <ul v-else class="divide-y divide-gray-200">
+          <li v-for="customer in displayedCustomers" :key="customer.id" class="p-3">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2 text-xs text-gray-500">
+                  <span class="font-medium text-gray-900">{{ customer.document_type }}</span>
+                  <span>{{ customer.document_number }}</span>
+                </div>
+                <div class="mt-1 text-sm font-medium text-gray-900 truncate">{{ customer.name }}</div>
+                <div class="mt-1 text-xs text-gray-600 space-y-0.5">
+                  <div v-if="customer.email" class="truncate">{{ customer.email }}</div>
+                  <div v-if="customer.phone">{{ customer.phone }}</div>
+                  <div class="text-gray-400">Registro: {{ formatDate(customer.created_at) }}</div>
+                </div>
+              </div>
+              <button
+                @click="editCustomer(customer)"
+                class="text-primary-600 hover:text-primary-700 text-sm font-medium flex-shrink-0 px-2 py-1"
+              >
+                Editar
+              </button>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Desktop table -->
+      <div class="hidden md:block overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
