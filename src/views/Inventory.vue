@@ -251,8 +251,69 @@
           <p class="mt-1 text-sm text-gray-500">Los productos se gestionan desde el Admin Panel</p>
         </div>
 
-        <!-- Tabla -->
-        <div v-else class="overflow-x-auto">
+        <!-- Mobile cards -->
+        <ul v-else class="md:hidden divide-y divide-gray-200">
+          <li
+            v-for="product in inventoryStore.products"
+            :key="product.id"
+            :class="getRowClass(product)"
+            class="p-3"
+          >
+            <div class="flex items-start gap-3">
+              <img
+                v-if="product.images && product.images.length > 0"
+                :src="product.images[0].url || product.images[0]"
+                :alt="product.name"
+                class="h-12 w-12 rounded-md object-cover flex-shrink-0"
+              />
+              <div v-else class="h-12 w-12 rounded-md bg-gray-200 flex items-center justify-center flex-shrink-0">
+                <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-gray-900 truncate">{{ product.name }}</div>
+                <div class="text-xs text-gray-500 mt-0.5">SKU: {{ product.sku }}</div>
+                <div v-if="product.category?.name" class="text-xs text-gray-500">{{ product.category.name }}</div>
+                <div class="mt-2 flex items-center justify-between gap-2 flex-wrap">
+                  <span class="text-sm font-semibold text-gray-900">{{ formatCurrency(product.price) }}</span>
+                  <span :class="getStockBadgeClass(product)">
+                    <template v-if="product.unlimited_stock">∞ Ilimitado</template>
+                    <template v-else>
+                      Stock: {{ product.stock }}
+                      <span v-if="product.stock === 0"> (Agotado)</span>
+                      <span v-else-if="product.stock <= product.min_stock"> (Bajo)</span>
+                    </template>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div class="mt-3 flex items-center justify-end gap-3 text-sm font-medium">
+              <button
+                v-if="canEdit"
+                @click="openQuickEdit(product)"
+                class="text-primary-600 hover:text-primary-700"
+              >
+                Editar Rápido
+              </button>
+              <button
+                @click="syncProductStock(product)"
+                :disabled="syncingProductIds.has(product.id)"
+                :title="`Sincronizar stock de ${product.name} desde ERP`"
+                class="text-teal-600 hover:text-teal-700 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
+              >
+                <svg v-if="syncingProductIds.has(product.id)" class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                <span>Sincronizar</span>
+              </button>
+            </div>
+          </li>
+        </ul>
+
+        <!-- Desktop table -->
+        <div v-if="inventoryStore.products.length > 0" class="hidden md:block overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
               <tr>
