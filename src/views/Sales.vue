@@ -2,21 +2,37 @@
   <div class="max-w-7xl mx-auto py-4 sm:py-6 px-3 sm:px-6 lg:px-8">
     <div class="py-4 sm:py-6">
       <div class="mb-4 sm:mb-6">
-        <div class="flex justify-between items-center mb-4">
+        <div class="flex justify-between items-center gap-2 mb-4">
           <h1 class="text-xl sm:text-2xl font-semibold text-gray-900">Historial de Ventas</h1>
           <button
             @click="fetchOrders"
-            class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+            class="px-3 sm:px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm sm:text-base whitespace-nowrap"
           >
             Actualizar
           </button>
         </div>
 
         <!-- Filtros -->
-        <div class="bg-white shadow rounded-lg p-4">
-          <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div class="bg-white shadow rounded-lg p-3 sm:p-4">
+          <!-- Mobile: collapsible toggle -->
+          <button
+            @click="showFilters = !showFilters"
+            class="md:hidden w-full flex items-center justify-between text-sm font-medium text-gray-700 mb-3"
+          >
+            <span class="inline-flex items-center gap-2">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+              Filtros{{ activeFiltersCount ? ` (${activeFiltersCount})` : '' }}
+            </span>
+            <svg class="h-4 w-4 transition-transform" :class="showFilters ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          <div :class="['grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4', showFilters ? '' : 'hidden md:grid']">
             <!-- Buscar -->
-            <div class="relative">
+            <div class="relative col-span-2 md:col-span-1">
               <label class="block text-xs font-medium text-gray-700 mb-1">Buscar</label>
               <input
                 v-model="searchQuery"
@@ -87,7 +103,7 @@
           </div>
 
           <!-- Botón limpiar filtros -->
-          <div class="mt-3 flex justify-end">
+          <div :class="['mt-3 flex justify-end', showFilters ? '' : 'hidden md:flex']">
             <button
               @click="clearFilters"
               class="text-sm text-gray-600 hover:text-gray-900"
@@ -127,7 +143,45 @@
 
       <!-- Orders List -->
       <div v-else-if="orders.length > 0" class="bg-white shadow overflow-hidden sm:rounded-lg">
-        <div class="overflow-x-auto">
+        <!-- Mobile cards -->
+        <ul class="md:hidden divide-y divide-gray-200">
+          <li v-for="order in orders" :key="order.id">
+            <router-link :to="`/sales/${order.id}`" class="block p-3 hover:bg-gray-50 active:bg-gray-100">
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-2 text-xs text-gray-500">
+                    <span class="font-medium text-gray-900">#{{ order.order_number || order.id }}</span>
+                    <span>·</span>
+                    <span>{{ formatDate(order.created_at) }}</span>
+                  </div>
+                  <div class="mt-1 text-sm font-medium text-gray-900 truncate">
+                    {{ order.customer?.name || 'Cliente General' }}
+                  </div>
+                  <div v-if="order.cajero_nombre" class="text-xs text-gray-500 mt-0.5">
+                    Cajero: {{ order.cajero_nombre }}
+                  </div>
+                  <div class="flex items-center gap-1.5 mt-2 flex-wrap">
+                    <span :class="getStatusClass(order.status)" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full">
+                      {{ getStatusText(order.status) }}
+                    </span>
+                    <span :class="getSourceClass(order.source)" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full">
+                      {{ getSourceText(order.source) }}
+                    </span>
+                  </div>
+                </div>
+                <div class="text-right flex-shrink-0">
+                  <div class="text-base font-semibold text-gray-900">{{ formatCurrency(order.total) }}</div>
+                  <svg class="h-4 w-4 text-gray-400 ml-auto mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
+            </router-link>
+          </li>
+        </ul>
+
+        <!-- Desktop table -->
+        <div class="hidden md:block overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
               <tr>
@@ -296,6 +350,19 @@ const dateTo = ref(''); // Default: Sin filtro de fecha (mostrar todas las venta
 // Pagination
 const currentPage = ref(1);
 const itemsPerPage = ref(20);
+
+// Mobile UI
+const showFilters = ref(false);
+
+const activeFiltersCount = computed(() => {
+  let count = 0;
+  if (searchQuery.value) count++;
+  if (selectedStatus.value && selectedStatus.value !== '1') count++;
+  if (selectedSource.value && selectedSource.value !== 'pos') count++;
+  if (dateFrom.value) count++;
+  if (dateTo.value) count++;
+  return count;
+});
 
 let searchTimeout = null;
 
