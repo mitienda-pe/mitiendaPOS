@@ -607,7 +607,7 @@ import { useCartStore } from '../stores/cart';
 import { useAuthStore } from '../stores/auth';
 import RightToLeftMoneyInput from './RightToLeftMoneyInput.vue';
 import ReceiptTicket from './ReceiptTicket.vue';
-import { COMPANY_CONFIG } from '../config/companyConfig';
+import { buildCompanyInfo } from '../config/companyConfig';
 import { useThermalPrinter } from '../composables/useThermalPrinter';
 import { kasnetQrApi } from '../services/kasnetQrApi';
 import {
@@ -1424,7 +1424,7 @@ const roundingApplied = computed(() => {
 
 // Funciones helper para el ticket (similares a SaleDetail.vue)
 const getCompanyInfo = () => {
-  return COMPANY_CONFIG;
+  return buildCompanyInfo(authStore.selectedStore);
 };
 
 const getStoreAddress = () => {
@@ -1433,9 +1433,13 @@ const getStoreAddress = () => {
     return props.completedSaleData.store_address;
   }
 
-  // Intentar obtener desde authStore
-  if (authStore.selectedStore?.address) {
-    return authStore.selectedStore.address;
+  // Intentar obtener desde authStore (tienda autenticada)
+  const store = authStore.selectedStore;
+  if (store?.direccionCompleta) {
+    return store.direccionCompleta;
+  }
+  if (store?.direccion) {
+    return store.direccion;
   }
 
   return null;
@@ -1447,9 +1451,9 @@ const getStorePhone = () => {
     return props.completedSaleData.store_phone;
   }
 
-  // Intentar obtener desde authStore
-  if (authStore.selectedStore?.phone) {
-    return authStore.selectedStore.phone;
+  // Intentar obtener desde authStore (tienda autenticada)
+  if (authStore.selectedStore?.telefono) {
+    return authStore.selectedStore.telefono;
   }
 
   return null;

@@ -343,7 +343,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ordersApi } from '../services/ordersApi';
 import ReceiptTicket from '../components/ReceiptTicket.vue';
-import { COMPANY_CONFIG } from '../config/companyConfig';
+import { buildCompanyInfo } from '../config/companyConfig';
 import { useAuthStore } from '../stores/auth';
 import { useThermalPrinter } from '../composables/useThermalPrinter';
 
@@ -575,9 +575,9 @@ const getBillingDocument = () => {
   };
 };
 
-// Función para obtener información de la empresa (hardcoded)
+// Información de la empresa para el ticket, derivada de la tienda autenticada
 const getCompanyInfo = () => {
-  return COMPANY_CONFIG;
+  return buildCompanyInfo(authStore.selectedStore);
 };
 
 // Función para obtener la dirección de la sucursal
@@ -587,13 +587,15 @@ const getStoreAddress = () => {
     return order.value._rawDetail.store_address;
   }
 
-  // Intentar obtener desde authStore
-  if (authStore.selectedStore?.address) {
-    return authStore.selectedStore.address;
+  // Intentar obtener desde authStore (tienda autenticada)
+  const store = authStore.selectedStore;
+  if (store?.direccionCompleta) {
+    return store.direccionCompleta;
+  }
+  if (store?.direccion) {
+    return store.direccion;
   }
 
-  // TODO: Si no está disponible en la API, deberá agregarse
-  // Por ahora retornar null
   return null;
 };
 
@@ -604,12 +606,11 @@ const getStorePhone = () => {
     return order.value._rawDetail.store_phone;
   }
 
-  // Intentar obtener desde authStore
-  if (authStore.selectedStore?.phone) {
-    return authStore.selectedStore.phone;
+  // Intentar obtener desde authStore (tienda autenticada)
+  if (authStore.selectedStore?.telefono) {
+    return authStore.selectedStore.telefono;
   }
 
-  // TODO: Si no está disponible, deberá agregarse al API
   return null;
 };
 
