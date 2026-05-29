@@ -40,6 +40,18 @@ const routes = [
     meta: { requiresAuth: false }
   },
   {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: () => import('../views/ForgotPassword.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/reset-password',
+    name: 'ResetPassword',
+    component: () => import('../views/ResetPassword.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
     path: '/menu',
     name: 'Menu',
     component: Menu,
@@ -168,6 +180,48 @@ const routes = [
         component: () => import('../components/settings/PrinterSettings.vue')
       },
       {
+        path: 'info',
+        name: 'StoreInfo',
+        component: () => import('../views/settings/StoreInfoView.vue'),
+        meta: { requiresModule: 'storeInfo' }
+      },
+      {
+        path: 'preferences',
+        name: 'BusinessPreferences',
+        component: () => import('../views/settings/BusinessPreferencesView.vue'),
+        meta: { requiresModule: 'preferences' }
+      },
+      {
+        path: 'brands',
+        name: 'Brands',
+        component: () => import('../views/settings/BrandsListView.vue'),
+        meta: { requiresModule: 'brands' }
+      },
+      {
+        path: 'categories',
+        name: 'Categories',
+        component: () => import('../views/settings/CategoriesListView.vue'),
+        meta: { requiresModule: 'categories' }
+      },
+      {
+        path: 'billing/nubefact',
+        name: 'NubefactConfig',
+        component: () => import('../views/settings/billing/NubefactConfigView.vue'),
+        meta: { requiresModule: 'billing' }
+      },
+      {
+        path: 'reports',
+        name: 'Reports',
+        component: () => import('../views/settings/ReportsView.vue'),
+        meta: { requiresModule: 'reports' }
+      },
+      {
+        path: 'payment-methods',
+        name: 'PaymentMethods',
+        component: () => import('../views/settings/PaymentMethodsView.vue'),
+        meta: { requiresModule: 'paymentMethods' }
+      },
+      {
         path: 'netsuite/preferences',
         name: 'Preferences',
         component: Preferences
@@ -240,6 +294,18 @@ router.beforeEach(async (to, from, next) => {
   if (requiresAuth && requiredRoles && !requiredRoles.includes(authStore.userRole)) {
     next('/unauthorized');
     return;
+  }
+
+  // Check module gating (flags from /pos/access). Fail-open if flags not yet
+  // loaded; the backend (CheckModuleAccess) is the real gate. Only block when a
+  // flag is explicitly disabled for the store.
+  const requiredModule = to.meta.requiresModule;
+  if (requiresAuth && requiredModule) {
+    const flags = authStore.accessFlags;
+    if (flags && Object.keys(flags).length > 0 && flags[requiredModule] === false) {
+      next('/settings/branches');
+      return;
+    }
   }
 
   // Check active shift for POS

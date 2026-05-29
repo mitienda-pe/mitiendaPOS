@@ -93,5 +93,29 @@ export const authApi = {
   async checkPosAccess() {
     const response = await apiClient.get('/pos/access');
     return response.data;
+  },
+
+  // --- Recuperación de contraseña (endpoints públicos) ---
+
+  // Solicita el envío del enlace de restablecimiento al correo del administrador.
+  async forgotPassword(email) {
+    const response = await apiClient.post('/auth/forgot-password', { email });
+    return response.data;
+  },
+
+  // Valida que el token del enlace de restablecimiento sea válido y no expirado.
+  async validateResetToken(token) {
+    const response = await apiClient.post('/auth/validate-reset-token', { token });
+    return response.data;
+  },
+
+  // Cambia la contraseña usando el token del enlace.
+  async resetPassword({ token, password, passwordConfirmation }) {
+    const response = await apiClient.post('/auth/reset-password', {
+      token,
+      password,
+      password_confirmation: passwordConfirmation,
+    });
+    return response.data;
   }
 };

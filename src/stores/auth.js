@@ -28,6 +28,24 @@ const decodeJwtPayload = (token) => {
   }
 };
 
+// Normaliza el `data` de /pos/access a un objeto de flags booleanos.
+// Centraliza el set de módulos para que los getters can* y el sidebar de
+// Settings lean una sola estructura. Default a false si el backend no lo envía.
+const normalizeAccessFlags = (access) => {
+  const a = access || {};
+  return {
+    plan: a.plan ?? null,
+    netsuite: !!a.netsuite_enabled,
+    billing: !!a.billing_enabled,
+    storeInfo: !!a.store_info_enabled,
+    preferences: !!a.preferences_enabled,
+    reports: !!a.reports_enabled,
+    brands: !!a.brands_enabled,
+    categories: !!a.categories_enabled,
+    paymentMethods: !!a.payment_methods_enabled,
+  };
+};
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: getStoredUser(),
@@ -67,6 +85,21 @@ export const useAuthStore = defineStore('auth', {
     // true si el JWT es de administrador (email+password, sin empleado_id).
     isAdminToken() {
       return !!this.accessToken && !this.isCashierToken;
+    },
+
+    // Flags de acceso por módulo (de /pos/access), usados por el sidebar de
+    // Settings y los guards de ruta para mostrar/ocultar secciones de admin.
+    // La seguridad real la aplica el backend (CheckModuleAccess); esto es UI.
+    accessFlags: (state) => state.selectedStore?.access || {},
+    canBilling() { return !!this.accessFlags.billing; },
+    canStoreInfo() { return !!this.accessFlags.storeInfo; },
+    canPreferences() { return !!this.accessFlags.preferences; },
+    canReports() { return !!this.accessFlags.reports; },
+    canBrands() { return !!this.accessFlags.brands; },
+    canCategories() { return !!this.accessFlags.categories; },
+    canPaymentMethods() { return !!this.accessFlags.paymentMethods; },
+    canNetsuite() {
+      return !!this.accessFlags.netsuite || !!this.selectedStore?.netsuite_enabled;
     },
   },
 
@@ -140,13 +173,16 @@ export const useAuthStore = defineStore('auth', {
 
           // Validar que la tienda tenga mod_pos habilitado.
           // Si no, abortar el login con error claro y limpiar sesión.
-          // La respuesta también trae el flag netsuite_enabled de la tienda.
+          // La respuesta trae además los flags por módulo (facturación, marcas,
+          // reportes, etc.) que el POS usa para mostrar/ocultar secciones de admin.
           const access = await this.assertPosAccess();
 
-          // Guardar la tienda seleccionada, fusionando el flag NetSuite del backend.
+          // Guardar la tienda seleccionada, fusionando los flags de acceso del
+          // backend bajo `access` (consumidos por los getters can*).
           const store = {
             ...this.stores.find(s => s.id === storeId),
             netsuite_enabled: !!access?.netsuite_enabled,
+            access: normalizeAccessFlags(access),
           };
           this.selectedStore = store;
           localStorage.setItem('selected_store', JSON.stringify(store));
@@ -156,6 +192,10 @@ export const useAuthStore = defineStore('auth', {
           const { useShiftStore } = await import('./shift');
           const shiftStore = useShiftStore();
           shiftStore.clearActiveShift();
+
+          // Limpiar cache de formas de pago (es por tienda).
+          const { usePaymentMethodsStore } = await import('./paymentMethods');
+          usePaymentMethodsStore().reset();
         }
       } catch (error) {
         console.error('Error selecting store:', error);
@@ -183,6 +223,30 @@ export const useAuthStore = defineStore('auth', {
         }
         // Otros errores (red, 500, etc.) los propagamos tal cual.
         throw error;
+      }
+    },
+
+    // Refresca los flags de acceso por módulo desde /pos/access y los
+    // persiste en selectedStore.access. Si la tienda perdió mod_pos (403),
+    // assertPosAccess lanza posAccessDenied y hacemos logout. Otros errores
+    // (red/500) se ignoran para no romper una sesión válida al recargar.
+    async refreshAccessFlags() {
+      if (!this.accessToken || !this.selectedStore) return;
+      try {
+        const access = await this.assertPosAccess();
+        const store = {
+          ...this.selectedStore,
+          netsuite_enabled: !!access?.netsuite_enabled,
+          access: normalizeAccessFlags(access),
+        };
+        this.selectedStore = store;
+        localStorage.setItem('selected_store', JSON.stringify(store));
+      } catch (error) {
+        if (error?.posAccessDenied) {
+          await this.logout();
+          throw error;
+        }
+        console.warn('⚠️ [AUTH] No se pudieron refrescar los flags de acceso:', error?.message);
       }
     },
 
@@ -257,6 +321,10 @@ export const useAuthStore = defineStore('auth', {
         const savedSalesStore = useSavedSalesStore();
         savedSalesStore.clearAll();
 
+        // Limpiar cache de formas de pago
+        const { usePaymentMethodsStore } = await import('./paymentMethods');
+        usePaymentMethodsStore().reset();
+
         console.log('✅ [AUTH] Logout completo - todas las sesiones limpiadas');
         router.push('/cashier-login');
       }
@@ -297,6 +365,7 @@ export const useAuthStore = defineStore('auth', {
         console.log('📡 [AUTH] Fetching fresh data from server...');
         await this.fetchUserProfile();
         await this.fetchStores();
+        await this.refreshAccessFlags();
 
         console.log('✅ [AUTH] Session check complete:', {
           userName: this.user?.name,

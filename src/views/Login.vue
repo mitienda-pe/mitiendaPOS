@@ -45,6 +45,16 @@
         </div>
       </form>
 
+      <!-- Recuperar contraseña -->
+      <div class="text-center mt-2">
+        <router-link
+          to="/forgot-password"
+          class="text-sm text-primary-600 hover:text-primary-500 font-medium"
+        >
+          ¿Olvidaste tu contraseña?
+        </router-link>
+      </div>
+
       <!-- Link a cashier login -->
       <div class="text-center mt-4">
         <router-link

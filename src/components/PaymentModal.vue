@@ -50,7 +50,7 @@
               <div class="mb-4">
                 <div class="font-medium mb-2">Método de pago:</div>
                 <div class="grid grid-cols-3 gap-3">
-                  <button @click="selectPaymentMethod('efectivo')" :class="[
+                  <button v-if="isMethodVisible('efectivo')" @click="selectPaymentMethod('efectivo')" :class="[
                     'btn flex items-center justify-center py-3 rounded-lg transition-colors duration-200',
                     paymentMethod === 'efectivo'
                       ? 'bg-green-600 text-white'
@@ -62,9 +62,9 @@
                       <circle cx="12" cy="12" r="2"></circle>
                       <path d="M6 12h.01M18 12h.01"></path>
                     </svg>
-                    Efectivo
+                    {{ methodLabel('efectivo', 'Efectivo') }}
                   </button>
-                  <button @click="selectPaymentMethod('tarjeta')" :class="[
+                  <button v-if="isMethodVisible('tarjeta')" @click="selectPaymentMethod('tarjeta')" :class="[
                     'btn flex items-center justify-center py-3 rounded-lg transition-colors duration-200',
                     paymentMethod === 'tarjeta'
                       ? 'bg-primary-600 text-white'
@@ -75,11 +75,13 @@
                       <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
                       <line x1="1" y1="10" x2="23" y2="10"></line>
                     </svg>
-                    Tarjeta
+                    {{ methodLabel('tarjeta', 'Tarjeta') }}
                   </button>
-                  <button @click="selectPaymentMethod('banco')" disabled :class="[
+                  <button v-if="isMethodVisible('banco')" @click="selectPaymentMethod('banco')" :class="[
                     'btn flex items-center justify-center py-3 rounded-lg transition-colors duration-200',
-                    'bg-gray-200 text-gray-400 cursor-not-allowed opacity-50'
+                    paymentMethod === 'banco'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-blue-100 hover:bg-blue-200 text-blue-800'
                   ]">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none"
                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -87,7 +89,7 @@
                       <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
                       <line x1="12" y1="21" x2="12" y2="23"></line>
                     </svg>
-                    Banco
+                    {{ methodLabel('banco', 'Transferencia') }}
                   </button>
                   <button @click="selectPaymentMethod('nota_credito')" disabled :class="[
                     'btn flex items-center justify-center py-3 rounded-lg transition-colors duration-200',
@@ -105,7 +107,7 @@
 
                     Nota C.
                   </button>
-                  <button @click="selectPaymentMethod('kasnet-qr')" :class="[
+                  <button v-if="isMethodVisible('kasnet-qr')" @click="selectPaymentMethod('kasnet-qr')" :class="[
                     'btn flex items-center justify-center py-3 rounded-lg transition-colors duration-200',
                     paymentMethod === 'kasnet-qr'
                       ? 'bg-purple-600 text-white'
@@ -119,7 +121,7 @@
                       <rect x="7" y="14" width="3" height="3"></rect>
                       <rect x="14" y="14" width="3" height="3"></rect>
                     </svg>
-                    Kasnet QR
+                    {{ methodLabel('kasnet-qr', 'Kasnet QR') }}
                   </button>
                   <button @click="selectPaymentMethod('credito')" disabled :class="[
                     'btn flex items-center justify-center py-3 rounded-lg transition-colors duration-200',
@@ -605,6 +607,7 @@ import { ref, computed, watch, onBeforeUnmount } from 'vue';
 import QRCode from 'qrcode';
 import { useCartStore } from '../stores/cart';
 import { useAuthStore } from '../stores/auth';
+import { usePaymentMethodsStore } from '../stores/paymentMethods';
 import RightToLeftMoneyInput from './RightToLeftMoneyInput.vue';
 import ReceiptTicket from './ReceiptTicket.vue';
 import { buildCompanyInfo } from '../config/companyConfig';
@@ -620,7 +623,23 @@ import { formatCurrency } from '../utils/formatters.js';
 
 const cartStore = useCartStore();
 const authStore = useAuthStore();
+const paymentMethodsStore = usePaymentMethodsStore();
 const { isConnected: thermalConnected, isEnabled: thermalEnabled, printReceipt: thermalPrint } = useThermalPrinter();
+
+// Visibilidad por defecto de los métodos cuando la config aún no cargó
+// (fail-open): replica el set hardcodeado histórico. Cuando la config del
+// backend (pos_payment_methods) sí cargó, manda esa config.
+const DEFAULT_VISIBLE_METHODS = { efectivo: true, tarjeta: true, 'kasnet-qr': true, banco: false };
+
+const isMethodVisible = (code) => {
+  if (paymentMethodsStore.loaded) {
+    return !!paymentMethodsStore.byCode[code];
+  }
+  return !!DEFAULT_VISIBLE_METHODS[code];
+};
+
+// Nombre visible del método: usa el personalizado por la tienda si existe.
+const methodLabel = (code, fallback) => paymentMethodsStore.byCode[code]?.nombre || fallback;
 
 const props = defineProps({
   modelValue: {
@@ -1018,6 +1037,10 @@ const formatDenomination = (value) => {
 };
 
 const getPaymentMethodName = (method) => {
+  // Preferir el nombre personalizado por la tienda (pos_payment_methods).
+  const custom = paymentMethodsStore.byCode[method]?.nombre;
+  if (custom) return custom;
+
   const methods = {
     'efectivo': 'Efectivo',
     'tarjeta': 'Tarjeta de crédito/débito',
@@ -1823,6 +1846,8 @@ watch(cashAmount, () => {
 watch(() => props.modelValue, (newVal) => {
   if (newVal) {
     resetForm();
+    // Cargar (cacheada) la config de formas de pago de la tienda.
+    paymentMethodsStore.fetchActive();
   }
 });
 </script>
