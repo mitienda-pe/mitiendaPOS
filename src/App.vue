@@ -261,7 +261,7 @@ const pendingShiftData = ref(null);
 const mobileMenuOpen = ref(false);
 
 // Configuración de inactividad
-const INACTIVITY_TIMEOUT = 3 * 60 * 1000; // 3 minutos en milisegundos
+const INACTIVITY_TIMEOUT = 10 * 60 * 1000; // 10 minutos en milisegundos
 let inactivityTimer = null;
 let lastActivity = Date.now();
 
