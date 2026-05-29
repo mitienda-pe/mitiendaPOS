@@ -1,9 +1,9 @@
 <template>
-  <div class="p-6">
+  <div class="p-3 sm:p-6">
     <!-- Header -->
-    <div class="mb-6">
-      <h1 class="text-3xl font-bold text-gray-900">Usuarios - NetSuite</h1>
-      <p class="mt-2 text-gray-600">
+    <div class="mb-4 sm:mb-6">
+      <h1 class="text-xl sm:text-3xl font-bold text-gray-900">Usuarios - NetSuite</h1>
+      <p class="mt-2 text-sm sm:text-base text-gray-600">
         Cada cajero activo debe tener su <code>empleado_netsuite_id</code> mapeado para que
         las facturas se asignen al sales rep correcto. Sin este ID, la venta intenta usar el
         sales rep por defecto configurado en
@@ -50,9 +50,59 @@
       </svg>
     </div>
 
-    <!-- Users Table -->
+    <!-- Users List -->
     <div v-else class="bg-white rounded-lg shadow overflow-hidden">
-      <table class="min-w-full divide-y divide-gray-200">
+      <!-- Mobile cards -->
+      <ul class="md:hidden divide-y divide-gray-200">
+        <li v-for="user in users" :key="user.empleado_id" class="p-3">
+          <div class="flex items-start gap-3">
+            <div class="flex-shrink-0 h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
+              <span class="text-primary-600 font-medium text-sm">{{ getUserInitials(user) }}</span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center justify-between gap-2">
+                <div class="text-sm font-medium text-gray-900 truncate">
+                  {{ user.empleado_nombres }} {{ user.empleado_apellidos }}
+                </div>
+                <span v-if="user.empleado_netsuite_id" class="text-green-600 flex-shrink-0" aria-label="Configurado">
+                  <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                  </svg>
+                </span>
+                <span v-else class="text-gray-400 flex-shrink-0" aria-label="Sin configurar">
+                  <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                  </svg>
+                </span>
+              </div>
+              <div v-if="user.empleado_documento" class="text-xs text-gray-500">{{ user.empleado_documento }}</div>
+              <div class="text-xs text-gray-500 truncate">{{ user.empleado_email || '-' }}</div>
+              <div class="mt-1.5">
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                  :class="{
+                    'bg-purple-100 text-purple-800': user.empleado_rol === 'administrador',
+                    'bg-primary-100 text-primary-800': user.empleado_rol === 'supervisor',
+                    'bg-green-100 text-green-800': user.empleado_rol === 'cajero'
+                  }">
+                  {{ getRoleLabel(user.empleado_rol) }}
+                </span>
+              </div>
+              <div class="mt-2">
+                <label class="block text-xs font-medium text-gray-700 mb-1">NetSuite ID</label>
+                <InlineEditField
+                  :model-value="user.empleado_netsuite_id"
+                  placeholder="Sin configurar"
+                  :maxlength="50"
+                  :on-save="(value) => updateNetsuiteId(user.empleado_id, value)"
+                />
+              </div>
+            </div>
+          </div>
+        </li>
+      </ul>
+
+      <!-- Desktop table -->
+      <table class="hidden md:table min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
