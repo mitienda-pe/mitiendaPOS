@@ -7,16 +7,21 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    env:
+      # Fuerza el runtime Node 24 en TODAS las actions JS (incl. pnpm/action-setup),
+      # independientemente de su versión fijada. Opt-in oficial de GitHub ante la
+      # deprecación de Node 20. Se puede quitar cuando todas publiquen sobre Node 24.
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: pnpm
