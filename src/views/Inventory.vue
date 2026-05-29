@@ -25,6 +25,16 @@
           </div>
           <div class="flex gap-2 flex-wrap">
             <button
+              v-if="canCreate"
+              @click="router.push('/inventory/create')"
+              class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+            >
+              <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Nuevo producto
+            </button>
+            <button
               @click="syncVisibleStock"
               :disabled="batchSyncing || syncingTiendaStock || syncingTiendaPrices || inventoryStore.products.length === 0"
               class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -558,6 +568,14 @@ const canEdit = computed(() => {
   }
   // Es cajero = solo lectura
   return false;
+});
+
+// Crear productos: solo administrador/supervisor. Se prioriza el rol del cajero
+// activo (login por PIN) sobre el de la sesión admin, para que un cajero no pueda
+// crear productos aunque la tienda haya iniciado sesión como administrador.
+const canCreate = computed(() => {
+  const role = cashierStore.cashierRole || authStore.userRole;
+  return role === 'administrador' || role === 'supervisor';
 });
 
 const searchInput = ref('');

@@ -64,6 +64,14 @@ const routes = [
     meta: { requiresAuth: true, roles: ['cajero', 'supervisor', 'administrador'] }
   },
   {
+    path: '/inventory/create',
+    name: 'CreateProduct',
+    component: () => import('../views/CreateProduct.vue'),
+    // Solo admin/supervisor. La vista refuerza esto considerando también el rol
+    // del cajero activo (login por PIN), ya que el guard solo mira authStore.
+    meta: { requiresAuth: true, roles: ['supervisor', 'administrador'] }
+  },
+  {
     path: '/customers',
     name: 'Customers',
     component: Customers,

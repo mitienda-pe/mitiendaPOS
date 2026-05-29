@@ -220,6 +220,49 @@ export const useInventoryStore = defineStore('inventory', {
     },
 
     /**
+     * Crear un producto (formulario mínimo POS) y opcionalmente subir su imagen.
+     * @param {Object} payload - { name, sku, barcode, price, stock, unlimited_stock, categories, published }
+     * @param {File|null} imageFile - Imagen opcional a subir tras crear el producto
+     * @returns {Promise<{ success: boolean, data?: object, message?: string, imageError?: string }>}
+     */
+    async createProduct(payload, imageFile = null) {
+      try {
+        const response = await inventoryApi.createProduct(payload);
+
+        if (!response.success || !response.data?.id) {
+          return { success: false, message: response.message || 'Error al crear producto' };
+        }
+
+        const product = response.data;
+        let imageError = null;
+
+        if (imageFile) {
+          try {
+            await inventoryApi.uploadProductImage(product.id, imageFile);
+          } catch (imgErr) {
+            console.error('Error uploading product image:', imgErr);
+            imageError = imgErr.response?.data?.message || imgErr.message || 'Error al subir la imagen';
+          }
+        }
+
+        // Refrescar lista y estadísticas para reflejar el nuevo producto
+        await Promise.all([this.loadProducts(), this.loadStats()]);
+
+        return { success: true, data: product, message: response.message, imageError };
+      } catch (error) {
+        console.error('Error creating product:', error);
+        // Errores de validación del backend (ej. SKU duplicado) llegan en response.data
+        const apiData = error.response?.data;
+        let message = apiData?.message || error.message || 'Error al crear producto';
+        // CI4 fail() devuelve { messages: { sku: '...' } } o { error: 1, message }
+        if (apiData?.messages && typeof apiData.messages === 'object') {
+          message = Object.values(apiData.messages).join(' ');
+        }
+        return { success: false, message };
+      }
+    },
+
+    /**
      * Cargar estadísticas del inventario
      */
     async loadStats() {

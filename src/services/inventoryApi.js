@@ -233,5 +233,86 @@ export const inventoryApi = {
         in_stock_count: inStock
       }
     };
+  },
+
+  /**
+   * Crear un producto (formulario mínimo POS)
+   * @param {Object} data - { name, sku, barcode, price, stock, unlimited_stock, categories, published }
+   * @returns {Promise} { success, data: { id, ... }, message }
+   */
+  async createProduct(data) {
+    const payload = {
+      name: data.name,
+      price: data.price !== undefined && data.price !== null ? parseFloat(data.price) : 0,
+      published: data.published ? true : false
+    };
+    if (data.sku) payload.sku = data.sku;
+    if (data.barcode) payload.barcode = data.barcode;
+    if (data.unlimited_stock) {
+      payload.unlimited_stock = true;
+    } else if (data.stock !== undefined && data.stock !== null && data.stock !== '') {
+      payload.stock = parseInt(data.stock);
+    }
+    if (Array.isArray(data.categories) && data.categories.length) {
+      payload.categories = data.categories.map((id) => parseInt(id));
+    }
+
+    const response = await apiClient.post('/products', payload);
+    // El interceptor normaliza { error:0, data:{...} } -> { success, data:{...} }
+    const created = response.data?.data ?? response.data;
+    return {
+      success: true,
+      data: created,
+      message: 'Producto creado correctamente'
+    };
+  },
+
+  /**
+   * Subir imagen de un producto recién creado (multipart)
+   * @param {number} id - ID del producto
+   * @param {File} file - Archivo de imagen (jpg/png/webp, min 600x600, max 10MB)
+   * @returns {Promise} { success, data }
+   */
+  async uploadProductImage(id, file) {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const response = await apiClient.post(`/products/${id}/images`, formData, {
+      // Dejar que el navegador fije el boundary del multipart; no forzar JSON.
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return {
+      success: true,
+      data: response.data?.data ?? response.data
+    };
+  },
+
+  /**
+   * Listar categorías de la tienda (árbol) y aplanarlas para un dropdown.
+   * @returns {Promise} { success, data: [{ id, name }] }
+   */
+  async getCategories() {
+    const response = await apiClient.get('/categories');
+    // /categories responde un árbol (array directo, sin envoltura { error, data }).
+    const tree = Array.isArray(response.data) ? response.data : (response.data?.data ?? []);
+
+    const flatten = (nodes, depth = 0) => {
+      const out = [];
+      for (const node of nodes || []) {
+        out.push({
+          id: node.tiendacategoria_id,
+          name: `${'  '.repeat(depth)}${node.tiendacategoria_nombre}`
+        });
+        if (Array.isArray(node.sub) && node.sub.length) {
+          out.push(...flatten(node.sub, depth + 1));
+        }
+      }
+      return out;
+    };
+
+    return {
+      success: true,
+      data: flatten(tree)
+    };
   }
 };
