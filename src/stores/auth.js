@@ -140,10 +140,14 @@ export const useAuthStore = defineStore('auth', {
 
           // Validar que la tienda tenga mod_pos habilitado.
           // Si no, abortar el login con error claro y limpiar sesión.
-          await this.assertPosAccess();
+          // La respuesta también trae el flag netsuite_enabled de la tienda.
+          const access = await this.assertPosAccess();
 
-          // Guardar la tienda seleccionada
-          const store = this.stores.find(s => s.id === storeId);
+          // Guardar la tienda seleccionada, fusionando el flag NetSuite del backend.
+          const store = {
+            ...this.stores.find(s => s.id === storeId),
+            netsuite_enabled: !!access?.netsuite_enabled,
+          };
           this.selectedStore = store;
           localStorage.setItem('selected_store', JSON.stringify(store));
 
@@ -161,9 +165,11 @@ export const useAuthStore = defineStore('auth', {
 
     // Lanza un error si la tienda autenticada no tiene mod_pos habilitado.
     // El llamador debe hacer logout o redirigir al login.
+    // Devuelve el `data` de la respuesta (incluye pos_enabled, plan, netsuite_enabled).
     async assertPosAccess() {
       try {
-        await authApi.checkPosAccess();
+        const response = await authApi.checkPosAccess();
+        return response?.data ?? {};
       } catch (error) {
         if (error.response?.status === 403) {
           const message = error.response?.data?.message

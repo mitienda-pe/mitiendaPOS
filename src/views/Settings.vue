@@ -65,7 +65,7 @@
           </router-link>
 
           <!-- Netsuite Group -->
-          <div class="pt-2">
+          <div v-if="showNetsuite" class="pt-2">
             <div class="flex items-center px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
@@ -181,13 +181,16 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import { storeHasNetsuite } from '../config/netsuiteStores';
 
 const sidebarOpen = ref(false);
 const route = useRoute();
 const authStore = useAuthStore();
+
+const showNetsuite = computed(() => storeHasNetsuite(authStore.selectedStore));
 
 watch(() => route.path, () => { sidebarOpen.value = false; });
 </script>
