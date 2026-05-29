@@ -14,8 +14,26 @@
 
       <!-- Form -->
       <form class="mt-8 space-y-6 bg-white rounded-2xl shadow-2xl p-8" @submit.prevent="handleLogin">
-        <!-- Store ID -->
-        <div>
+        <!-- Store ID recordado (compacto) -->
+        <div v-if="storeRemembered">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            Tienda
+          </label>
+          <div class="flex items-center justify-between px-4 py-3 border border-gray-300 rounded-lg bg-gray-50">
+            <span class="text-gray-900 font-medium">Tienda #{{ storeId }}</span>
+            <button
+              type="button"
+              class="text-sm text-primary-600 hover:text-primary-700 font-medium"
+              :disabled="loading"
+              @click="changeStore"
+            >
+              Cambiar
+            </button>
+          </div>
+        </div>
+
+        <!-- Store ID (editable) -->
+        <div v-else>
           <label for="store_id" class="block text-sm font-medium text-gray-700 mb-2">
             ID de Tienda
           </label>
@@ -104,11 +122,13 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useCashierStore } from '../stores/cashier';
 import { authApi } from '../services/authApi';
+
+const REMEMBERED_STORE_KEY = 'cashier_remembered_store_id';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -119,6 +139,23 @@ const pin = ref('');
 const loading = ref(false);
 const error = ref(null);
 const pinInput = ref(null);
+const storeRemembered = ref(false);
+
+onMounted(() => {
+  const savedStoreId = localStorage.getItem(REMEMBERED_STORE_KEY);
+  if (savedStoreId) {
+    storeId.value = savedStoreId;
+    storeRemembered.value = true;
+    // Tienda ya recordada: enfocar directamente el PIN
+    nextTick(() => pinInput.value?.focus());
+  }
+});
+
+const changeStore = () => {
+  storeRemembered.value = false;
+  storeId.value = '';
+  localStorage.removeItem(REMEMBERED_STORE_KEY);
+};
 
 const isValid = computed(() => {
   return storeId.value.length > 0 && pin.value.length === 4;
@@ -140,6 +177,9 @@ const handleLogin = async () => {
     }
 
     const { access_token, empleado, tienda } = response.data;
+
+    // Recordar la tienda para próximos accesos (solo el ID, no el PIN)
+    localStorage.setItem(REMEMBERED_STORE_KEY, String(storeId.value));
 
     console.log('✅ [CASHIER LOGIN] Login exitoso:', {
       empleado: `${empleado.nombres} ${empleado.apellidos}`,
@@ -230,8 +270,10 @@ const handleLogin = async () => {
         error.value = response?.message || 'No tienes permiso para ingresar en este momento';
       }
     } else if (status === 404) {
-      // Tienda no encontrada
+      // Tienda no encontrada: limpiar la recordada para permitir corregir el ID
       error.value = `La tienda con ID ${storeId.value} no existe`;
+      localStorage.removeItem(REMEMBERED_STORE_KEY);
+      storeRemembered.value = false;
     } else if (status === 400) {
       // Parámetros faltantes
       error.value = 'Datos incompletos. Verifica el ID de tienda y PIN';
