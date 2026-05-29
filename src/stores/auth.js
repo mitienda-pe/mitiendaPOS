@@ -203,6 +203,40 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    // Auto-login tras el registro self-service. Recibe el token ya scopeado a
+    // la tienda nueva (store_id en el JWT), así que NO pasa por el selector de
+    // tienda. Persiste sesión, resuelve flags de acceso y entra al POS.
+    async loginWithRegistration({ access_token, user, store }) {
+      this.accessToken = access_token;
+      localStorage.setItem('access_token', access_token);
+
+      this.user = { ...(user || {}), role: 'administrador' };
+      localStorage.setItem('user', JSON.stringify(this.user));
+
+      // Resolver flags de /pos/access (usa el token recién emitido).
+      let access = {};
+      try {
+        access = await this.assertPosAccess();
+      } catch (e) {
+        // Una tienda recién creada en plan PDV siempre tiene mod_pos; si falla
+        // por red, seguimos con flags vacíos (fail-open en la UI).
+        console.warn('⚠️ [AUTH] No se pudieron resolver flags tras registro:', e?.message);
+      }
+
+      const selected = {
+        id: Number(store?.id),
+        name: store?.name,
+        slug: store?.slug,
+        netsuite_enabled: !!access?.netsuite_enabled,
+        access: normalizeAccessFlags(access),
+      };
+      this.selectedStore = selected;
+      this.stores = [selected];
+      localStorage.setItem('selected_store', JSON.stringify(selected));
+
+      router.push('/menu');
+    },
+
     // Lanza un error si la tienda autenticada no tiene mod_pos habilitado.
     // El llamador debe hacer logout o redirigir al login.
     // Devuelve el `data` de la respuesta (incluye pos_enabled, plan, netsuite_enabled).

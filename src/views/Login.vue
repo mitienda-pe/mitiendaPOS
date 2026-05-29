@@ -45,7 +45,15 @@
         </div>
       </form>
 
-      <!-- Recuperar contraseña -->
+      <!-- Crear cuenta / recuperar contraseña -->
+      <div class="text-center mt-2">
+        <router-link
+          to="/register"
+          class="text-sm text-primary-600 hover:text-primary-500 font-medium"
+        >
+          ¿No tienes cuenta? Crea una gratis
+        </router-link>
+      </div>
       <div class="text-center mt-2">
         <router-link
           to="/forgot-password"

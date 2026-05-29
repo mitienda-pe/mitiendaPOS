@@ -117,5 +117,25 @@ export const authApi = {
       password_confirmation: passwordConfirmation,
     });
     return response.data;
+  },
+
+  // --- Registro self-service del POS ---
+
+  // Envía el código OTP al correo. Requiere captcha_token (Cap.js). Devuelve
+  // { error, session_id, masked_recipient, expires_in_seconds } o
+  // { error:1, has_account } si el email ya tiene cuenta.
+  async registerSendOtp({ email, name, captchaToken }) {
+    const response = await apiClient.post('/pos/register/send-otp', {
+      email,
+      name,
+      captcha_token: captchaToken,
+    });
+    return response.data?.data ?? response.data;
+  },
+
+  // Crea la tienda (trial PDV) y devuelve { access_token, user, store } scopeado.
+  async register(payload) {
+    const response = await apiClient.post('/pos/register', payload);
+    return response.data?.data ?? response.data;
   }
 };
