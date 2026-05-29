@@ -27,6 +27,7 @@
 <script setup>
 import { computed, h } from 'vue';
 import { useAuthStore } from '../stores/auth';
+import { MENU_ITEMS } from '../config/menuItems';
 
 const authStore = useAuthStore();
 
@@ -115,23 +116,22 @@ const IconHelp = svgIcon([
   { tag: 'line', attrs: { x1: '12', y1: '17', x2: '12.01', y2: '17' } }
 ]);
 
-const ALL = ['cajero', 'supervisor', 'administrador'];
-const ADMIN_ONLY = ['supervisor', 'administrador'];
+const ICONS_BY_PATH = {
+  '/dashboard':  IconDashboard,
+  '/my-shift':   IconShift,
+  '/pos':        IconPOS,
+  '/sales':      IconSales,
+  '/documents':  IconDocuments,
+  '/inventory':  IconInventory,
+  '/customers':  IconCustomers,
+  '/promotions': IconPromotions,
+  '/vouchers':   IconVouchers,
+  '/returns':    IconReturns,
+  '/settings':   IconSettings,
+  '/help':       IconHelp,
+};
 
-const menuItems = [
-  { to: '/dashboard',  label: 'Dashboard',    icon: IconDashboard,  borderClass: 'border-orange-500',  iconClass: 'text-orange-500',  description: 'Visualiza indicadores y gráficos', roles: ALL },
-  { to: '/my-shift',   label: 'Mi Turno',     icon: IconShift,      borderClass: 'border-green-500',   iconClass: 'text-green-500',   description: 'Gestiona tu caja y turnos',        roles: ALL },
-  { to: '/pos',        label: 'POS',          icon: IconPOS,        borderClass: 'border-primary-500', iconClass: 'text-primary-500', description: 'Gestiona ventas y emite comprobantes', roles: ALL },
-  { to: '/sales',      label: 'Ventas',       icon: IconSales,      borderClass: 'border-pink-500',    iconClass: 'text-pink-500',    description: 'Consulta el historial de ventas',  roles: ALL },
-  { to: '/documents',  label: 'Documentos',   icon: IconDocuments,  borderClass: 'border-yellow-500',  iconClass: 'text-yellow-500',  description: 'Gestiona documentos y comprobantes', roles: ALL },
-  { to: '/inventory',  label: 'Inventario',   icon: IconInventory,  borderClass: 'border-lime-500',    iconClass: 'text-lime-500',    description: 'Gestiona productos, stock y categorías', roles: ALL },
-  { to: '/customers',  label: 'Clientes',     icon: IconCustomers,  borderClass: 'border-purple-500',  iconClass: 'text-purple-500',  description: 'Administra tu cartera de clientes', roles: ALL },
-  { to: '/promotions', label: 'Descuentos y Promociones', icon: IconPromotions, borderClass: 'border-rose-500', iconClass: 'text-rose-500', description: 'Gestiona ofertas y promociones', roles: ALL },
-  { to: '/vouchers',   label: 'Vales y Tarjetas de Regalo', icon: IconVouchers, borderClass: 'border-amber-500', iconClass: 'text-amber-500', description: 'Gestiona vales de consumo y tarjetas de regalo', roles: ALL },
-  { to: '/returns',    label: 'Cambios y devoluciones', icon: IconReturns, borderClass: 'border-cyan-500', iconClass: 'text-cyan-500', description: 'Gestiona cambios y devoluciones de productos', roles: ALL },
-  { to: '/settings',   label: 'Configuración',icon: IconSettings,   borderClass: 'border-gray-500',    iconClass: 'text-gray-500',    description: 'Preferencias, sucursales y usuarios', roles: ADMIN_ONLY },
-  { to: '/help',       label: 'Ayuda',        icon: IconHelp,       borderClass: 'border-sky-500',     iconClass: 'text-sky-500',     description: 'Manuales de usuario y soporte',    roles: ALL },
-];
+const menuItems = MENU_ITEMS.map(item => ({ ...item, icon: ICONS_BY_PATH[item.to] }));
 
 const visibleItems = computed(() => {
   const role = authStore.userRole;
