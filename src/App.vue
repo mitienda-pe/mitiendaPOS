@@ -108,10 +108,10 @@
         </div>
 
         <!-- Mobile dropdown menu -->
-        <div v-if="mobileMenuOpen" class="md:hidden border-t border-gray-700">
-          <div class="px-3 py-3 space-y-2">
+        <div v-if="mobileMenuOpen" class="md:hidden border-t border-gray-700 max-h-[calc(100dvh-3.5rem)] overflow-y-auto">
+          <div class="px-3 py-3 space-y-1">
             <!-- Store info -->
-            <div class="text-sm text-gray-300 px-2 pb-2 border-b border-gray-700">
+            <div class="text-sm text-gray-300 px-2 pb-2 mb-1 border-b border-gray-700">
               <p class="font-medium">{{ authStore.selectedStore?.name || 'Sin tienda' }}</p>
               <p v-if="cashierStore.isCashierAuthenticated" class="text-green-400 text-xs mt-0.5">
                 {{ cashierStore.cashierName }}
@@ -120,7 +120,7 @@
                 <span v-if="sucursalNombre && sucursalNombre !== 'Sucursal'">{{ sucursalNombre }} • </span>Caja {{ cajaNumero }}
               </p>
             </div>
-            <!-- Menu link -->
+            <!-- Menú Principal -->
             <router-link
               v-if="showMenuButton && ['cajero', 'supervisor', 'administrador'].includes(authStore.userRole)"
               to="/menu"
@@ -128,19 +128,34 @@
               class="block text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
               Menú Principal
             </router-link>
-            <!-- Lock -->
-            <button
-              v-if="cashierStore.isCashierAuthenticated"
-              @click="handleLock(); mobileMenuOpen = false"
-              class="w-full text-left text-gray-300 hover:bg-yellow-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
-              Bloquear Caja
-            </button>
-            <!-- Logout -->
-            <button
-              @click="authStore.logout(); mobileMenuOpen = false"
-              class="w-full text-left text-gray-300 hover:bg-red-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
-              Cerrar Sesión
-            </button>
+            <!-- Módulos -->
+            <div class="pt-2 mt-1 border-t border-gray-700">
+              <p class="px-3 pb-1 text-[10px] uppercase tracking-wider text-gray-500 font-semibold">Módulos</p>
+              <router-link
+                v-for="item in visibleMenuItems"
+                :key="item.to"
+                :to="item.to"
+                @click="mobileMenuOpen = false"
+                class="block text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+                active-class="bg-gray-900 text-white"
+              >
+                {{ item.label }}
+              </router-link>
+            </div>
+            <!-- Acciones -->
+            <div class="pt-2 mt-1 border-t border-gray-700 space-y-1">
+              <button
+                v-if="cashierStore.isCashierAuthenticated"
+                @click="handleLock(); mobileMenuOpen = false"
+                class="w-full text-left text-gray-300 hover:bg-yellow-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                Bloquear Caja
+              </button>
+              <button
+                @click="authStore.logout(); mobileMenuOpen = false"
+                class="w-full text-left text-gray-300 hover:bg-red-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                Cerrar Sesión
+              </button>
+            </div>
           </div>
         </div>
       </nav>
@@ -230,6 +245,7 @@ import { useRouter, useRoute } from 'vue-router';
 import LockScreenModal from './components/LockScreenModal.vue';
 import OpenShiftModal from './components/OpenShiftModal.vue';
 import CloseShiftModal from './components/CloseShiftModal.vue';
+import { MENU_ITEMS } from './config/menuItems';
 
 const authStore = useAuthStore();
 const cashierStore = useCashierStore();
@@ -261,6 +277,13 @@ const lockScreenInfo = computed(() => {
 
 // Computed para ocultar botón "Menú Principal" cuando ya estás en el menú
 const showMenuButton = computed(() => route.path !== '/menu');
+
+// Módulos visibles en el menú hamburguesa mobile (filtrados por rol)
+const visibleMenuItems = computed(() => {
+  const role = authStore.userRole;
+  if (!role) return MENU_ITEMS;
+  return MENU_ITEMS.filter(item => item.roles.includes(role));
+});
 
 // Close mobile menu on navigation
 watch(() => route.path, () => { mobileMenuOpen.value = false; });
