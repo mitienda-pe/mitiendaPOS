@@ -3,19 +3,20 @@
     <div class="py-4 sm:py-6">
       <!-- Header -->
       <div class="mb-6">
-        <div class="flex justify-between items-center mb-4">
-          <div>
-            <h1 class="text-2xl font-semibold text-gray-900">Bonificaciones</h1>
-            <p class="mt-1 text-sm text-gray-500">Gestiona las bonificaciones de tu tienda</p>
+        <div class="flex flex-wrap justify-between items-start gap-3 mb-4">
+          <div class="min-w-0">
+            <h1 class="text-xl sm:text-2xl font-semibold text-gray-900">Bonificaciones</h1>
+            <p class="mt-1 text-xs sm:text-sm text-gray-500">Gestiona las bonificaciones de tu tienda</p>
           </div>
           <button
             @click="showCreateDialog = true"
-            class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
+            class="px-3 sm:px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2 text-sm sm:text-base whitespace-nowrap"
           >
-            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
-            Nueva Bonificación
+            <span class="hidden sm:inline">Nueva Bonificación</span>
+            <span class="sm:hidden">Nueva</span>
           </button>
         </div>
 
@@ -115,9 +116,54 @@
         </div>
       </div>
 
-      <!-- Promotions Table -->
+      <!-- Promotions List -->
       <div v-else class="bg-white shadow overflow-hidden sm:rounded-lg">
-        <div class="overflow-x-auto">
+        <!-- Mobile cards -->
+        <ul class="md:hidden divide-y divide-gray-200">
+          <li v-for="promotion in promotions" :key="promotion.tiendapromocion_id" class="p-3">
+            <router-link :to="`/promotions/${promotion.tiendapromocion_id}`" class="block">
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0 flex-1">
+                  <div class="text-sm font-medium text-gray-900 truncate">{{ promotion.tiendapromocion_nombre }}</div>
+                  <div class="text-xs text-gray-500 mt-0.5">{{ promotion.promocion_nombre }}</div>
+                  <div class="text-xs text-gray-600 mt-1">
+                    {{ promotion.num_productos || 0 }} productos<span v-if="promotion.num_productos_bonificacion" class="text-gray-500"> ({{ promotion.num_productos_bonificacion }} bonif.)</span>
+                  </div>
+                  <div class="text-xs text-gray-500 mt-1">
+                    {{ formatDate(promotion.tiendapromocion_fechainicio) }} → {{ formatDate(promotion.tiendapromocion_fechacaducidad) }}
+                  </div>
+                  <div v-if="Number(promotion.is_active_period) === 1" class="mt-0.5 text-xs text-green-600">
+                    Vigente ({{ promotion.days_until_expiry }} días)
+                  </div>
+                  <div v-else class="mt-0.5 text-xs text-red-600">Fuera de período</div>
+                </div>
+                <span
+                  v-if="Number(promotion.tiendapromocion_estado) === 1"
+                  class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 flex-shrink-0"
+                >
+                  Activo
+                </span>
+                <span
+                  v-else
+                  class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 flex-shrink-0"
+                >
+                  Inactivo
+                </span>
+              </div>
+            </router-link>
+            <div class="mt-2 flex justify-end">
+              <button
+                @click="confirmDelete(promotion)"
+                class="text-red-600 hover:text-red-700 text-sm font-medium"
+              >
+                Eliminar
+              </button>
+            </div>
+          </li>
+        </ul>
+
+        <!-- Desktop table -->
+        <div class="hidden md:block overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
               <tr>
