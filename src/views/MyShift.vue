@@ -50,7 +50,7 @@
             <p class="text-lg sm:text-xl font-medium text-yellow-800 mb-2">No hay turno activo</p>
             <p class="text-sm text-yellow-600 mb-4">Presiona el botón para comenzar tu turno</p>
             <button
-              v-if="cashierStore.isCashierAuthenticated"
+              v-if="cashierStore.isCashierAuthenticated || authStore.isAdminToken"
               @click="handleOpenShift"
               class="bg-green-600 text-white hover:bg-green-700 px-6 py-2.5 rounded-lg text-sm font-medium transition-colors">
               Abrir Turno
@@ -560,7 +560,7 @@ const handleCloseShift = () => {
     activeShift: shiftStore.activeShift
   });
 
-  if (!cashierStore.isCashierAuthenticated) {
+  if (!cashierStore.isCashierAuthenticated && !authStore.isAdminToken) {
     console.warn('⚠️ [MyShift] Cajero no autenticado, mostrando alerta');
     alert('⚠️ Debes autenticarte como cajero primero');
     return;
@@ -587,6 +587,13 @@ const onShiftOpened = async (data) => {
       montoInicial: data.montoInicial,
       notas: data.notas
     };
+
+    // Admin sin cajero: abrir turno directo (empleado_id null → backend usa usuario_id),
+    // sin exigir PIN de cajero. Si hay cajero autenticado o es token de cajero, pedir PIN.
+    if (authStore.isAdminToken && !cashierStore.isCashierAuthenticated) {
+      await onCashierAuthenticated({ empleado_id: null });
+      return;
+    }
 
     // Abrir modal de autenticación de cajero PRIMERO
     showCashierAuthModal.value = true;

@@ -27,14 +27,14 @@
             <div class="flex items-center space-x-2 md:hidden">
               <!-- Open/Close Shift -->
               <button
-                v-if="cashierStore.isCashierAuthenticated && !shiftStore.hasActiveShift"
+                v-if="canManageShift && !shiftStore.hasActiveShift"
                 @click="handleOpenShift"
                 class="bg-green-600 text-white hover:bg-green-700 px-3 py-1.5 rounded-md text-xs font-medium transition-colors"
                 title="Abrir turno">
                 Abrir Turno
               </button>
               <button
-                v-else-if="cashierStore.isCashierAuthenticated && shiftStore.hasActiveShift"
+                v-else-if="canManageShift && shiftStore.hasActiveShift"
                 @click="handleCloseShift"
                 class="bg-red-600 text-white hover:bg-red-700 px-2.5 py-1 rounded-md text-xs font-medium transition-colors"
                 title="Cerrar turno">
@@ -77,14 +77,14 @@
               </div>
               <!-- Open/Close Shift Button -->
               <button
-                v-if="cashierStore.isCashierAuthenticated && !shiftStore.hasActiveShift"
+                v-if="canManageShift && !shiftStore.hasActiveShift"
                 @click="handleOpenShift"
                 class="bg-green-600 text-white hover:bg-green-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
                 title="Abrir turno">
                 Abrir Turno
               </button>
               <button
-                v-else-if="cashierStore.isCashierAuthenticated && shiftStore.hasActiveShift"
+                v-else-if="canManageShift && shiftStore.hasActiveShift"
                 @click="handleCloseShift"
                 class="bg-red-600 text-white hover:bg-red-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
                 title="Cerrar turno">
@@ -266,6 +266,11 @@ let inactivityTimer = null;
 let lastActivity = Date.now();
 
 // Info para el lock screen
+// Un cajero autenticado (login por PIN) O un administrador (token email+password)
+// pueden abrir/cerrar turno y vender. El backend acepta abrir turno con usuario_id
+// (sin empleado_id), así que el admin no necesita un cajero para operar.
+const canManageShift = computed(() => cashierStore.isCashierAuthenticated || authStore.isAdminToken);
+
 const lockScreenInfo = computed(() => {
   if (!cashierStore.cashier) return null;
   return {
@@ -348,7 +353,7 @@ const handleOpenShift = () => {
 
 // Handle close shift
 const handleCloseShift = () => {
-  if (!cashierStore.isCashierAuthenticated) {
+  if (!cashierStore.isCashierAuthenticated && !authStore.isAdminToken) {
     alert('⚠️ Debes autenticarte como cajero primero');
     return;
   }
@@ -379,7 +384,7 @@ const onShiftOpened = async (data) => {
       data.montoInicial,
       data.notas,
       `Caja ${data.cajaNumero}`,
-      cashierStore.cashier.empleado_id,
+      cashierStore.cashier?.empleado_id ?? null, // admin sin cajero → null (backend usa usuario_id)
       data.sucursalId // tiendadireccion_id
     );
 

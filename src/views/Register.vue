@@ -37,6 +37,11 @@
           <label class="form-label">Celular <span class="text-gray-400 font-normal">(opcional)</span></label>
           <input v-model="form.phone" type="tel" class="input-field" placeholder="999 999 999" />
         </div>
+        <div>
+          <label class="form-label">PIN de cajero <span class="text-gray-400 font-normal">(4 dígitos, opcional)</span></label>
+          <input v-model="form.cashier_pin" type="text" inputmode="numeric" maxlength="4" class="input-field" placeholder="Ej. 1234" />
+          <p class="text-xs text-gray-400 mt-1">Para ingresar como cajero con PIN. Puedes vender igual con tu cuenta de administrador.</p>
+        </div>
 
         <p class="text-xs text-gray-400 text-center flex items-center justify-center gap-1">
           <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -112,6 +117,7 @@ const form = reactive({
   email: '',
   password: '',
   phone: '',
+  cashier_pin: '',
 });
 
 const handleSendOtp = async () => {
@@ -161,6 +167,7 @@ const handleRegister = async () => {
       admin_name: form.admin_name.trim(),
       phone: form.phone.trim(),
       country: 'PE',
+      cashier_pin: form.cashier_pin.trim(),
       session_id_email: sessionId.value,
       code_email: otpCode.value,
     });
