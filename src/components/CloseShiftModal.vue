@@ -493,6 +493,27 @@ const handleClose = async () => {
 
   // If still on closing step, advance to PIN validation
   if (currentStep.value === 'closing') {
+    // Admin sin cajero: cerrar directo sin PIN. El backend no exige PIN para
+    // token admin (solo valida que el turno sea de su usuario_id) y permite el
+    // cierre. Evita pedir un PIN de cajero que el administrador no tiene.
+    if (authStore.isAdminToken && !cashierStore.isCashierAuthenticated) {
+      processing.value = true;
+      try {
+        const data = {
+          montoReal: parseFloat(montoReal.value),
+          notas: notas.value.trim(),
+          pin: null,
+        };
+        if (showBreakdown.value) {
+          data.breakdown = { ...denominationCounts.value };
+        }
+        emit('shift-closed', data);
+      } finally {
+        processing.value = false;
+      }
+      return;
+    }
+
     console.log('➡️ [CloseShiftModal] Avanzando de paso "closing" a "pin"');
     currentStep.value = 'pin';
     await nextTick();
