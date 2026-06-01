@@ -1001,15 +1001,13 @@ const handlePaymentCompleted = async () => {
     console.log('📤 [POS] Enviando orden al API:', JSON.stringify(orderData, null, 2));
 
     // Crear la orden en el backend.
-    // Ruteo por integración: las tiendas NetSuite siguen usando el proxy legacy
-    // (paridad de cálculos pendiente de validar); las NO-NetSuite usan el endpoint
-    // nativo de api2, que factura automáticamente con el proveedor activo de la tienda.
+    // TEMPORAL (revert 4380535): se fuerza el proxy legacy para TODAS las tiendas.
+    // El ruteo por `canNetsuite` quedaba stale en sesiones abiertas antes del deploy
+    // (accessFlags vacío => canNetsuite=false), mandando tiendas NetSuite al endpoint
+    // nativo y perdiendo ventas. Re-habilitar el nativo solo tras corregir el fallo de
+    // /orders/native y garantizar que canNetsuite no quede stale (re-fetch de /pos/access).
     // NOTA: El backend valida stock con NetSuite si la tienda tiene la validación activa.
-    const useNativeBackend = !authStore.canNetsuite;
-    console.log(`🧭 [POS] Backend de creación de orden: ${useNativeBackend ? 'nativo (/orders/native)' : 'legacy proxy (/orders/legacy)'}`);
-    const response = useNativeBackend
-      ? await ordersApi.createOrderNative(orderData)
-      : await ordersApi.createOrder(orderData);
+    const response = await ordersApi.createOrder(orderData);
 
     console.log('📥 [POS] Response from API:', response);
     console.log('📥 [POS] Response.error:', response.error);
