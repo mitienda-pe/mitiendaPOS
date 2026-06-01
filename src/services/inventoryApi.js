@@ -314,5 +314,23 @@ export const inventoryApi = {
       success: true,
       data: flatten(tree)
     };
+  },
+
+  /**
+   * Carga masiva de productos por CSV (alta/actualización por SKU).
+   * @param {File} file - archivo CSV
+   * @param {Object} opts - { tiendadireccionId, confirm }
+   *   confirm=false → previsualización (no escribe); confirm=true → aplica.
+   * @returns {Promise<{resumen, filas}>}
+   */
+  async importCatalog(file, { tiendadireccionId = null, confirm = false } = {}) {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (tiendadireccionId) formData.append('tiendadireccion_id', String(tiendadireccionId));
+    const url = `/products/import-catalog${confirm ? '?confirm=1' : ''}`;
+    const response = await apiClient.post(url, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data?.data ?? response.data;
   }
 };

@@ -90,6 +90,12 @@ const routes = [
     meta: { requiresAuth: true, roles: ['supervisor', 'administrador'] }
   },
   {
+    path: '/inventory/import',
+    name: 'ImportProducts',
+    component: () => import('../views/ImportProducts.vue'),
+    meta: { requiresAuth: true, roles: ['supervisor', 'administrador'] }
+  },
+  {
     path: '/customers',
     name: 'Customers',
     component: Customers,
