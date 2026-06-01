@@ -1000,10 +1000,16 @@ const handlePaymentCompleted = async () => {
     // Log del payload que se enviará
     console.log('📤 [POS] Enviando orden al API:', JSON.stringify(orderData, null, 2));
 
-    // Crear la orden en el backend
-    // NOTA: El backend validará automáticamente el stock con NetSuite si la tienda
-    // tiene habilitada la validación (tienda_netsuite_stock_validation = 1)
-    const response = await ordersApi.createOrder(orderData);
+    // Crear la orden en el backend.
+    // Ruteo por integración: las tiendas NetSuite siguen usando el proxy legacy
+    // (paridad de cálculos pendiente de validar); las NO-NetSuite usan el endpoint
+    // nativo de api2, que factura automáticamente con el proveedor activo de la tienda.
+    // NOTA: El backend valida stock con NetSuite si la tienda tiene la validación activa.
+    const useNativeBackend = !authStore.canNetsuite;
+    console.log(`🧭 [POS] Backend de creación de orden: ${useNativeBackend ? 'nativo (/orders/native)' : 'legacy proxy (/orders/legacy)'}`);
+    const response = useNativeBackend
+      ? await ordersApi.createOrderNative(orderData)
+      : await ordersApi.createOrder(orderData);
 
     console.log('📥 [POS] Response from API:', response);
     console.log('📥 [POS] Response.error:', response.error);

@@ -40,10 +40,24 @@ export const ordersApi = {
     }
   },
 
-  // Crear orden usando el endpoint nativo (EN DESARROLLO - NO USAR AÚN)
+  // Crear orden usando el endpoint nativo de api2 (sin proxy legacy).
+  // Lo usan las tiendas NO-NetSuite: api2 crea la venta y factura
+  // automáticamente con el proveedor activo (Nubefact/Bizlinks/Datil).
   async createOrderNative(orderData) {
-    const response = await apiClient.post('/orders/pos', orderData);
-    return response.data;
+    try {
+      console.log('🚀 [ordersApi] Calling apiClient.post(/orders/native)');
+      console.log('🚀 [ordersApi] Data:', orderData);
+      const response = await apiClient.post('/orders/native', orderData);
+      console.log('✅ [ordersApi] Response received:', response);
+      return response.data;
+    } catch (error) {
+      console.error('❌ [ordersApi] Error creating native order:', error);
+      console.error('❌ [ordersApi] Error response data:', error.response?.data);
+      if (error.response?.data) {
+        throw new Error(error.response.data.message || JSON.stringify(error.response.data));
+      }
+      throw error;
+    }
   },
 
   // Obtener lista de órdenes con filtros
