@@ -234,6 +234,12 @@ const routes = [
         meta: { requiresModule: 'paymentMethods' }
       },
       {
+        path: 'branch-stock',
+        name: 'BranchStock',
+        component: () => import('../views/settings/BranchStockView.vue'),
+        meta: { requiresModule: 'branchStock' }
+      },
+      {
         path: 'netsuite/preferences',
         name: 'Preferences',
         component: Preferences

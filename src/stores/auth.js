@@ -43,6 +43,7 @@ const normalizeAccessFlags = (access) => {
     brands: !!a.brands_enabled,
     categories: !!a.categories_enabled,
     paymentMethods: !!a.payment_methods_enabled,
+    branchStock: !!a.branch_stock_enabled,
   };
 };
 
@@ -98,6 +99,7 @@ export const useAuthStore = defineStore('auth', {
     canBrands() { return !!this.accessFlags.brands; },
     canCategories() { return !!this.accessFlags.categories; },
     canPaymentMethods() { return !!this.accessFlags.paymentMethods; },
+    canBranchStock() { return !!this.accessFlags.branchStock; },
     canNetsuite() {
       return !!this.accessFlags.netsuite || !!this.selectedStore?.netsuite_enabled;
     },
