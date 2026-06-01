@@ -378,7 +378,15 @@ export const useAuthStore = defineStore('auth', {
       });
 
       if (!accessToken || !refreshToken) {
-        this.logout();
+        // Sin sesión: limpiar estado SIN redirigir. Antes llamaba a logout(),
+        // que hace router.push('/cashier-login') y expulsaba al visitante de las
+        // páginas públicas (/register, /forgot-password, /login). El guard del
+        // router ya redirige las rutas protegidas a /cashier-login si hace falta.
+        this.user = null;
+        this.accessToken = null;
+        this.refreshToken = null;
+        this.selectedStore = null;
+        this.stores = [];
         return false;
       }
 
