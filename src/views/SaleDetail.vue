@@ -203,7 +203,7 @@
               </div>
               <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                 <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
-                  Enviar factura por email
+                  Enviar comprobante por email
                 </h3>
                 <div class="mt-4">
                   <label for="email-input" class="block text-sm font-medium text-gray-700 mb-2">
@@ -875,7 +875,7 @@ const confirmSendEmail = async () => {
 
     // El axios interceptor ya transformó la respuesta a { success: true/false }
     if (response.success) {
-      emailSuccess.value = `Factura enviada exitosamente a ${emailInput.value.trim()}`;
+      emailSuccess.value = `Comprobante enviado exitosamente a ${emailInput.value.trim()}`;
       setTimeout(() => emailSuccess.value = null, 5000);
       closeEmailModal();
     } else {
@@ -883,7 +883,7 @@ const confirmSendEmail = async () => {
     }
   } catch (err) {
     console.error('Error sending email:', err);
-    emailError.value = err.message || 'No se pudo enviar el email. Verifica que la venta tenga factura emitida.';
+    emailError.value = err.message || 'No se pudo enviar el email. Inténtalo nuevamente.';
     setTimeout(() => emailError.value = null, 8000);
   } finally {
     sendingEmail.value = false;
@@ -956,7 +956,9 @@ const confirmVoid = async () => {
 };
 
 const canShowEmailButton = () => {
-  // Mostrar botón si la orden está aprobada (status = 1) y tiene factura
+  // Mostrar botón si la orden está aprobada (status = 1). El backend envía el
+  // comprobante de la compra; si la venta tiene comprobante electrónico adjunta
+  // serie/PDF/XML, y si no, manda solo el resumen.
   return order.value && order.value.status == 1;
 };
 

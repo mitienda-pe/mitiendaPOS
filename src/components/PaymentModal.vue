@@ -542,14 +542,15 @@
               <div>
                 <div class="mb-3">
                   <button v-if="!showEmailForm"
-                    class="w-full py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg"
+                    class="w-full py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    :disabled="sendingEmail"
                     @click="displayCustomer?.email ? sendByEmail() : showEmailForm = true">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 inline" viewBox="0 0 24 24" fill="none"
                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
                       <polyline points="22,6 12,13 2,6"></polyline>
                     </svg>
-                    Enviar por Email
+                    {{ sendingEmail ? 'Enviando...' : 'Enviar por Email' }}
                   </button>
 
                   <div v-if="showEmailForm" class="border rounded-lg p-3 bg-gray-50">
@@ -572,9 +573,9 @@
                     </div>
                     <button
                       class="w-full py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 bg-red-600 hover:bg-red-700 text-white"
-                      @click="sendByEmail" :disabled="!isValidEmail"
-                      :class="isValidEmail ? '' : 'opacity-50 cursor-not-allowed'">
-                      Enviar
+                      @click="sendByEmail" :disabled="!isValidEmail || sendingEmail"
+                      :class="(isValidEmail && !sendingEmail) ? '' : 'opacity-50 cursor-not-allowed'">
+                      {{ sendingEmail ? 'Enviando...' : 'Enviar' }}
                     </button>
                   </div>
                 </div>
@@ -613,6 +614,7 @@ import ReceiptTicket from './ReceiptTicket.vue';
 import { buildCompanyInfo } from '../config/companyConfig';
 import { useThermalPrinter } from '../composables/useThermalPrinter';
 import { kasnetQrApi } from '../services/kasnetQrApi';
+import { ordersApi } from '../services/ordersApi';
 import {
   suggestOptimalPayments,
   validateCashPayment,
@@ -703,6 +705,7 @@ const currentReference = ref('');
 const showTicket = ref(props.showTicket);
 const showEmailForm = ref(false);
 const emailAddress = ref('');
+const sendingEmail = ref(false);
 const attemptedSubmit = ref(false);
 
 // Estados para sugerencias y validaciones de efectivo
@@ -1761,28 +1764,46 @@ const finalizeSale = () => {
   closeModal();
 };
 
-const sendByEmail = () => {
-  // Si hay email del cliente, usarlo directamente
-  const customerEmail = displayCustomer.value?.email;
+const sendByEmail = async () => {
+  if (sendingEmail.value) return;
 
-  if (customerEmail) {
-    // Usar el email del cliente automáticamente
-    console.log(`Enviando ticket por email a: ${customerEmail}`);
-    // Aquí iría la lógica para enviar el email
-    alert(`Ticket enviado por email a ${customerEmail}`);
+  // Email destino: el del cliente si existe, sino el ingresado manualmente
+  const targetEmail = (displayCustomer.value?.email || emailAddress.value || '').trim();
+
+  if (!targetEmail) {
+    // No hay email del cliente: abrir el formulario para ingresarlo
+    showEmailForm.value = true;
     return;
   }
 
-  // Si no hay email del cliente, validar el email ingresado manualmente
-  if (!isValidEmail.value) return;
+  // Si se ingresó manualmente, validar formato
+  if (!displayCustomer.value?.email && !isValidEmail.value) return;
 
-  console.log(`Enviando ticket por email a: ${emailAddress.value}`);
-  // Aquí iría la lógica para enviar el email
+  // Necesitamos el ID de la orden ya creada para reenviar el comprobante
+  const orderId = props.completedSaleData?.orderId;
+  if (!orderId) {
+    alert('No se pudo enviar el email: la venta no tiene un ID asociado. Puedes reenviarlo desde el detalle de la venta.');
+    return;
+  }
 
-  // Mostrar mensaje de éxito y cerrar el formulario
-  alert(`Ticket enviado por email a ${emailAddress.value}`);
-  showEmailForm.value = false;
-  emailAddress.value = '';
+  try {
+    sendingEmail.value = true;
+    const response = await ordersApi.resendInvoiceEmail(orderId, targetEmail);
+
+    // El interceptor de axios normaliza la respuesta a { success: true/false }
+    if (response?.success) {
+      alert(`Comprobante enviado por email a ${targetEmail}`);
+      showEmailForm.value = false;
+      emailAddress.value = '';
+    } else {
+      throw new Error(response?.message || 'Error al enviar el email');
+    }
+  } catch (err) {
+    console.error('Error enviando comprobante por email:', err);
+    alert(`No se pudo enviar el email: ${err.message || 'Error desconocido'}`);
+  } finally {
+    sendingEmail.value = false;
+  }
 };
 
 const sendByWhatsApp = () => {
