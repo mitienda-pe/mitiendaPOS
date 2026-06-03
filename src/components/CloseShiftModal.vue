@@ -59,6 +59,16 @@
                         <span>Transferencia:</span>
                         <span>{{ formatCurrency(shift.total_transferencia) }}</span>
                       </div>
+                      <div
+                        v-if="shift.total_redondeo"
+                        class="flex justify-between text-sm text-gray-600"
+                        title="Diferencia por redondeo de efectivo. El total cobrado = ventas registradas + redondeos."
+                      >
+                        <span>Redondeos del turno:</span>
+                        <span :class="shift.total_redondeo < 0 ? 'text-red-600' : 'text-green-600'">
+                          {{ formatCurrency(shift.total_redondeo) }}
+                        </span>
+                      </div>
                       <div class="flex justify-between text-sm font-medium border-t pt-2">
                         <span>Total Ventas:</span>
                         <span>{{ formatCurrency(shift.total_ventas) }}</span>

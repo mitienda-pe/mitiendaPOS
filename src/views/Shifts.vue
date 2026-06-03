@@ -133,6 +133,9 @@
               <div v-if="shift.total_transferencia > 0" class="text-xs bg-cyan-50 px-2 py-1 rounded">
                 🏦 Transferencia: S/ {{ shift.total_transferencia.toFixed(2) }}
               </div>
+              <div v-if="shift.total_redondeo" class="text-xs bg-amber-50 px-2 py-1 rounded">
+                🪙 Redondeo: S/ {{ shift.total_redondeo.toFixed(2) }}
+              </div>
             </div>
           </div>
 
@@ -254,7 +257,8 @@ const hasPaymentBreakdown = (shift) => {
          (shift.total_tarjeta || 0) > 0 ||
          (shift.total_yape || 0) > 0 ||
          (shift.total_plin || 0) > 0 ||
-         (shift.total_transferencia || 0) > 0;
+         (shift.total_transferencia || 0) > 0 ||
+         (shift.total_redondeo || 0) != 0;
 };
 
 /**
