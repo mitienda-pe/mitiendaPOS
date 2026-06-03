@@ -246,10 +246,14 @@ import LockScreenModal from './components/LockScreenModal.vue';
 import OpenShiftModal from './components/OpenShiftModal.vue';
 import CloseShiftModal from './components/CloseShiftModal.vue';
 import { MENU_ITEMS } from './config/menuItems';
+import { useTawkTo } from './composables/useTawkTo';
 
 const authStore = useAuthStore();
 const cashierStore = useCashierStore();
 const shiftStore = useShiftStore();
+
+// Widget de soporte (Tawk.to): carga el chat y le pasa contexto de la sesión
+useTawkTo(authStore, cashierStore);
 const router = useRouter();
 const route = useRoute();
 const errorMessage = ref('');
