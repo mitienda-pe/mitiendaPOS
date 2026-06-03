@@ -493,12 +493,16 @@ const validatePinAvailability = async () => {
       const excludeId = editingEmpleado.value?.empleado_id || null;
       const response = await posEmpleadosApi.checkPin(currentStoreId.value, pin, excludeId);
 
-      if (response.success && response.available) {
+      // Soportar respuesta envuelta { success, data: { available, message } }
+      // y la plana legacy { success, available, message } durante el despliegue.
+      const result = response.data ?? response;
+
+      if (response.success && result.available) {
         pinValidation.value.isValid = true;
         pinValidation.value.error = null;
       } else {
         pinValidation.value.isValid = false;
-        pinValidation.value.error = response.message || 'El PIN ya está en uso';
+        pinValidation.value.error = result.message || 'El PIN ya está en uso';
       }
     } catch (err) {
       console.error('Error validando PIN:', err);
