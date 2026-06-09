@@ -175,10 +175,15 @@
       />
     </div>
 
-    <!-- Gráficos: tendencia + métodos de pago -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
+    <!-- Gráfico: tendencia de ventas -->
+    <div class="mb-4 sm:mb-6">
       <SalesTrendChart :data="trends.daily_sales || []" />
+    </div>
+
+    <!-- Gráficos: métodos de pago — monto + operaciones -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
       <PaymentMethodChart :data="distributions.payment_methods || []" />
+      <PaymentMethodCountChart :data="distributions.payment_methods || []" />
     </div>
 
     <!-- Gráficos: hora del día + comprobantes -->
@@ -207,6 +212,7 @@ import DateRangePicker from '../components/dashboard/DateRangePicker.vue';
 import MetricCard from '../components/dashboard/MetricCard.vue';
 import SalesTrendChart from '../components/dashboard/SalesTrendChart.vue';
 import PaymentMethodChart from '../components/dashboard/PaymentMethodChart.vue';
+import PaymentMethodCountChart from '../components/dashboard/PaymentMethodCountChart.vue';
 import SalesByHourChart from '../components/dashboard/SalesByHourChart.vue';
 import DocumentTypeChart from '../components/dashboard/DocumentTypeChart.vue';
 import TopProductsTable from '../components/dashboard/TopProductsTable.vue';
