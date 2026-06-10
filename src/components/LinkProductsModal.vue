@@ -69,7 +69,7 @@
                             <div class="flex items-center gap-3">
                               <img
                                 v-if="product.images && product.images.length > 0"
-                                :src="product.images[0].url"
+                                :src="cdnThumb(product.images[0].url)"
                                 :alt="product.name"
                                 class="w-10 h-10 rounded object-cover"
                               />
@@ -133,6 +133,7 @@
 </template>
 
 <script setup>
+import { cdnThumb } from '@/utils/cdnImage';
 import { ref, computed } from 'vue';
 import { productsApi } from '../services/productsApi';
 

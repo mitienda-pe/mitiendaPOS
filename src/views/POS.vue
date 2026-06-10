@@ -1,4 +1,5 @@
 <script setup>
+import { cdnThumb } from '@/utils/cdnImage';
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useAuthStore } from '../stores/auth';
@@ -1765,7 +1766,7 @@ const getPaymentMethodName = (method) => {
                       <!-- Thumbnail -->
                       <div class="flex-shrink-0 w-10 h-10 rounded bg-gray-100 overflow-hidden flex items-center justify-center">
                         <img v-if="product.images && product.images[0]?.thumbnail"
-                          :src="product.images[0].thumbnail"
+                          :src="cdnThumb(product.images[0].thumbnail)"
                           :alt="product.nombre"
                           class="w-full h-full object-cover"
                           loading="lazy"

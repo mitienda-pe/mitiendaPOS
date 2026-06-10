@@ -282,7 +282,7 @@
             <div class="flex items-start gap-3">
               <img
                 v-if="product.images && product.images.length > 0"
-                :src="product.images[0].url || product.images[0]"
+                :src="cdnThumb(product.images[0].url || product.images[0])"
                 :alt="product.name"
                 class="h-12 w-12 rounded-md object-cover flex-shrink-0"
               />
@@ -382,7 +382,7 @@
                 <td class="px-6 py-4 whitespace-nowrap">
                   <img
                     v-if="product.images && product.images.length > 0"
-                    :src="product.images[0].url || product.images[0]"
+                    :src="cdnThumb(product.images[0].url || product.images[0])"
                     :alt="product.name"
                     class="h-10 w-10 rounded-md object-cover"
                   />
@@ -553,6 +553,7 @@
 </template>
 
 <script setup>
+import { cdnThumb } from '@/utils/cdnImage';
 import { ref, onMounted, computed, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { useInventoryStore } from '../stores/inventory';
