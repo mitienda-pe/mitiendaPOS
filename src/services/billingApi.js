@@ -58,6 +58,16 @@ const billingApi = {
   // ========== Billing Documents ==========
 
   /**
+   * Get the store's electronic billing mode (auto/manual/delegated).
+   * Used by the POS to decide the state of the "Emitir comprobante" button.
+   * @returns {Promise<Object>} { provider_configured, provider_id, provider_name, auto_emission, delegated }
+   */
+  async getStatus() {
+    const response = await apiClient.get('/billing/status')
+    return response.data
+  },
+
+  /**
    * Get list of emitted billing documents
    * @param {number} limit - Number of documents to retrieve
    * @param {number} offset - Offset for pagination

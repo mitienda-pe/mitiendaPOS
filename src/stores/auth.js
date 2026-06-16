@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import router from '../router';
 import { authApi } from '../services/authApi';
+import billingApi from '../services/billingApi';
 
 // Helper function to parse stored user data
 const getStoredUser = () => {
@@ -103,6 +104,21 @@ export const useAuthStore = defineStore('auth', {
     canNetsuite() {
       return !!this.accessFlags.netsuite || !!this.selectedStore?.netsuite_enabled;
     },
+
+    // Estado de facturación electrónica (de /billing/status), usado para
+    // decidir el botón "Emitir comprobante" en TicketModal y SaleDetail.
+    billingStatus: (state) => state.selectedStore?.billing || {},
+    // Hay proveedor (Nubefact/Bizlinks/Datil) configurado.
+    hasBillingProvider() { return !!this.billingStatus.provider_configured; },
+    // La facturación está delegada al ERP (NetSuite emite por su sync).
+    isBillingDelegated() { return !!this.billingStatus.delegated; },
+    // Emisión automática al confirmar el pago (sw_bloqueado=0).
+    isBillingAutomatic() { return !!this.billingStatus.auto_emission; },
+    // Emisión manual: hay proveedor, no es automática y no está delegada.
+    // Solo en este caso el cajero debe emitir el comprobante con el botón.
+    isBillingManual() {
+      return this.hasBillingProvider && !this.isBillingAutomatic && !this.isBillingDelegated;
+    },
   },
 
   actions: {
@@ -189,6 +205,9 @@ export const useAuthStore = defineStore('auth', {
           this.selectedStore = store;
           localStorage.setItem('selected_store', JSON.stringify(store));
 
+          // Resolver el modo de facturación (auto/manual/delegada) en background.
+          await this.fetchBillingStatus();
+
           // Limpiar turno de caja al cambiar de tienda para evitar
           // contaminación cross-tenant de movimientos de caja
           const { useShiftStore } = await import('./shift');
@@ -236,7 +255,26 @@ export const useAuthStore = defineStore('auth', {
       this.stores = [selected];
       localStorage.setItem('selected_store', JSON.stringify(selected));
 
+      await this.fetchBillingStatus();
+
       router.push('/menu');
+    },
+
+    // Resuelve el modo de facturación electrónica (/billing/status) y lo
+    // persiste en selectedStore.billing. Non-blocking: si falla (red/500) se
+    // deja sin estado y los getters caen a manual=false (botón oculto), sin
+    // romper la sesión. Lo consumen TicketModal y SaleDetail.
+    async fetchBillingStatus() {
+      if (!this.accessToken || !this.selectedStore) return;
+      try {
+        const response = await billingApi.getStatus();
+        const billing = response?.data ?? response ?? {};
+        const store = { ...this.selectedStore, billing };
+        this.selectedStore = store;
+        localStorage.setItem('selected_store', JSON.stringify(store));
+      } catch (error) {
+        console.warn('⚠️ [AUTH] No se pudo resolver el estado de facturación:', error?.message);
+      }
     },
 
     // Lanza un error si la tienda autenticada no tiene mod_pos habilitado.
@@ -277,6 +315,9 @@ export const useAuthStore = defineStore('auth', {
         };
         this.selectedStore = store;
         localStorage.setItem('selected_store', JSON.stringify(store));
+
+        // Refrescar también el modo de facturación al restaurar la sesión.
+        await this.fetchBillingStatus();
       } catch (error) {
         if (error?.posAccessDenied) {
           await this.logout();

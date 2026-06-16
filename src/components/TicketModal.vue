@@ -39,10 +39,10 @@
                     <span class="text-base font-semibold text-gray-900">{{ orderNumber }}</span>
                   </div>
 
-                  <div v-if="billingDocument" class="flex justify-between items-center border-b pb-2">
+                  <div v-if="currentDocument" class="flex justify-between items-center border-b pb-2">
                     <span class="text-sm font-medium text-gray-600">Comprobante:</span>
                     <span class="text-base font-semibold text-primary-600">
-                      {{ billingDocument.serie }}-{{ billingDocument.correlative }}
+                      {{ currentDocument.serie }}-{{ currentDocument.correlative }}
                     </span>
                   </div>
 
@@ -67,12 +67,23 @@
 
                 <!-- Success Message -->
                 <div class="mt-4 text-center">
-                  <p class="text-sm text-gray-600">
+                  <p v-if="currentDocument" class="text-sm text-gray-600">
                     El comprobante de pago ha sido emitido correctamente.
                   </p>
-                  <p v-if="billingDocument?.files?.pdf" class="text-xs text-gray-500 mt-2">
+                  <p v-else-if="canEmitManually" class="text-sm text-gray-600">
+                    La venta se registró. Emite el comprobante cuando estés listo.
+                  </p>
+                  <p v-else class="text-sm text-gray-600">
+                    La venta se registró correctamente.
+                  </p>
+                  <p v-if="currentDocument?.files?.pdf" class="text-xs text-gray-500 mt-2">
                     Puedes descargar o imprimir el comprobante usando los botones de abajo.
                   </p>
+                </div>
+
+                <!-- Error de emisión manual -->
+                <div v-if="emitError" class="mt-3 bg-red-50 border-l-4 border-red-500 p-3 rounded text-left">
+                  <p class="text-sm text-red-700">{{ emitError }}</p>
                 </div>
               </div>
             </div>
@@ -86,8 +97,26 @@
           >
             Cerrar
           </button>
+          <!-- Emitir comprobante (modo manual). Deshabilitado + tooltip cuando
+               está delegado al ERP o no hay proveedor configurado. -->
           <button
-            v-if="billingDocument?.files?.pdf"
+            v-if="showEmitButton"
+            @click="handleEmitDocument"
+            :disabled="!canEmitManually || emitting"
+            :title="emitDisabledReason"
+            class="mt-3 sm:mt-0 w-full inline-flex justify-center items-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg v-if="emitting" class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            {{ emitting ? 'Emitiendo...' : 'Emitir comprobante' }}
+          </button>
+          <button
+            v-if="currentDocument?.files?.pdf"
             @click="openPDF"
             class="mt-3 sm:mt-0 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:w-auto sm:text-sm"
           >
@@ -97,7 +126,7 @@
             Imprimir
           </button>
           <button
-            v-if="billingDocument?.files?.pdf"
+            v-if="currentDocument?.files?.pdf"
             @click="downloadPDF"
             class="mt-3 sm:mt-0 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none sm:w-auto sm:text-sm"
           >
@@ -113,10 +142,12 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useAuthStore } from '../stores/auth';
+import { useBillingStore } from '../stores/billing';
 
 const authStore = useAuthStore();
+const billingStore = useBillingStore();
 
 const props = defineProps({
   modelValue: Boolean,
@@ -136,6 +167,47 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue']);
 
 const store = computed(() => authStore.selectedStore);
+
+// Comprobante a mostrar: el emitido manualmente en este modal (si lo hubo)
+// tiene prioridad sobre el que vino por props (auto-emisión).
+const emittedDocument = ref(null);
+const currentDocument = computed(() => emittedDocument.value || props.billingDocument);
+
+// Estado del botón "Emitir comprobante" según el modo de facturación.
+const canEmitManually = computed(() => authStore.isBillingManual && !currentDocument.value);
+const billingDelegated = computed(() => authStore.isBillingDelegated);
+const billingProviderMissing = computed(() => !authStore.hasBillingProvider && !authStore.isBillingDelegated);
+const emitDisabledReason = computed(() => {
+  if (billingDelegated.value) return 'La facturación está delegada al ERP; el comprobante se emite automáticamente.';
+  if (billingProviderMissing.value) return 'Configura un proveedor de facturación electrónica para emitir comprobantes.';
+  return '';
+});
+// Mostrar el botón cuando aún no hay comprobante y la tienda tiene algo que ver
+// con facturación (manual, delegada o sin proveedor → deshabilitado + tooltip).
+const showEmitButton = computed(() =>
+  !currentDocument.value && (authStore.isBillingManual || billingDelegated.value || billingProviderMissing.value)
+);
+
+const emitError = ref(null);
+const emitting = computed(() => billingStore.isEmitting);
+
+const handleEmitDocument = async () => {
+  if (!canEmitManually.value || !props.orderId) return;
+  emitError.value = null;
+
+  // El tipo de comprobante (boleta/factura) lo deriva el backend del
+  // documento_id_facturacion de la orden; aquí solo pedimos la emisión.
+  const result = await billingStore.emitDocument({
+    order_id: Number(props.orderId),
+    pdf_format: 'TICKET',
+  });
+
+  if (result.success) {
+    emittedDocument.value = result.data;
+  } else {
+    emitError.value = result.error || 'No se pudo emitir el comprobante';
+  }
+};
 
 const totalPaid = computed(() => {
   if (!props.payments) return 0;
@@ -162,18 +234,18 @@ const closeModal = () => {
 };
 
 const openPDF = () => {
-  if (props.billingDocument?.files?.pdf) {
+  if (currentDocument.value?.files?.pdf) {
     // Abrir el PDF en una nueva ventana/pestaña
-    window.open(props.billingDocument.files.pdf, '_blank');
+    window.open(currentDocument.value.files.pdf, '_blank');
   }
 };
 
 const downloadPDF = () => {
-  if (props.billingDocument?.files?.pdf) {
+  if (currentDocument.value?.files?.pdf) {
     // Crear un enlace temporal y hacer clic para descargar
     const link = document.createElement('a');
-    link.href = props.billingDocument.files.pdf;
-    link.download = `${props.billingDocument.serie}-${props.billingDocument.correlative}.pdf`;
+    link.href = currentDocument.value.files.pdf;
+    link.download = `${currentDocument.value.serie}-${currentDocument.value.correlative}.pdf`;
     link.target = '_blank';
     document.body.appendChild(link);
     link.click();

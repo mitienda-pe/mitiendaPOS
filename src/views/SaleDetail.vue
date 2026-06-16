@@ -69,6 +69,25 @@
             Reimprimir
           </button>
 
+          <!-- Emitir comprobante (modo manual). Deshabilitado + tooltip cuando
+               está delegado al ERP o no hay proveedor configurado. -->
+          <button
+            v-if="showBillingEmitButton"
+            @click="handleEmitBilling"
+            :disabled="!canEmitBilling || billingEmitting"
+            :title="billingEmitDisabledReason"
+            class="inline-flex items-center px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+          >
+            <svg v-if="!billingEmitting" class="h-4 w-4 sm:h-5 sm:w-5 mr-1.5 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <svg v-else class="animate-spin h-4 w-4 sm:h-5 sm:w-5 mr-1.5 sm:mr-2" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            {{ billingEmitting ? 'Emitiendo...' : 'Emitir comprobante' }}
+          </button>
+
           <button
             v-if="canVoidOrder()"
             @click="showVoidModal = true"
@@ -122,6 +141,24 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <p class="text-red-700">{{ emailError }}</p>
+        </div>
+      </div>
+
+      <!-- Notificación emisión de comprobante -->
+      <div v-if="billingEmitSuccess" class="mb-4 bg-green-50 border-l-4 border-green-500 p-4 rounded">
+        <div class="flex">
+          <svg class="h-5 w-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p class="text-green-700">{{ billingEmitSuccess }}</p>
+        </div>
+      </div>
+      <div v-if="billingEmitError" class="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded">
+        <div class="flex">
+          <svg class="h-5 w-5 text-red-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p class="text-red-700">{{ billingEmitError }}</p>
         </div>
       </div>
 
@@ -345,11 +382,13 @@ import { ordersApi } from '../services/ordersApi';
 import ReceiptTicket from '../components/ReceiptTicket.vue';
 import { buildCompanyInfo } from '../config/companyConfig';
 import { useAuthStore } from '../stores/auth';
+import { useBillingStore } from '../stores/billing';
 import { useThermalPrinter } from '../composables/useThermalPrinter';
 
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
+const billingStore = useBillingStore();
 const { isConnected: thermalConnected, isEnabled: thermalEnabled, printReceipt: thermalPrint } = useThermalPrinter();
 
 const order = ref(null);
@@ -573,6 +612,54 @@ const getBillingDocument = () => {
       xml: eBilling.url_xml
     }
   };
+};
+
+// ===== Emisión manual de comprobante =====
+// Estado del botón "Emitir comprobante" según el modo de facturación de la tienda.
+const billingEmitError = ref(null);
+const billingEmitSuccess = ref(null);
+const billingEmitting = computed(() => billingStore.isEmitting);
+
+const hasEmittedDocument = computed(() => !!getBillingDocument());
+const isPaidOrder = computed(() => Number(order.value?.status) === 1);
+// Solo en modo manual el cajero puede emitir el comprobante.
+const canEmitBilling = computed(() =>
+  isPaidOrder.value && !hasEmittedDocument.value && authStore.isBillingManual
+);
+// El botón se muestra (deshabilitado + tooltip) también cuando está delegado al
+// ERP o no hay proveedor, para dar contexto al cajero.
+const showBillingEmitButton = computed(() =>
+  isPaidOrder.value && !hasEmittedDocument.value &&
+  (authStore.isBillingManual || authStore.isBillingDelegated || !authStore.hasBillingProvider)
+);
+const billingEmitDisabledReason = computed(() => {
+  if (authStore.isBillingDelegated) return 'La facturación está delegada al ERP; el comprobante se emite automáticamente.';
+  if (!authStore.hasBillingProvider) return 'Configura un proveedor de facturación electrónica para emitir comprobantes.';
+  return '';
+});
+
+const handleEmitBilling = async () => {
+  if (!canEmitBilling.value || !order.value?.id) return;
+  billingEmitError.value = null;
+  billingEmitSuccess.value = null;
+
+  // El tipo (boleta/factura) lo deriva el backend del documento_id_facturacion
+  // de la orden (elegido en el checkout del POS).
+  const result = await billingStore.emitDocument({
+    order_id: Number(order.value.id),
+    pdf_format: 'TICKET',
+  });
+
+  if (result.success) {
+    const doc = result.data || {};
+    billingEmitSuccess.value = `Comprobante emitido: ${doc.serie || ''}-${doc.correlative || ''}`;
+    setTimeout(() => { billingEmitSuccess.value = null; }, 5000);
+    // Recargar para que getBillingDocument() refleje el comprobante recién emitido.
+    await loadOrderDetail();
+  } else {
+    billingEmitError.value = result.error || 'No se pudo emitir el comprobante';
+    setTimeout(() => { billingEmitError.value = null; }, 8000);
+  }
 };
 
 // Información de la empresa para el ticket, derivada de la tienda autenticada
