@@ -107,6 +107,22 @@
 
                     Nota C.
                   </button>
+                  <button v-if="isMethodVisible('qr')" @click="selectPaymentMethod('qr')" :class="[
+                    'btn flex items-center justify-center py-3 rounded-lg transition-colors duration-200',
+                    paymentMethod === 'qr'
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-purple-100 hover:bg-purple-200 text-purple-800'
+                  ]">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                      <rect x="7" y="7" width="3" height="3"></rect>
+                      <rect x="14" y="7" width="3" height="3"></rect>
+                      <rect x="7" y="14" width="3" height="3"></rect>
+                      <rect x="14" y="14" width="3" height="3"></rect>
+                    </svg>
+                    {{ methodLabel('qr', 'Pago con QR') }}
+                  </button>
                   <button v-if="isMethodVisible('kasnet-qr')" @click="selectPaymentMethod('kasnet-qr')" :class="[
                     'btn flex items-center justify-center py-3 rounded-lg transition-colors duration-200',
                     paymentMethod === 'kasnet-qr'
@@ -324,6 +340,43 @@
                   </p>
                   <p class="text-xs text-gray-500 mt-1">
                     Ingrese el número de operación de la transferencia o depósito bancario
+                  </p>
+                </div>
+
+                <!-- Pago con QR de billetera (Yape/Plin), conciliación manual -->
+                <div v-if="paymentMethod === 'qr'" class="mb-3">
+                  <div v-if="qrConfig" class="text-center mb-3">
+                    <div class="flex justify-center mb-2">
+                      <img :src="qrConfig.qr_image_url" :alt="`QR ${qrConfig.name}`"
+                        class="border-2 border-purple-200 p-2 rounded-lg bg-white object-contain"
+                        style="width:220px;height:220px" />
+                    </div>
+                    <div class="text-sm font-medium text-gray-900">{{ qrConfig.name }}</div>
+                    <div v-if="qrConfig.phone" class="text-xs text-gray-500">{{ qrConfig.phone }}</div>
+                    <p class="text-xs text-gray-500 mt-2">
+                      El cliente escanea el QR y paga con {{ qrConfig.name }}. Confirma el pago
+                      tras ver el comprobante.
+                    </p>
+                  </div>
+                  <div v-else class="text-center text-xs text-amber-600 mb-3">
+                    No hay un QR configurado para esta tienda.
+                  </div>
+
+                  <RightToLeftMoneyInput v-model="paymentAmount" label="Monto a cobrar"
+                    helpText="Monto del pago con QR" />
+
+                  <label class="block text-sm font-medium text-gray-700 mb-1 mt-2">
+                    Nº de operación <span class="text-gray-400">(opcional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    v-model="qrOperationNumber"
+                    placeholder="Ej: 00123456"
+                    maxlength="100"
+                    class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                  <p class="text-xs text-gray-500 mt-1">
+                    Registra el número de operación del comprobante para conciliar (opcional).
                   </p>
                 </div>
 
@@ -631,7 +684,14 @@ const { isConnected: thermalConnected, isEnabled: thermalEnabled, printReceipt: 
 // Visibilidad por defecto de los métodos cuando la config aún no cargó
 // (fail-open): replica el set hardcodeado histórico. Cuando la config del
 // backend (pos_payment_methods) sí cargó, manda esa config.
-const DEFAULT_VISIBLE_METHODS = { efectivo: true, tarjeta: true, 'kasnet-qr': true, banco: false };
+// 'qr' y 'kasnet-qr' arrancan ocultos: el backend decide si mostrarlos según la
+// config de la tienda (qr solo aparece si hay imagen de QR cargada; kasnet-qr
+// está oculto a nivel plataforma). efectivo/tarjeta siempre visibles (fail-open).
+const DEFAULT_VISIBLE_METHODS = { efectivo: true, tarjeta: true, qr: false, 'kasnet-qr': false, banco: false };
+
+// Config del QR de billetera (Yape/Plin) que la tienda usa en el storefront,
+// inyectada por el backend en el método 'qr'. { wallet, name, phone, qr_image_url }
+const qrConfig = computed(() => paymentMethodsStore.byCode['qr']?.qr_config || null);
 
 const isMethodVisible = (code) => {
   if (paymentMethodsStore.loaded) {
@@ -699,6 +759,7 @@ const cashAmount = ref(0);
 const change = ref(0);
 const cardCode = ref('');
 const bankOperationNumber = ref('');
+const qrOperationNumber = ref('');
 const creditNoteNumber = ref('');
 const giftCardCode = ref('');
 const currentReference = ref('');
@@ -964,6 +1025,7 @@ const selectPaymentMethod = (method) => {
   currentReference.value = '';
   cardCode.value = '';
   bankOperationNumber.value = '';
+  qrOperationNumber.value = '';
   creditNoteNumber.value = '';
   giftCardCode.value = '';
   attemptedSubmit.value = false;
@@ -982,6 +1044,11 @@ const selectPaymentMethod = (method) => {
 
   // Kasnet QR: pre-llenar con el saldo pendiente
   if (method === 'kasnet-qr') {
+    paymentAmount.value = Number(props.remainingAmount) || 0;
+  }
+
+  // QR billetera (manual): pre-llenar con el saldo pendiente
+  if (method === 'qr') {
     paymentAmount.value = Number(props.remainingAmount) || 0;
   }
 };
@@ -1226,7 +1293,11 @@ const addPayment = () => {
       if (cartStore.appliedRounding !== 0 && props.payments.length > 0) {
         amount = Math.min(paymentAmount.value, props.remainingAmount - cartStore.appliedRounding);
       }
-      reference = 'QR';
+      // Billetera resuelta por el backend (Yape/Plin) + nº de operación opcional.
+      reference = qrConfig.value?.name ? `QR ${qrConfig.value.name}` : 'QR';
+      if (qrOperationNumber.value) {
+        reference += ` · Op: ${qrOperationNumber.value.trim()}`;
+      }
       break;
     case 'kasnet-qr':
       amount = Math.min(paymentAmount.value, props.remainingAmount);
@@ -1278,6 +1349,12 @@ const addPayment = () => {
   if (paymentMethod.value === 'banco' && bankOperationNumber.value) {
     paymentData.authorization_number = bankOperationNumber.value.trim();
     console.log('🏦 [PaymentModal] authorization_number (operación bancaria) agregado:', bankOperationNumber.value);
+  }
+
+  // Agregar nº de operación (opcional) si es pago con QR
+  if (paymentMethod.value === 'qr' && qrOperationNumber.value) {
+    paymentData.authorization_number = qrOperationNumber.value.trim();
+    console.log('🔳 [PaymentModal] authorization_number (operación QR) agregado:', qrOperationNumber.value);
   }
 
   // Agregar serie y número si es nota de crédito
