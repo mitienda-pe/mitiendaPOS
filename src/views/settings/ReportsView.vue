@@ -89,6 +89,12 @@
 <script setup>
 import { ref, reactive, computed } from 'vue';
 import reportsApi from '../../services/reportsApi';
+import { useAuthStore } from '../../stores/auth';
+
+const authStore = useAuthStore();
+
+// Costo y ganancia son sensibles: solo el dueño/admin los ve, no los cajeros.
+const PROFIT_KEYS = ['product_unit_cost', 'product_cost_subtotal', 'product_profit', 'product_margin_pct'];
 
 const tabs = [
   { key: 'orders', label: 'Ventas' },
@@ -122,9 +128,18 @@ const loadPreview = async () => {
   loading.value = true;
   message.value = '';
   try {
-    rows.value = activeTab.value === 'orders'
+    let data = activeTab.value === 'orders'
       ? await reportsApi.getOrdersPreview(filters)
       : await reportsApi.getProductSalesPreview(filters);
+    // Ocultar columnas de costo/ganancia a quien no es dueño/admin.
+    if (!authStore.isAdmin && Array.isArray(data)) {
+      data = data.map((row) => {
+        const clone = { ...row };
+        PROFIT_KEYS.forEach((k) => delete clone[k]);
+        return clone;
+      });
+    }
+    rows.value = data;
   } catch (e) {
     rows.value = [];
     showMessage('No se pudo cargar el reporte.');

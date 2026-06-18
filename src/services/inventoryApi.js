@@ -248,6 +248,9 @@ export const inventoryApi = {
     };
     if (data.sku) payload.sku = data.sku;
     if (data.barcode) payload.barcode = data.barcode;
+    if (data.cost !== undefined && data.cost !== null && data.cost !== '') {
+      payload.cost = parseFloat(data.cost);
+    }
     if (data.unlimited_stock) {
       payload.unlimited_stock = true;
     } else if (data.stock !== undefined && data.stock !== null && data.stock !== '') {

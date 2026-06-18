@@ -139,6 +139,22 @@
         />
       </div>
 
+      <!-- Costo de compra (para calcular ganancia; no se muestra al cliente) -->
+      <div>
+        <input
+          v-model="form.cost"
+          type="number"
+          step="0.01"
+          min="0"
+          inputmode="decimal"
+          placeholder="Costo de compra (S/)"
+          class="w-full px-4 py-4 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+        />
+        <p v-if="estimatedMargin !== null" class="text-xs text-gray-500 mt-1 ml-1">
+          Margen estimado: <span class="font-semibold text-primary-600">{{ estimatedMargin }}%</span>
+        </p>
+      </div>
+
       <!-- Stock + ilimitado -->
       <div class="flex items-center gap-3">
         <input
@@ -266,10 +282,19 @@ const form = reactive({
   sku: '',
   barcode: '',
   price: '',
+  cost: '',
   stock: '',
   unlimited_stock: false,
   category_id: '',
   published: true
+});
+
+// Margen estimado = (precio de venta - costo de compra) / precio de venta
+const estimatedMargin = computed(() => {
+  const price = parseFloat(form.price);
+  const cost = parseFloat(form.cost);
+  if (!price || !cost || cost <= 0) return null;
+  return Math.round(((price - cost) / price) * 100);
 });
 
 const categories = ref([]);
@@ -432,6 +457,7 @@ const handleSubmit = async () => {
       sku: form.sku.trim(),
       barcode: form.barcode.trim(),
       price: parseFloat(form.price),
+      cost: form.cost !== '' && form.cost !== null ? parseFloat(form.cost) : null,
       stock: form.stock,
       unlimited_stock: form.unlimited_stock,
       published: form.published,

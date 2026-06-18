@@ -211,6 +211,46 @@
         :show-reprint="true"
       />
 
+      <!-- Análisis de ganancia (solo dueño/admin) -->
+      <div
+        v-if="canSeeProfit && profitAnalysis"
+        class="mt-6 bg-white border border-gray-200 rounded-xl p-5 shadow-sm"
+      >
+        <div class="flex items-center gap-2 mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="1" x2="12" y2="23" />
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+          </svg>
+          <h3 class="text-sm font-semibold text-gray-800">Análisis de ganancia</h3>
+          <span class="text-xs text-gray-400">(solo visible para el administrador)</span>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div>
+            <p class="text-xs text-gray-500 mb-1">Ingreso</p>
+            <p class="text-base font-semibold text-gray-900">S/ {{ profitAnalysis.revenue.toFixed(2) }}</p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-500 mb-1">Costo</p>
+            <p class="text-base font-semibold text-gray-900">S/ {{ profitAnalysis.totalCost.toFixed(2) }}</p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-500 mb-1">Ganancia</p>
+            <p class="text-base font-bold" :class="profitAnalysis.profit >= 0 ? 'text-primary-600' : 'text-red-600'">
+              S/ {{ profitAnalysis.profit.toFixed(2) }}
+            </p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-500 mb-1">Margen</p>
+            <p class="text-base font-bold" :class="profitAnalysis.profit >= 0 ? 'text-primary-600' : 'text-red-600'">
+              {{ profitAnalysis.margin }}%
+            </p>
+          </div>
+        </div>
+        <p class="text-xs text-gray-400 mt-3">
+          Calculado con el costo de compra registrado en cada producto. Los productos sin costo cuentan como costo 0.
+        </p>
+      </div>
+
       <!-- Debug Info (Collapsible) -->
       <div class="mt-6">
         <button
@@ -494,7 +534,10 @@ const getProducts = () => {
       price: parseFloat(item.price || 0),
       original_price: item.original_price ? parseFloat(item.original_price) : null,
       discount_percent: item.discount_percent || null,
-      total: parseFloat(item.total || 0)
+      total: parseFloat(item.total || 0),
+      unit_cost: item.unit_cost != null ? parseFloat(item.unit_cost) : 0,
+      cost_total: item.cost_total != null ? parseFloat(item.cost_total) : 0,
+      profit: item.profit != null ? parseFloat(item.profit) : null
     }));
   }
 
@@ -507,7 +550,10 @@ const getProducts = () => {
       price: parseFloat(item.price || item.precio || 0),
       original_price: item.original_price ? parseFloat(item.original_price) : null,
       discount_percent: item.discount_percent || null,
-      total: parseFloat(item.total || ((item.quantity || item.cantidad) * (item.price || item.precio)) || 0)
+      total: parseFloat(item.total || ((item.quantity || item.cantidad) * (item.price || item.precio)) || 0),
+      unit_cost: item.unit_cost != null ? parseFloat(item.unit_cost) : 0,
+      cost_total: item.cost_total != null ? parseFloat(item.cost_total) : 0,
+      profit: item.profit != null ? parseFloat(item.profit) : null
     }));
   }
 
@@ -613,6 +659,24 @@ const getBillingDocument = () => {
     }
   };
 };
+
+// ===== Análisis de ganancia (solo dueño/admin) =====
+// El costo y el margen son información sensible del negocio: se ocultan a cajeros.
+const canSeeProfit = computed(() => authStore.isAdmin);
+
+const profitAnalysis = computed(() => {
+  const products = getProducts();
+  if (!products.length) return null;
+  // Solo tiene sentido si al menos un producto tiene costo registrado.
+  const hasCost = products.some(p => p.unit_cost > 0);
+  if (!hasCost) return null;
+
+  const revenue = products.reduce((sum, p) => sum + (p.total || 0), 0);
+  const totalCost = products.reduce((sum, p) => sum + (p.cost_total || 0), 0);
+  const profit = revenue - totalCost;
+  const margin = revenue > 0 ? Math.round((profit / revenue) * 100) : 0;
+  return { revenue, totalCost, profit, margin };
+});
 
 // ===== Emisión manual de comprobante =====
 // Estado del botón "Emitir comprobante" según el modo de facturación de la tienda.
