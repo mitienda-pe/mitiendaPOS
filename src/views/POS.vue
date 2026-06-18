@@ -20,6 +20,7 @@ import SupervisorAuthModal from '../components/SupervisorAuthModal.vue';
 import ConfirmProductsModal from '../components/ConfirmProductsModal.vue';
 import MergeSalesModal from '../components/MergeSalesModal.vue';
 import BarcodeScanner from '../components/BarcodeScanner.vue';
+import ProductVariantModal from '../components/ProductVariantModal.vue';
 import BillingDocumentModal from '../components/BillingDocumentModal.vue';
 import ProcessingOverlay from '../components/ProcessingOverlay.vue';
 import StockValidationErrorModal from '../components/StockValidationErrorModal.vue';
@@ -77,6 +78,8 @@ const showTicket = ref(false);
 const showConfirmProducts = ref(false);
 const showMergeSales = ref(false);
 const showBarcodeScanner = ref(false);
+const showVariantModal = ref(false);
+const variantModalProduct = ref(null);
 const showBillingModal = ref(false);
 const showStockValidationError = ref(false);
 const showNetsuiteCustomerIssue = ref(false);
@@ -182,7 +185,56 @@ const handleBarcodeInput = async () => {
   if (!barcode.value) return;
 
   try {
-    const response = await productsApi.searchByCode(barcode.value);
+    const scannedCode = barcode.value;
+
+    // 1. Resolución exacta del código de barras (producto o variación). Si el código
+    // pertenece a una variación, la agregamos directo sin pasar por el selector
+    // (escaneo retail-grade). Tolerante a fallos: si el endpoint no existe aún
+    // (migración no desplegada) cae al flujo de búsqueda por SKU/texto.
+    try {
+      const resolved = await productsApi.resolveBarcode(scannedCode);
+
+      if (resolved.matched === 'variant' && resolved.product && resolved.variant) {
+        const base = mapResolvedProduct(resolved.product);
+        const v = resolved.variant;
+        const available = v.unlimited_stock || Number(v.stock) > 0;
+        if (!available) {
+          showToast('warning', 'Esta variación está agotada');
+        } else {
+          addToCart({
+            ...base,
+            precio: v.price != null ? Number(v.price) : base.precio,
+            stock: v.unlimited_stock ? base.stock : Number(v.stock) || 0,
+            unlimited_stock: v.unlimited_stock === true,
+            sku: v.sku ? String(v.sku) : base.sku,
+            variant_id: v.id,
+            variant_name: v.names || '',
+            variant_sku: v.sku || null,
+          });
+        }
+        barcode.value = '';
+        barcodeInput.value?.focus();
+        return;
+      }
+
+      if (resolved.matched === 'product' && resolved.product) {
+        const prod = mapResolvedProduct(resolved.product);
+        // addToCart abre el selector si el producto tiene variaciones (fallback híbrido).
+        if (prod.unlimited_stock || prod.stock > 0) {
+          addToCart(prod);
+        } else {
+          showToast('warning', 'Este producto está agotado');
+        }
+        barcode.value = '';
+        barcodeInput.value?.focus();
+        return;
+      }
+    } catch (resolveError) {
+      console.warn('resolveBarcode no disponible o falló, usando búsqueda por SKU/texto:', resolveError);
+    }
+
+    // 2. Fallback: búsqueda por SKU/texto (también encuentra por barcode con LIKE).
+    const response = await productsApi.searchByCode(scannedCode);
 
     if (response.success && response.data) {
       const product = {
@@ -193,6 +245,7 @@ const handleBarcodeInput = async () => {
         stock: response.data.stock,
         unlimited_stock: response.data.unlimited_stock,
         categoria: response.data.category?.name || 'Sin categoría',
+        has_variants: response.data.has_variants === true,
         images: response.data.images || []
       };
 
@@ -213,6 +266,19 @@ const handleBarcodeInput = async () => {
   }
 };
 
+// Mapea el producto lean del resolver de barcode al formato del POS.
+const mapResolvedProduct = (p) => ({
+  id: p.id,
+  sku: p.sku ? String(p.sku) : '',
+  nombre: p.name,
+  precio: p.price,
+  stock: p.stock,
+  unlimited_stock: p.unlimited_stock === true,
+  categoria: p.category?.name || 'Sin categoría',
+  has_variants: p.has_variants === true,
+  images: p.images || []
+});
+
 // Abrir scanner de código de barras con cámara
 const openBarcodeScanner = () => {
   showBarcodeScanner.value = true;
@@ -231,6 +297,15 @@ const handleBarcodeDetected = async (code) => {
 
 const addToCart = (product) => {
   try {
+    // Producto con variaciones (talla/color, etc.): abrir el selector antes de
+    // agregarlo. Una vez elegida la variación, addToCart se vuelve a llamar con
+    // variant_id ya seteado y cae al flujo normal.
+    if (product.has_variants && !product.variant_id) {
+      variantModalProduct.value = product;
+      showVariantModal.value = true;
+      return;
+    }
+
     // Si el carrito está bloqueado, requiere autorización
     if (cartStore.status === 'BLOQUEADO') {
       pendingAction.value = { type: 'add_item_blocked', data: product };
@@ -248,6 +323,28 @@ const addToCart = (product) => {
   }
 };
 
+// Variación elegida en el selector: arma el producto con datos de la variación
+// (precio, stock, sku) y lo agrega al carrito como una línea propia.
+const handleVariantSelected = (variant) => {
+  const base = variantModalProduct.value;
+  showVariantModal.value = false;
+  variantModalProduct.value = null;
+  if (!base) return;
+
+  const productWithVariant = {
+    ...base,
+    precio: variant.price != null ? Number(variant.price) : base.precio,
+    stock: variant.unlimited_stock ? base.stock : Number(variant.stock) || 0,
+    unlimited_stock: variant.unlimited_stock === true,
+    sku: variant.sku ? String(variant.sku) : base.sku,
+    variant_id: variant.id,
+    variant_name: variant.names || '',
+    variant_sku: variant.sku || null,
+  };
+
+  addToCart(productWithVariant);
+};
+
 const incrementQuantity = (item) => {
   try {
     // Si el carrito está bloqueado, requiere autorización
@@ -257,7 +354,7 @@ const incrementQuantity = (item) => {
       return;
     }
 
-    cartStore.incrementQuantity(item.id);
+    cartStore.incrementQuantity(item.lineId ?? item.id);
 
     // 🔥 OPTIMIZATION: Reset stock validation when quantity changes
     stockValidatedForCurrentCart.value = false;
@@ -275,7 +372,7 @@ const decrementQuantity = (item) => {
       return;
     }
 
-    cartStore.decrementQuantity(item.id);
+    cartStore.decrementQuantity(item.lineId ?? item.id);
 
     // 🔥 OPTIMIZATION: Reset stock validation when quantity changes
     stockValidatedForCurrentCart.value = false;
@@ -293,7 +390,7 @@ const updateQuantity = (item, newQuantity) => {
       return;
     }
 
-    cartStore.updateItemQuantity(item.id, newQuantity);
+    cartStore.updateItemQuantity(item.lineId ?? item.id, newQuantity);
 
     // 🔥 OPTIMIZATION: Reset stock validation when quantity changes
     stockValidatedForCurrentCart.value = false;
@@ -318,7 +415,7 @@ const removeItem = (item) => {
       return;
     }
 
-    cartStore.removeItem(item.id);
+    cartStore.removeItem(item.lineId ?? item.id);
 
     // 🔥 OPTIMIZATION: Reset stock validation when item is removed
     stockValidatedForCurrentCart.value = false;
@@ -544,6 +641,7 @@ const processPayment = async () => {
   try {
     const items = cartItems.value.map(item => ({
       product_id: item.id,
+      productoatributo_id: item.variant_id || 0,
       sku: item.sku,
       quantity: item.quantity
     }));
@@ -718,6 +816,7 @@ const handleBonificationWarningProceed = async () => {
   try {
     const items = cartItems.value.map(item => ({
       product_id: item.id,
+      productoatributo_id: item.variant_id || 0,
       sku: item.sku,
       quantity: item.quantity
     }));
@@ -952,10 +1051,17 @@ const handlePaymentCompleted = async () => {
       document_type: billingDocumentType.value, // 'boleta' o 'factura'
       items: cartItems.value.map(item => ({
         product_id: item.id,
+        // Variación elegida (productoatributo_id). 0/ausente = producto simple.
+        // El backend (nativo y proxy legacy) usa este id para precio y descuento de stock.
+        productoatributo_id: item.variant_id || 0,
         sku: item.sku,
-        name: item.nombre,
+        name: item.variant_name ? `${item.nombre} (${item.variant_name})` : item.nombre,
         quantity: item.quantity,
-        // IMPORTANTE: item.precio YA incluye IGV, debemos extraer el precio base
+        // Precio de línea con IGV (variación si aplica). El backend nativo lo usa como
+        // precio efectivo; el proxy legacy lo ignora y resuelve el precio por atributoId.
+        price: item.precio,
+        // IMPORTANTE: item.precio YA incluye IGV (precio de la variación si aplica),
+        // debemos extraer el precio base
         unit_price: item.precio / 1.18, // Precio sin IGV
         subtotal: (item.precio / 1.18) * item.quantity, // Subtotal sin IGV
         tax: ((item.precio / 1.18) * item.quantity) * 0.18, // IGV del subtotal
@@ -1363,6 +1469,7 @@ const searchProducts = () => {
           unlimited_stock: item.unlimited_stock,
           categoria: item.category?.name || 'Sin categoría',
           barcode: item.barcode || null,
+          has_variants: item.has_variants === true,
           images: item.images || []
         }));
         highlightedIndex.value = -1;
@@ -1474,6 +1581,7 @@ const mapProductsToFormat = (products) => {
     stock: item.stock,
     unlimited_stock: item.unlimited_stock,
     categoria: item.category?.name || 'Sin categoría',
+    has_variants: item.has_variants === true,
     images: item.images || []
   }));
 };
@@ -1624,23 +1732,23 @@ const onSupervisorAuthorized = (authData) => {
 
       case 'increment_quantity':
         console.log('⬆️ [POS] Incrementing quantity with authorization');
-        cartStore.incrementQuantity(data.id, authData);
+        cartStore.incrementQuantity(data.lineId ?? data.id, authData);
         break;
 
       case 'decrement_quantity':
         console.log('⬇️ [POS] Decrementing quantity with authorization');
-        cartStore.decrementQuantity(data.id, authData);
+        cartStore.decrementQuantity(data.lineId ?? data.id, authData);
         break;
 
       case 'update_quantity':
         console.log('✏️ [POS] Updating quantity with authorization');
-        cartStore.updateItemQuantity(data.item.id, data.newQuantity, authData);
+        cartStore.updateItemQuantity(data.item.lineId ?? data.item.id, data.newQuantity, authData);
         break;
 
       case 'remove_item':
         // Quitar producto requiere supervisor
         console.log('🗑️ [POS] Removing item with supervisor authorization');
-        cartStore.removeItem(data.id, authData);
+        cartStore.removeItem(data.lineId ?? data.id, authData);
         break;
 
       case 'remove_payment':
@@ -1842,9 +1950,10 @@ const getPaymentMethodName = (method) => {
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
-                <tr v-for="item in cartItems" :key="item.id">
+                <tr v-for="item in cartItems" :key="item.lineId ?? item.id">
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm font-medium text-gray-900">{{ item.nombre }}</div>
+                    <div v-if="item.variant_name" class="text-xs text-primary-600 font-medium">{{ item.variant_name }}</div>
                     <div class="text-sm text-gray-500">SKU: {{ item.sku }}</div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm">
@@ -1894,10 +2003,11 @@ const getPaymentMethodName = (method) => {
 
           <!-- Cart Items: mobile cards -->
           <div class="md:hidden space-y-2">
-            <div v-for="item in cartItems" :key="item.id" class="bg-white rounded-lg border border-gray-200 p-3">
+            <div v-for="item in cartItems" :key="item.lineId ?? item.id" class="bg-white rounded-lg border border-gray-200 p-3">
               <div class="flex items-start justify-between gap-2">
                 <div class="min-w-0 flex-1">
                   <div class="text-sm font-medium text-gray-900 truncate">{{ item.nombre }}</div>
+                  <div v-if="item.variant_name" class="text-xs text-primary-600 font-medium truncate">{{ item.variant_name }}</div>
                   <div class="text-xs text-gray-500">SKU: {{ item.sku }}</div>
                   <div class="mt-1 text-sm">
                     <div v-if="item.precio_original" class="flex items-center gap-2 flex-wrap">
@@ -2345,6 +2455,13 @@ const getPaymentMethodName = (method) => {
   <BarcodeScanner
     v-model="showBarcodeScanner"
     @detected="handleBarcodeDetected"
+  />
+
+  <!-- Selector de variación (talla/color, etc.) -->
+  <ProductVariantModal
+    v-model="showVariantModal"
+    :product="variantModalProduct"
+    @select="handleVariantSelected"
   />
 
   <!-- Billing Document Modal -->

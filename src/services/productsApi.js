@@ -41,6 +41,8 @@ const adaptMeiliHit = (hit) => ({
   brand: hit.brand || null,
   barcode: hit.barcode || null,
   variants: Array.isArray(hit.variants) ? hit.variants : [],
+  // Señal para el POS: si trae variaciones debe abrirse el selector antes de agregar.
+  has_variants: hit.has_variants === true || (Array.isArray(hit.variants) && hit.variants.length > 0),
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 });
@@ -172,6 +174,7 @@ export const productsApi = {
             images,
             category: product.category || null,
             brand: product.brand || null,
+            has_variants: product.has_variants === true,
             created_at: product.created_at || new Date().toISOString(),
             updated_at: product.updated_at || new Date().toISOString()
           };
@@ -250,6 +253,7 @@ export const productsApi = {
         images,
         category: rawData.category || null,
         brand: rawData.brand || null,
+        has_variants: rawData.has_variants === true,
         created_at: rawData.created_at || new Date().toISOString(),
         updated_at: rawData.updated_at || new Date().toISOString()
       };
@@ -338,6 +342,7 @@ export const productsApi = {
           images,
           category: product.category || null,
           brand: product.brand || null,
+          has_variants: product.has_variants === true,
           created_at: product.created_at || new Date().toISOString(),
           updated_at: product.updated_at || new Date().toISOString()
         }
@@ -348,6 +353,34 @@ export const productsApi = {
       success: false,
       data: null,
       message: 'Producto no encontrado'
+    };
+  },
+
+  // Resuelve un código de barras exacto a un producto o a una variación concreta.
+  // Devuelve { matched: 'product'|'variant'|null, product, variant }. Usado al escanear
+  // para agregar la variación directo (sin selector) cuando el código es de la variación.
+  async resolveBarcode(code) {
+    const response = await apiClient.get(`/products/resolve-barcode?code=${encodeURIComponent(code)}`);
+    const data = response.data?.data || {};
+    return {
+      matched: data.matched || null,
+      product: data.product || null,
+      variant: data.variant || null,
+    };
+  },
+
+  // Obtener las variaciones (atributos) de un producto para el selector del POS.
+  // Devuelve { attributes: [...], variants: [{ id, sku, names, price, offer_price,
+  // stock, unlimited_stock, image_url, details }] } desde GET /products/:id/variants.
+  async getVariants(productId) {
+    const response = await apiClient.get(`/products/${productId}/variants`);
+    const body = response.data || {};
+    const data = body.data || body;
+
+    return {
+      success: true,
+      attributes: Array.isArray(data.attributes) ? data.attributes : [],
+      variants: Array.isArray(data.variants) ? data.variants : [],
     };
   }
 };

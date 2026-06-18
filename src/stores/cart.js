@@ -235,6 +235,8 @@ export const useCartStore = defineStore('cart', {
         // Mapear items al formato esperado por el backend
         const itemsForCalculation = this.items.map(item => ({
           producto_id: item.id,
+          // La variación elegida (si la hay) ajusta el precio de la línea en el backend.
+          productoatributo_id: item.variant_id || 0,
           cantidad: item.quantity,
           tiendaventa_cantidad: item.quantity
         }));
@@ -290,8 +292,14 @@ export const useCartStore = defineStore('cart', {
         throw new Error('Carrito bloqueado. Se requiere PIN del cajero para agregar productos.');
       }
 
-      // Buscar si ya existe
-      const existingItem = this.items.find(i => i.id === product.id);
+      // Identidad de línea: producto + variación (talla/color, etc.). Dos variaciones
+      // del mismo producto son dos líneas distintas. Para productos simples
+      // lineId === String(id), así el comportamiento previo no cambia.
+      const variantId = product.variant_id ?? null;
+      const lineId = variantId ? `${product.id}:${variantId}` : String(product.id);
+
+      // Buscar si ya existe la MISMA línea (mismo producto y misma variación)
+      const existingItem = this.items.find(i => (i.lineId ?? String(i.id)) === lineId);
 
       if (existingItem) {
         // Verificar stock (solo si no es ilimitado)
@@ -303,6 +311,10 @@ export const useCartStore = defineStore('cart', {
         // Agregar nuevo item
         const newItem = {
           ...product,
+          lineId,
+          variant_id: variantId,
+          variant_name: product.variant_name ?? null,
+          variant_sku: product.variant_sku ?? null,
           quantity: 1
         };
         this.items.push(newItem);
@@ -331,13 +343,15 @@ export const useCartStore = defineStore('cart', {
     /**
      * Actualizar cantidad de un item
      */
-    async updateItemQuantity(productId, newQuantity, authorization = null) {
+    async updateItemQuantity(lineId, newQuantity, authorization = null) {
       // Validar permisos
       if (!this.canEditQuantity && !authorization) {
         throw new Error('Requiere PIN del cajero para editar cantidades en carrito bloqueado');
       }
 
-      const item = this.items.find(i => i.id === productId);
+      // lineId identifica la línea (producto + variación). Compat: productos simples
+      // usan String(id) como lineId, así que pasar el id sigue funcionando.
+      const item = this.items.find(i => (i.lineId ?? String(i.id)) === String(lineId));
       if (!item) {
         throw new Error('Producto no encontrado en el carrito');
       }
@@ -359,29 +373,29 @@ export const useCartStore = defineStore('cart', {
       await this.recalculateTotals();
 
       if (authorization) {
-        this._logAudit('UPDATE_QUANTITY_BLOCKED', authorization, { productId, newQuantity });
+        this._logAudit('UPDATE_QUANTITY_BLOCKED', authorization, { lineId, newQuantity });
       }
     },
 
     /**
      * Incrementar cantidad de un item
      */
-    incrementQuantity(productId, authorization = null) {
-      const item = this.items.find(i => i.id === productId);
+    incrementQuantity(lineId, authorization = null) {
+      const item = this.items.find(i => (i.lineId ?? String(i.id)) === String(lineId));
       if (!item) return;
 
-      this.updateItemQuantity(productId, item.quantity + 1, authorization);
+      this.updateItemQuantity(item.lineId ?? String(item.id), item.quantity + 1, authorization);
     },
 
     /**
      * Decrementar cantidad de un item
      */
-    decrementQuantity(productId, authorization = null) {
-      const item = this.items.find(i => i.id === productId);
+    decrementQuantity(lineId, authorization = null) {
+      const item = this.items.find(i => (i.lineId ?? String(i.id)) === String(lineId));
       if (!item) return;
 
       if (item.quantity > 1) {
-        this.updateItemQuantity(productId, item.quantity - 1, authorization);
+        this.updateItemQuantity(item.lineId ?? String(item.id), item.quantity - 1, authorization);
       }
     },
 
@@ -389,9 +403,9 @@ export const useCartStore = defineStore('cart', {
      * Eliminar item del carrito
      * SIEMPRE requiere PIN supervisor si no está ABIERTO
      */
-    async removeItem(productId, supervisorAuth = null) {
+    async removeItem(lineId, supervisorAuth = null) {
       console.log('🗑️ [CART] removeItem called:', {
-        productId,
+        lineId,
         status: this.status,
         canRemoveProducts: this.canRemoveProducts,
         hasSupervisorAuth: !!supervisorAuth,
@@ -411,14 +425,14 @@ export const useCartStore = defineStore('cart', {
       }
 
       console.log('✅ [CART] Item removed successfully');
-      this.items = this.items.filter(i => i.id !== productId);
+      this.items = this.items.filter(i => (i.lineId ?? String(i.id)) !== String(lineId));
       this.unsavedChanges = true;
 
       // Recalcular totales desde el backend
       await this.recalculateTotals();
 
       if (supervisorAuth) {
-        this._logAudit('REMOVE_ITEM', supervisorAuth, { productId });
+        this._logAudit('REMOVE_ITEM', supervisorAuth, { lineId });
       }
 
       // Si se vacía el carrito, volver a ABIERTO
