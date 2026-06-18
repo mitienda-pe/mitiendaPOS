@@ -268,6 +268,25 @@ export const inventoryApi = {
   },
 
   /**
+   * Autocompletado del catálogo maestro de productos peruanos.
+   * Sugiere productos del catálogo global que la tienda aún no tiene, para
+   * acelerar el alta. El backend ya excluye los que la tienda posee.
+   * @param {string} q - texto parcial del nombre (min 2 chars)
+   * @param {number} limit - máximo de sugerencias (default 8)
+   * @returns {Promise} { success, data: [{ catalogo_id, nombre, marca, categoria, precio_referencial, barcode }] }
+   */
+  async suggestFromCatalog(q, limit = 8) {
+    const query = (q || '').trim();
+    if (query.length < 2) {
+      return { success: true, data: [] };
+    }
+    const params = new URLSearchParams({ q: query, limit: String(limit) });
+    const response = await apiClient.get(`/products/catalog-suggest?${params.toString()}`);
+    const data = response.data?.data ?? [];
+    return { success: true, data: Array.isArray(data) ? data : [] };
+  },
+
+  /**
    * Subir imagen de un producto recién creado (multipart)
    * @param {number} id - ID del producto
    * @param {File} file - Archivo de imagen (jpg/png/webp, min 600x600, max 10MB)

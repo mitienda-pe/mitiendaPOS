@@ -51,14 +51,45 @@
         />
       </div>
 
-      <!-- Nombre -->
-      <div>
+      <!-- Nombre (con autocompletado del catálogo maestro) -->
+      <div class="relative">
         <input
           v-model="form.name"
           type="text"
           placeholder="Nombre del producto *"
+          autocomplete="off"
+          @input="onNameInput"
+          @keydown="onSuggestKeydown"
+          @blur="onNameBlur"
           class="w-full px-4 py-4 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
         />
+        <ul
+          v-if="showSuggestions && nameSuggestions.length"
+          class="absolute z-30 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-72 overflow-auto"
+        >
+          <li
+            v-for="(s, idx) in nameSuggestions"
+            :key="s.catalogo_id"
+            @mousedown.prevent="selectSuggestion(s)"
+            :class="idx === highlightedIndex ? 'bg-primary-50' : ''"
+            class="px-4 py-3 cursor-pointer hover:bg-primary-50 border-b border-gray-100 last:border-b-0"
+          >
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-sm text-gray-900 leading-snug">{{ s.nombre }}</span>
+              <span v-if="s.precio_referencial != null" class="text-xs text-gray-400 flex-shrink-0">
+                S/ {{ Number(s.precio_referencial).toFixed(2) }}
+              </span>
+            </div>
+            <div v-if="s.marca || s.categoria" class="text-xs text-gray-400 mt-0.5">
+              <span v-if="s.marca">{{ s.marca }}</span>
+              <span v-if="s.marca && s.categoria"> · </span>
+              <span v-if="s.categoria">{{ s.categoria }}</span>
+            </div>
+          </li>
+        </ul>
+        <p class="mt-1 ml-1 text-xs text-gray-400">
+          Escribe el nombre y elige una sugerencia del catálogo para autocompletar.
+        </p>
       </div>
 
       <!-- SKU -->
@@ -249,6 +280,13 @@ const showScanner = ref(false);
 const submitting = ref(false);
 const toast = ref({ show: false, type: 'success', message: '' });
 
+// Autocompletado del catálogo maestro
+const nameSuggestions = ref([]);
+const showSuggestions = ref(false);
+const highlightedIndex = ref(-1);
+let suggestTimer = null;
+let suppressSuggest = false; // evita re-sugerir inmediatamente tras seleccionar
+
 const MIN_IMAGE_DIMENSION = 600;
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
@@ -267,6 +305,75 @@ const goBack = () => router.push('/inventory');
 
 const onBarcodeDetected = (code) => {
   form.barcode = code;
+};
+
+const onNameInput = () => {
+  // No re-sugerir el valor que acabamos de autocompletar al seleccionar.
+  if (suppressSuggest) { suppressSuggest = false; return; }
+
+  const q = form.name.trim();
+  highlightedIndex.value = -1;
+  if (suggestTimer) clearTimeout(suggestTimer);
+
+  if (q.length < 2) {
+    nameSuggestions.value = [];
+    showSuggestions.value = false;
+    return;
+  }
+
+  suggestTimer = setTimeout(async () => {
+    try {
+      const res = await inventoryApi.suggestFromCatalog(q, 8);
+      // El usuario pudo seguir escribiendo; ignorar respuestas obsoletas.
+      if (form.name.trim() !== q) return;
+      nameSuggestions.value = res.data || [];
+      showSuggestions.value = nameSuggestions.value.length > 0;
+    } catch (error) {
+      nameSuggestions.value = [];
+      showSuggestions.value = false;
+    }
+  }, 300);
+};
+
+const selectSuggestion = (s) => {
+  suppressSuggest = true;
+  form.name = s.nombre;
+  // Prellenar precio referencial solo si el campo está vacío (siempre editable).
+  if (s.precio_referencial != null && (form.price === '' || form.price === null)) {
+    form.price = String(s.precio_referencial);
+  }
+  if (s.barcode && !form.barcode) {
+    form.barcode = s.barcode;
+  }
+  nameSuggestions.value = [];
+  showSuggestions.value = false;
+  highlightedIndex.value = -1;
+};
+
+const onSuggestKeydown = (event) => {
+  if (!showSuggestions.value || !nameSuggestions.value.length) return;
+
+  if (event.key === 'ArrowDown') {
+    event.preventDefault();
+    highlightedIndex.value = (highlightedIndex.value + 1) % nameSuggestions.value.length;
+  } else if (event.key === 'ArrowUp') {
+    event.preventDefault();
+    highlightedIndex.value = highlightedIndex.value <= 0
+      ? nameSuggestions.value.length - 1
+      : highlightedIndex.value - 1;
+  } else if (event.key === 'Enter') {
+    if (highlightedIndex.value >= 0) {
+      event.preventDefault();
+      selectSuggestion(nameSuggestions.value[highlightedIndex.value]);
+    }
+  } else if (event.key === 'Escape') {
+    showSuggestions.value = false;
+  }
+};
+
+const onNameBlur = () => {
+  // Retraso para permitir el mousedown sobre una sugerencia antes de ocultar.
+  setTimeout(() => { showSuggestions.value = false; }, 150);
 };
 
 const clearImage = () => {
