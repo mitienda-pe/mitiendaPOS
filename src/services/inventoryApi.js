@@ -354,5 +354,38 @@ export const inventoryApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return response.data?.data ?? response.data;
+  },
+
+  // ─── Lotes con vencimiento (perecibles) ────────────────────────
+
+  /** Lista los lotes de un producto. */
+  async getProductLots(productId, variantId = null) {
+    const qs = variantId ? `?productoatributo_id=${variantId}` : '';
+    const response = await apiClient.get(`/products/${productId}/lots${qs}`);
+    return response.data?.data ?? response.data;
+  },
+
+  /**
+   * Registra un ingreso de lote.
+   * @param {Object} lot - { productoatributo_id?, cantidad, fecha_vencimiento?, fecha_produccion?, codigo?, costo? }
+   */
+  async createLot(productId, lot) {
+    const response = await apiClient.post(`/products/${productId}/lots`, lot);
+    return response.data?.data ?? response.data;
+  },
+
+  /** Da de baja un lote por merma. */
+  async bajaLot(loteId, motivo = null) {
+    const response = await apiClient.post(`/lots/${loteId}/baja`, motivo ? { motivo } : {});
+    return response.data?.data ?? response.data;
+  },
+
+  /** Kardex (movimientos) por lote de un producto. */
+  async getProductKardex(productId, { loteId = null, page = 1 } = {}) {
+    const qs = new URLSearchParams();
+    if (loteId) qs.append('lote_id', String(loteId));
+    if (page) qs.append('page', String(page));
+    const response = await apiClient.get(`/products/${productId}/lots/kardex?${qs.toString()}`);
+    return response.data?.data ?? response.data;
   }
 };

@@ -310,6 +310,13 @@
             </div>
             <div class="mt-3 flex items-center justify-end gap-3 text-sm font-medium">
               <button
+                v-if="canEdit && product.lots_managed"
+                @click="openLots(product)"
+                class="text-amber-600 hover:text-amber-700"
+              >
+                Lotes
+              </button>
+              <button
                 v-if="canEdit"
                 @click="openQuickEdit(product)"
                 class="text-primary-600 hover:text-primary-700"
@@ -434,6 +441,13 @@
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <div class="flex items-center justify-end gap-3">
                     <button
+                      v-if="canEdit && product.lots_managed"
+                      @click="openLots(product)"
+                      class="text-amber-600 hover:text-amber-700 transition-colors"
+                    >
+                      Lotes
+                    </button>
+                    <button
                       v-if="canEdit"
                       @click="openQuickEdit(product)"
                       class="text-primary-600 hover:text-indigo-900 transition-colors"
@@ -521,6 +535,14 @@
       @save="handleQuickSave"
     />
 
+    <!-- Lotes (ingreso de mercadería) -->
+    <RegisterLotModal
+      :is-open="showLots"
+      :product="lotsProduct"
+      @close="closeLots"
+      @changed="loadData"
+    />
+
     <!-- Toast Notification -->
     <Transition name="toast">
       <div
@@ -560,6 +582,7 @@ import { useInventoryStore } from '../stores/inventory';
 import { useAuthStore } from '../stores/auth';
 import { useCashierStore } from '../stores/cashier';
 import QuickEditModal from '../components/QuickEditModal.vue';
+import RegisterLotModal from '../components/RegisterLotModal.vue';
 import { netsuiteStockApi } from '../services/netsuiteStockApi';
 
 const router = useRouter();
@@ -654,6 +677,18 @@ const openQuickEdit = (product) => {
 const closeQuickEdit = () => {
   showQuickEdit.value = false;
   selectedProduct.value = null;
+};
+
+// Lotes (ingreso de mercadería)
+const showLots = ref(false);
+const lotsProduct = ref(null);
+const openLots = (product) => {
+  lotsProduct.value = product;
+  showLots.value = true;
+};
+const closeLots = () => {
+  showLots.value = false;
+  lotsProduct.value = null;
 };
 
 const handleQuickSave = async (data) => {
