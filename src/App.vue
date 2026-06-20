@@ -339,6 +339,9 @@ const handleLock = () => {
 // Desbloqueo
 const handleUnlock = async () => {
   cashierStore.unlock();
+  // El desbloqueo se re-valida con PIN, así que extiende la sesión (ventana
+  // deslizante) y evita que un cajero activo expire por el límite de 12h.
+  cashierStore.refreshSession();
   resetInactivityTimer();
 
   // ✅ FIX: Refrescar estado del turno después de desbloquear

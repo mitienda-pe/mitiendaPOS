@@ -122,6 +122,31 @@ export const useCashierStore = defineStore('cashier', {
     },
 
     /**
+     * Refrescar la marca de tiempo de la sesión (ventana deslizante).
+     *
+     * `authenticatedAt` solo se setea en el login con PIN, y `restoreSession()`
+     * desloguea al pasar 12h desde ese momento. En jornadas largas (p. ej.
+     * panaderías que abren de madrugada) eso deslogueaba al cajero a media
+     * tarde dejando ventas con cajero_id null. Llamar a esto al desbloquear
+     * (re-validado con PIN) y al restaurar la sesión convierte el límite en una
+     * ventana deslizante: un cajero activo no expira a mitad del turno.
+     */
+    refreshSession() {
+      if (!this.cashier) return;
+      try {
+        localStorage.setItem('cashier_session', JSON.stringify({
+          cashier: this.cashier,
+          sucursal: this.sucursal,
+          cajaNumero: this.cajaNumero,
+          authenticatedAt: new Date().toISOString(),
+        }));
+        console.log('🔄 [CASHIER] Sesión refrescada (ventana deslizante)');
+      } catch (error) {
+        console.error('❌ [CASHIER] Error refrescando sesión:', error);
+      }
+    },
+
+    /**
      * Cerrar sesión de cajero
      */
     logout() {
@@ -161,6 +186,10 @@ export const useCashierStore = defineStore('cashier', {
         this.sucursal = data.sucursal;
         this.cajaNumero = data.cajaNumero;
         this.authenticated = true;
+
+        // Ventana deslizante: un reload/relanzamiento dentro de las 12h extiende
+        // otras 12h, evitando que un cajero activo expire a mitad del turno.
+        this.refreshSession();
 
         console.log('🔄 [CASHIER] Sesión restaurada:', this.cashierName);
         return true;

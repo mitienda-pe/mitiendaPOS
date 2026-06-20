@@ -26,6 +26,7 @@ import ProcessingOverlay from '../components/ProcessingOverlay.vue';
 import StockValidationErrorModal from '../components/StockValidationErrorModal.vue';
 import NetsuiteCustomerIssueModal from '../components/NetsuiteCustomerIssueModal.vue';
 import BonificationWarningModal from '../components/BonificationWarningModal.vue';
+import CashierAuthModal from '../components/CashierAuthModal.vue';
 import { customersApi } from '../services/customersApi';
 import QuantityStepperInput from '../components/QuantityStepperInput.vue';
 import ToastNotification from '../components/ToastNotification.vue';
@@ -569,6 +570,25 @@ const handleStartSale = (data) => {
   saleHasUnsavedChanges.value = false;
 };
 
+// Re-autenticación de cajero forzada por el guard del checkout (sesión expirada)
+const showCashierReauth = ref(false);
+
+// Número de caja para el modal de re-autenticación. caja_numero puede venir
+// como "Caja 1" o como número; lo normalizamos a Number (lo que espera el modal).
+const reauthCajaNumero = computed(() => {
+  const raw = cashierStore.cajaNumero ?? shiftStore.activeShift?.caja_numero;
+  if (raw == null) return null;
+  if (typeof raw === 'number') return raw;
+  const m = String(raw).match(/\d+/);
+  return m ? parseInt(m[0], 10) : null;
+});
+
+const onCashierReauthed = () => {
+  showCashierReauth.value = false;
+  // Reintentar el cobro ahora que hay un cajero autenticado
+  handlePaymentCompleted();
+};
+
 // Retomar una venta guardada
 const resumeSavedSale = (sale) => {
   // Si hay una venta en curso, preguntar si se desea guardar
@@ -929,6 +949,18 @@ const handlePaymentCompleted = async () => {
   processingOrder.value = true;
 
   try {
+    // Guard de cajero: la orden viaja con cajero_id desde cashierStore. Si la
+    // sesión del cajero expiró (ventana de 12h) o no hay cajero autenticado, NO
+    // cobramos: de lo contrario NetSuite recibe la venta sin vendedor (salesrep).
+    // El modo admin (isAdminToken) opera legítimamente sin cajero y el backend
+    // usa el sales rep por defecto de la tienda.
+    if (!cashierStore.cashier?.empleado_id && !authStore.isAdminToken) {
+      console.warn('⚠️ [POS] Sin cajero autenticado al cobrar — solicitando re-autenticación');
+      processingOrder.value = false;
+      showCashierReauth.value = true;
+      return;
+    }
+
     // Validación: Boleta >= S/700 requiere DNI/RUC
     if (billingDocumentType.value === 'boleta' && total.value >= 700) {
       if (!selectedCustomer.value || !selectedCustomer.value.document_number) {
@@ -1676,7 +1708,11 @@ const autoSaveSale = () => {
     subtotal: subtotal.value,
     tax: tax.value,
     total: total.value,
-    payments: [...payments.value]
+    payments: [...payments.value],
+    // Metadato: cajero que inició/editó la venta guardada. La atribución del
+    // salesrep en NetSuite usa el cajero que COMPLETA el cobro (cashierStore en
+    // vivo), no este; se guarda como referencia y para diagnóstico.
+    cajero_id: cashierStore.cashier?.empleado_id || null,
   };
 
   // Si ya existe un ID para esta venta, actualizar en lugar de crear una nueva
@@ -2513,6 +2549,15 @@ const getPaymentMethodName = (method) => {
     :available-bonifications="availableBonifications"
     @proceed="handleBonificationWarningProceed"
     @cancel="handleBonificationWarningCancel"
+  />
+
+  <!-- Re-autenticación de cajero (sesión expirada al cobrar) -->
+  <CashierAuthModal
+    v-model="showCashierReauth"
+    :required="true"
+    :sucursalId="shiftStore.activeShift?.tiendadireccion_id || null"
+    :cajaNumero="reauthCajaNumero"
+    @authenticated="onCashierReauthed"
   />
 
   <!-- Toast Notification -->
