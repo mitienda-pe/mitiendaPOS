@@ -58,6 +58,9 @@
 
       <!-- Paso 2: OTP -->
       <form v-else class="mt-8 space-y-4" @submit.prevent="handleRegister">
+        <div v-if="accountNotice" class="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          {{ accountNotice }}
+        </div>
         <p class="text-sm text-gray-600 text-center">
           Ingresa el código de 6 dígitos que enviamos a
           <strong>{{ maskedRecipient || form.email }}</strong>.
@@ -110,6 +113,7 @@ const error = ref('');
 const sessionId = ref('');
 const maskedRecipient = ref('');
 const otpCode = ref('');
+const accountNotice = ref('');
 
 const form = reactive({
   business_name: '',
@@ -138,14 +142,16 @@ const handleSendOtp = async () => {
       name: form.admin_name.trim(),
       captchaToken,
     });
-    if (res?.has_account) {
-      error.value = 'Ya existe una cuenta con este correo. Inicia sesión.';
-      return;
-    }
     if (res?.error) {
       error.value = res.message || 'No se pudo enviar el código.';
       return;
     }
+    // Cuenta existente sin prueba vigente: no bloquea, solo avisamos que la
+    // nueva tienda se agregará a su cuenta. El caso bloqueante (prueba gratis
+    // vigente) llega como 409 y cae en el catch de abajo.
+    accountNotice.value = res?.has_account
+      ? (res.account_notice || 'Ya tienes una cuenta con este correo. La nueva tienda se agregará a tu cuenta existente.')
+      : '';
     sessionId.value = res.session_id;
     maskedRecipient.value = res.masked_recipient || '';
     step.value = 2;
@@ -188,5 +194,6 @@ const goBack = () => {
   step.value = 1;
   otpCode.value = '';
   error.value = '';
+  accountNotice.value = '';
 };
 </script>

@@ -122,8 +122,11 @@ export const authApi = {
   // --- Registro self-service del POS ---
 
   // Envía el código OTP al correo. Requiere captcha_token (Cap.js). Devuelve
-  // { error, session_id, masked_recipient, expires_in_seconds } o
-  // { error:1, has_account } si el email ya tiene cuenta.
+  // { error, session_id, masked_recipient, expires_in_seconds, has_account,
+  //   account_notice }. Si el email ya tiene cuenta SIN prueba vigente, has_account
+  //   es true y el OTP igual se envía (la tienda se adjuntará a esa cuenta). Si el
+  //   email ya tiene una prueba gratis VIGENTE, responde 409 { blocked:true } (axios
+  //   lanza) y no se envía código.
   async registerSendOtp({ email, name, captchaToken }) {
     const response = await apiClient.post('/pos/register/send-otp', {
       email,
