@@ -96,6 +96,33 @@
         </div>
       </section>
 
+      <!-- Emisión automática -->
+      <section class="bg-white rounded-lg shadow-sm p-5">
+        <h2 class="text-lg font-semibold text-gray-800 mb-1">Emisión automática</h2>
+        <p class="text-sm text-gray-500 mb-4">
+          Cuando está activa, los comprobantes se emiten automáticamente ante SUNAT al confirmarse el pago.
+          Si la apagas, deberás emitir cada comprobante manualmente.
+        </p>
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-medium text-gray-700">
+            {{ autoEmissionEnabled ? 'Activa' : 'Inactiva' }}
+          </span>
+          <button
+            type="button"
+            role="switch"
+            :aria-checked="autoEmissionEnabled"
+            @click="autoEmissionEnabled = !autoEmissionEnabled"
+            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+            :class="autoEmissionEnabled ? 'bg-primary-600' : 'bg-gray-200'"
+          >
+            <span
+              class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+              :class="autoEmissionEnabled ? 'translate-x-6' : 'translate-x-1'"
+            />
+          </button>
+        </div>
+      </section>
+
       <!-- Acciones -->
       <div class="flex flex-wrap gap-3">
         <button type="submit" class="btn-primary" :disabled="saving">
@@ -113,7 +140,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import billingApi from '../../../services/billingApi';
 
 const loading = ref(true);
@@ -133,6 +160,12 @@ const form = reactive({
   environment: 'prueba',
   pdf_format: 'TICKET',
   blocked: true,
+});
+
+// blocked = true significa emisión automática DESACTIVADA (igual que el backoffice)
+const autoEmissionEnabled = computed({
+  get: () => !form.blocked,
+  set: (val) => { form.blocked = !val; },
 });
 
 const showMessage = (text, type = 'success') => {
