@@ -55,6 +55,38 @@ const billingApi = {
     return response.data
   },
 
+  // ========== Bizlinks Configuration ==========
+
+  /** Get Bizlinks configuration for current store */
+  async getBizlinksConfig() {
+    const response = await apiClient.get('/billing/bizlinks')
+    return response.data
+  },
+
+  /** Save Bizlinks credentials */
+  async saveBizlinksCredentials(data) {
+    const response = await apiClient.post('/billing/bizlinks', data)
+    return response.data
+  },
+
+  /** Update Bizlinks credentials */
+  async updateBizlinksCredentials(data) {
+    const response = await apiClient.put('/billing/bizlinks', data)
+    return response.data
+  },
+
+  /** Delete Bizlinks credentials */
+  async deleteBizlinksCredentials() {
+    const response = await apiClient.delete('/billing/bizlinks')
+    return response.data
+  },
+
+  /** Test Bizlinks connection (solo modo credenciales propias) */
+  async testBizlinksConnection() {
+    const response = await apiClient.post('/billing/bizlinks/test')
+    return response.data
+  },
+
   // ========== Billing Documents ==========
 
   /**

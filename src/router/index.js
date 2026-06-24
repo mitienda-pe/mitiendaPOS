@@ -216,9 +216,21 @@ const routes = [
         meta: { requiresModule: 'categories' }
       },
       {
+        path: 'billing',
+        name: 'BillingProviders',
+        component: () => import('../views/settings/billing/BillingProvidersView.vue'),
+        meta: { requiresModule: 'billing' }
+      },
+      {
         path: 'billing/nubefact',
         name: 'NubefactConfig',
         component: () => import('../views/settings/billing/NubefactConfigView.vue'),
+        meta: { requiresModule: 'billing' }
+      },
+      {
+        path: 'billing/bizlinks',
+        name: 'BizlinksConfig',
+        component: () => import('../views/settings/billing/BizlinksConfigView.vue'),
         meta: { requiresModule: 'billing' }
       },
       {

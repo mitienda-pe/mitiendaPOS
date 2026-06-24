@@ -123,7 +123,7 @@
 
           <router-link
             v-if="authStore.canBilling"
-            to="/settings/billing/nubefact"
+            to="/settings/billing"
             class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
             active-class="bg-primary-50 text-primary-700 font-medium"
           >
