@@ -268,20 +268,6 @@
           </div>
         </nav>
       </div>
-
-      <!-- Back to menu button (desktop only) -->
-      <div class="hidden md:block absolute bottom-0 left-0 right-0 p-6 border-t">
-        <router-link
-          to="/menu"
-          class="flex items-center justify-center px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="19" y1="12" x2="5" y2="12"></line>
-            <polyline points="12 19 5 12 12 5"></polyline>
-          </svg>
-          Volver al Menú
-        </router-link>
-      </div>
     </aside>
 
     <!-- Main content -->
