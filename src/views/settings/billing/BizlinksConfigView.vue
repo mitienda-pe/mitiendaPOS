@@ -123,32 +123,18 @@
         </div>
       </section>
 
-      <!-- Ambiente (solo credenciales propias) y formato -->
-      <section class="bg-white rounded-lg shadow-sm p-5">
-        <h2 class="text-lg font-semibold text-gray-800 mb-4">{{ isOwn ? 'Ambiente y formato' : 'Formato de impresión' }}</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div v-if="isOwn">
-            <span class="form-label">Ambiente</span>
-            <div class="flex gap-4 mt-1">
-              <label class="inline-flex items-center gap-2 text-sm">
-                <input type="radio" value="production" v-model="form.environment" class="text-primary-600 focus:ring-primary-500" /> Producción
-              </label>
-              <label class="inline-flex items-center gap-2 text-sm">
-                <input type="radio" value="development" v-model="form.environment" class="text-primary-600 focus:ring-primary-500" /> Prueba
-              </label>
-            </div>
-          </div>
-          <div>
-            <span class="form-label">Formato de impresión</span>
-            <div class="flex gap-4 mt-1">
-              <label class="inline-flex items-center gap-2 text-sm">
-                <input type="radio" value="A4" v-model="form.pdf_format" class="text-primary-600 focus:ring-primary-500" /> A4
-              </label>
-              <label class="inline-flex items-center gap-2 text-sm">
-                <input type="radio" value="TICKET" v-model="form.pdf_format" class="text-primary-600 focus:ring-primary-500" /> Ticket (80mm)
-              </label>
-            </div>
-          </div>
+      <!-- Ambiente (solo credenciales propias). Bizlinks no acepta formato/ancho de PDF
+           por parámetro (genera el PDF con su plantilla A4), por eso no hay selector A4/Ticket. -->
+      <section v-if="isOwn" class="bg-white rounded-lg shadow-sm p-5">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">Ambiente</h2>
+        <span class="form-label">Ambiente</span>
+        <div class="flex gap-4 mt-1">
+          <label class="inline-flex items-center gap-2 text-sm">
+            <input type="radio" value="production" v-model="form.environment" class="text-primary-600 focus:ring-primary-500" /> Producción
+          </label>
+          <label class="inline-flex items-center gap-2 text-sm">
+            <input type="radio" value="development" v-model="form.environment" class="text-primary-600 focus:ring-primary-500" /> Prueba
+          </label>
         </div>
       </section>
 
