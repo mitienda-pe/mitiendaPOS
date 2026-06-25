@@ -40,6 +40,9 @@ const adaptMeiliHit = (hit) => ({
   category: hit.category || null,
   brand: hit.brand || null,
   barcode: hit.barcode || null,
+  // Venta al peso: el POS abre el modal de peso en vez de sumar 1 unidad.
+  sold_by_weight: hit.sold_by_weight === true || hit.soldByWeight === true,
+  sale_unit: hit.sale_unit || hit.saleUnit || null,
   variants: Array.isArray(hit.variants) ? hit.variants : [],
   // Señal para el POS: si trae variaciones debe abrirse el selector antes de agregar.
   has_variants: hit.has_variants === true || (Array.isArray(hit.variants) && hit.variants.length > 0),
@@ -175,6 +178,8 @@ export const productsApi = {
             category: product.category || null,
             brand: product.brand || null,
             has_variants: product.has_variants === true,
+            sold_by_weight: product.sold_by_weight === true,
+            sale_unit: product.sale_unit || null,
             created_at: product.created_at || new Date().toISOString(),
             updated_at: product.updated_at || new Date().toISOString()
           };
@@ -254,6 +259,8 @@ export const productsApi = {
         category: rawData.category || null,
         brand: rawData.brand || null,
         has_variants: rawData.has_variants === true,
+        sold_by_weight: rawData.sold_by_weight === true,
+        sale_unit: rawData.sale_unit || null,
         created_at: rawData.created_at || new Date().toISOString(),
         updated_at: rawData.updated_at || new Date().toISOString()
       };
@@ -343,6 +350,8 @@ export const productsApi = {
           category: product.category || null,
           brand: product.brand || null,
           has_variants: product.has_variants === true,
+          sold_by_weight: product.sold_by_weight === true,
+          sale_unit: product.sale_unit || null,
           created_at: product.created_at || new Date().toISOString(),
           updated_at: product.updated_at || new Date().toISOString()
         }

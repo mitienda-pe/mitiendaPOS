@@ -21,6 +21,7 @@ import ConfirmProductsModal from '../components/ConfirmProductsModal.vue';
 import MergeSalesModal from '../components/MergeSalesModal.vue';
 import BarcodeScanner from '../components/BarcodeScanner.vue';
 import ProductVariantModal from '../components/ProductVariantModal.vue';
+import WeightEntryModal from '../components/WeightEntryModal.vue';
 import BillingDocumentModal from '../components/BillingDocumentModal.vue';
 import ProcessingOverlay from '../components/ProcessingOverlay.vue';
 import StockValidationErrorModal from '../components/StockValidationErrorModal.vue';
@@ -81,6 +82,8 @@ const showMergeSales = ref(false);
 const showBarcodeScanner = ref(false);
 const showVariantModal = ref(false);
 const variantModalProduct = ref(null);
+const showWeightModal = ref(false);
+const weightModalProduct = ref(null);
 const showBillingModal = ref(false);
 const showStockValidationError = ref(false);
 const showNetsuiteCustomerIssue = ref(false);
@@ -178,8 +181,16 @@ const totalChange = computed(() => cartStore.totalChange);
 
 const calculateSubtotal = (item) => {
   const precio = parseFloat(item.precio) || 0;
-  const cantidad = parseInt(item.quantity) || 0;
+  // parseFloat (no parseInt) para soportar venta al peso (ej. 0.250).
+  const cantidad = parseFloat(item.quantity) || 0;
   return precio * cantidad;
+};
+
+// Formatea el peso para mostrar: hasta 3 decimales, sin ceros de relleno
+// innecesarios (0.250 → "0.25", 1.000 → "1", 0.5 → "0.5").
+const formatWeight = (value) => {
+  const n = Number(value) || 0;
+  return parseFloat(n.toFixed(3)).toString();
 };
 
 const handleBarcodeInput = async () => {
@@ -247,6 +258,8 @@ const handleBarcodeInput = async () => {
         unlimited_stock: response.data.unlimited_stock,
         categoria: response.data.category?.name || 'Sin categoría',
         has_variants: response.data.has_variants === true,
+        sold_by_weight: response.data.sold_by_weight === true,
+        sale_unit: response.data.sale_unit || null,
         images: response.data.images || []
       };
 
@@ -277,6 +290,8 @@ const mapResolvedProduct = (p) => ({
   unlimited_stock: p.unlimited_stock === true,
   categoria: p.category?.name || 'Sin categoría',
   has_variants: p.has_variants === true,
+  sold_by_weight: p.sold_by_weight === true,
+  sale_unit: p.sale_unit || null,
   images: p.images || []
 });
 
@@ -304,6 +319,15 @@ const addToCart = (product) => {
     if (product.has_variants && !product.variant_id) {
       variantModalProduct.value = product;
       showVariantModal.value = true;
+      return;
+    }
+
+    // Venta al peso: abrir el modal de peso para capturar la cantidad (kg) antes
+    // de agregar. Al confirmar, handleWeightConfirmed agrega con __weight seteado
+    // y cae al flujo normal (sin reabrir el modal).
+    if (product.sold_by_weight && product.__weight == null) {
+      weightModalProduct.value = product;
+      showWeightModal.value = true;
       return;
     }
 
@@ -344,6 +368,61 @@ const handleVariantSelected = (variant) => {
   };
 
   addToCart(productWithVariant);
+};
+
+// Línea del carrito que se está editando (peso), o null si es una pesada nueva.
+const editingWeightLineId = ref(null);
+// Autorización capturada cuando se edita el peso con el carrito bloqueado.
+const weightEditAuth = ref(null);
+
+// Abrir el modal para editar el peso de una línea ya agregada (con o sin auth).
+const openWeightEditor = (item, authorization = null) => {
+  editingWeightLineId.value = item.lineId ?? String(item.id);
+  weightEditAuth.value = authorization;
+  weightModalProduct.value = { ...item, __initialWeight: item.quantity };
+  showWeightModal.value = true;
+};
+
+const handleEditWeight = (item) => {
+  // Carrito bloqueado: requiere PIN del cajero antes de editar.
+  if (!cartStore.canEditQuantity) {
+    pendingAction.value = { type: 'edit_weight', data: item };
+    showSupervisorAuth.value = true;
+    return;
+  }
+  openWeightEditor(item);
+};
+
+// Peso confirmado en el modal: si se está editando una línea, actualiza su
+// cantidad; si no, agrega el producto al peso como una línea propia (cada pesada
+// es una línea independiente).
+const handleWeightConfirmed = (weight) => {
+  const base = weightModalProduct.value;
+  const editingLineId = editingWeightLineId.value;
+  const auth = weightEditAuth.value;
+  showWeightModal.value = false;
+  weightModalProduct.value = null;
+  editingWeightLineId.value = null;
+  weightEditAuth.value = null;
+  if (!base) return;
+
+  const w = Number(weight);
+  if (!w || w <= 0) return;
+
+  if (editingLineId) {
+    cartStore.updateItemQuantity(editingLineId, w, auth);
+    stockValidatedForCurrentCart.value = false;
+    return;
+  }
+
+  addToCart({ ...base, __weight: w });
+};
+
+const closeWeightModal = () => {
+  showWeightModal.value = false;
+  weightModalProduct.value = null;
+  editingWeightLineId.value = null;
+  weightEditAuth.value = null;
 };
 
 const incrementQuantity = (item) => {
@@ -1100,7 +1179,11 @@ const handlePaymentCompleted = async () => {
         total: item.precio * item.quantity, // Total con IGV (precio original * cantidad)
         // Información de promoción para trazabilidad en NetSuite
         promotion_id: item.promotion?.id || null,
-        unit_price_original: item.originalPrice || null // Precio original antes del descuento (con IGV)
+        unit_price_original: item.originalPrice || null, // Precio original antes del descuento (con IGV)
+        // Venta al peso: la cantidad ya es el peso (decimal). El nativo resuelve la
+        // unidad SUNAT server-side; estos campos son para el proxy legacy y trazabilidad.
+        sold_by_weight: item.sold_by_weight === true,
+        sale_unit: item.sale_unit || null
       })),
       payments: payments.value.map(payment => ({
         method: payment.method,
@@ -1502,6 +1585,8 @@ const searchProducts = () => {
           categoria: item.category?.name || 'Sin categoría',
           barcode: item.barcode || null,
           has_variants: item.has_variants === true,
+          sold_by_weight: item.sold_by_weight === true,
+          sale_unit: item.sale_unit || null,
           images: item.images || []
         }));
         highlightedIndex.value = -1;
@@ -1614,6 +1699,8 @@ const mapProductsToFormat = (products) => {
     unlimited_stock: item.unlimited_stock,
     categoria: item.category?.name || 'Sin categoría',
     has_variants: item.has_variants === true,
+    sold_by_weight: item.sold_by_weight === true,
+    sale_unit: item.sale_unit || null,
     images: item.images || []
   }));
 };
@@ -1781,6 +1868,13 @@ const onSupervisorAuthorized = (authData) => {
         cartStore.updateItemQuantity(data.item.lineId ?? data.item.id, data.newQuantity, authData);
         break;
 
+      case 'edit_weight':
+        // Editar el peso de una línea con el carrito bloqueado: abrir el modal con
+        // la autorización capturada; el update se aplica al confirmar el peso.
+        console.log('⚖️ [POS] Editing weight with authorization');
+        openWeightEditor(data, authData);
+        break;
+
       case 'remove_item':
         // Quitar producto requiere supervisor
         console.log('🗑️ [POS] Removing item with supervisor authorization');
@@ -1924,7 +2018,9 @@ const getPaymentMethodName = (method) => {
                       <div class="flex-grow min-w-0">
                         <div class="flex justify-between items-start gap-2">
                           <span class="font-medium text-gray-900 truncate">{{ product.nombre }}</span>
-                          <span class="text-gray-700 flex-shrink-0">{{ formatCurrency(product.precio) }}</span>
+                          <span class="text-gray-700 flex-shrink-0">
+                            {{ formatCurrency(product.precio) }}<span v-if="product.sold_by_weight" class="text-xs text-gray-400"> / {{ product.sale_unit || 'kg' }}</span>
+                          </span>
                         </div>
                         <div class="text-xs text-gray-500 flex items-center gap-2 mt-0.5 flex-wrap">
                           <span v-if="product.sku">SKU: {{ product.sku }}</span>
@@ -2003,9 +2099,20 @@ const getPaymentMethodName = (method) => {
                       </div>
                     </div>
                     <span v-else class="text-gray-500">{{ formatCurrency(item.precio) }}</span>
+                    <span v-if="item.sold_by_weight" class="block text-xs text-gray-400">/ {{ item.sale_unit || 'kg' }}</span>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
+                    <button
+                      v-if="item.sold_by_weight"
+                      type="button"
+                      class="inline-flex items-center gap-1 px-3 py-1.5 rounded border border-gray-300 text-sm font-medium text-gray-900 hover:border-primary-500 hover:text-primary-600"
+                      @click="handleEditWeight(item)"
+                    >
+                      {{ formatWeight(item.quantity) }} {{ item.sale_unit || 'kg' }}
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+                    </button>
                     <QuantityStepperInput
+                      v-else
                       v-model="item.quantity"
                       :min="1"
                       :max="item.unlimited_stock ? 9999 : item.stock"
@@ -2065,7 +2172,17 @@ const getPaymentMethodName = (method) => {
                 </button>
               </div>
               <div class="mt-2 flex items-center justify-between gap-2">
+                <button
+                  v-if="item.sold_by_weight"
+                  type="button"
+                  class="inline-flex items-center gap-1 px-3 py-1.5 rounded border border-gray-300 text-sm font-medium text-gray-900 hover:border-primary-500 hover:text-primary-600"
+                  @click="handleEditWeight(item)"
+                >
+                  {{ formatWeight(item.quantity) }} {{ item.sale_unit || 'kg' }}
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+                </button>
                 <QuantityStepperInput
+                  v-else
                   v-model="item.quantity"
                   :min="1"
                   :max="item.unlimited_stock ? 9999 : item.stock"
@@ -2498,6 +2615,14 @@ const getPaymentMethodName = (method) => {
     v-model="showVariantModal"
     :product="variantModalProduct"
     @select="handleVariantSelected"
+  />
+
+  <!-- Modal de ingreso de peso (venta al peso) -->
+  <WeightEntryModal
+    v-model="showWeightModal"
+    :product="weightModalProduct"
+    @confirm="handleWeightConfirmed"
+    @close="closeWeightModal"
   />
 
   <!-- Billing Document Modal -->

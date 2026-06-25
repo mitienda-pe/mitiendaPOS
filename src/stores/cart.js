@@ -81,7 +81,8 @@ export const useCartStore = defineStore('cart', {
       // Fallback: cálculo local
       // IMPORTANTE: Usar price_without_tax si está disponible, sino calcular desde precio con IGV
       return state.items.reduce((sum, item) => {
-        const cantidad = parseInt(item.quantity) || 0;
+        // parseFloat (no parseInt) para soportar venta al peso (ej. 0.250).
+        const cantidad = parseFloat(item.quantity) || 0;
 
         // Verificar si tenemos precio sin IGV disponible
         let precioSinIGV;
@@ -290,6 +291,37 @@ export const useCartStore = defineStore('cart', {
       if (this.status === 'BLOQUEADO' && !authorization) {
         console.error('❌ [CART] Cart blocked - requires authorization');
         throw new Error('Carrito bloqueado. Se requiere PIN del cajero para agregar productos.');
+      }
+
+      // Venta al peso: cada pesada es una línea independiente con cantidad = peso
+      // (kg). No se fusiona con otras líneas del mismo producto (dos pesadas = dos
+      // líneas) y no aplica el stepper de +1. __weight viene del modal de peso.
+      const isWeight = product.sold_by_weight === true && product.__weight != null;
+      if (isWeight) {
+        const weight = Number(product.__weight) || 0;
+        if (weight <= 0) {
+          throw new Error('El peso debe ser mayor a 0');
+        }
+        this._weightLineSeq = (this._weightLineSeq || 0) + 1;
+        const newItem = {
+          ...product,
+          lineId: `${product.id}:w:${this._weightLineSeq}`,
+          variant_id: null,
+          variant_name: null,
+          variant_sku: null,
+          sold_by_weight: true,
+          sale_unit: product.sale_unit || 'kg',
+          quantity: weight
+        };
+        delete newItem.__weight;
+        delete newItem.__initialWeight;
+        this.items.push(newItem);
+        this.unsavedChanges = true;
+        await this.recalculateTotals();
+        if (authorization) {
+          this._logAudit('ADD_ITEM_BLOCKED', authorization, { productId: product.id });
+        }
+        return;
       }
 
       // Identidad de línea: producto + variación (talla/color, etc.). Dos variaciones
