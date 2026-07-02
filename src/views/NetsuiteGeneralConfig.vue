@@ -142,6 +142,46 @@
         </div>
       </section>
 
+      <!-- Group: Sync mode -->
+      <section class="bg-white shadow rounded-lg p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-1">Modo de sincronización</h2>
+        <p class="text-sm text-gray-500 mb-4">
+          Cómo se sincroniza cada venta con NetSuite.
+          <strong>Factura directa</strong>: crea Invoice + pago (POS de mostrador).
+          <strong>Sales Order</strong>: crea solo la Orden de Venta; NetSuite genera el
+          despacho, la guía de remisión y la factura (ventas web con despacho).
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Modo de sincronización</label>
+            <select
+              v-model="form.sync_mode"
+              class="block w-full rounded-md shadow-sm sm:text-sm px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
+            >
+              <option value="invoice_direct">Factura directa (POS)</option>
+              <option value="sales_order">Sales Order (web / guía de remisión)</option>
+            </select>
+          </div>
+          <div v-if="form.sync_mode === 'sales_order'">
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              Custom Form ID del Sales Order
+              <span class="text-gray-400 font-normal">(opcional)</span>
+            </label>
+            <input
+              v-model="form.so_custom_form_id"
+              type="text"
+              inputmode="numeric"
+              placeholder="ej: 225"
+              class="block w-full rounded-md shadow-sm sm:text-sm px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
+            />
+            <p class="mt-1 text-xs text-gray-500">
+              Custom Form de NetSuite para la Orden de Venta (ej: 225 = "PE Orden de Venta").
+              Vacío = form por defecto de la cuenta.
+            </p>
+          </div>
+        </div>
+      </section>
+
       <div class="flex items-center justify-end gap-3 pt-4">
         <button
           type="button"
@@ -213,6 +253,8 @@ const emptyForm = () => ({
   default_zip_id: '',
   discount_item_id: '',
   default_salesrep_id: '',
+  sync_mode: 'invoice_direct',
+  so_custom_form_id: '',
 });
 
 const form = reactive(emptyForm());
@@ -239,6 +281,8 @@ const fieldToColumn = {
   default_zip_id: 'tiendacredencialerp_default_zip_id',
   discount_item_id: 'tiendacredencialerp_discount_item_id',
   default_salesrep_id: 'tiendacredencialerp_default_salesrep_id',
+  sync_mode: 'tiendacredencialerp_sync_mode',
+  so_custom_form_id: 'tiendacredencialerp_so_custom_form_id',
 };
 
 // Only credential-level critical issues map to the individual field
@@ -279,6 +323,10 @@ async function loadAll() {
       const value = cred[column];
       form[key] = value === null || value === undefined ? '' : String(value);
     });
+    // El modo de sync nunca es vacío: si la tienda no lo tiene aún, mostrar el
+    // default POS (factura directa). Se normaliza antes de fijar originalForm
+    // para que no aparezca como cambio pendiente.
+    if (!form.sync_mode) form.sync_mode = 'invoice_direct';
     originalForm = { ...form };
 
     validation.value = validateResp?.data || null;

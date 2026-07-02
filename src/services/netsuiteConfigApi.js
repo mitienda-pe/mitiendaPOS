@@ -29,7 +29,8 @@ export const netsuiteConfigApi = {
    *  tax_item_id, edoc_standard_id, receivables_account_id,
    *  entity_status_id, payment_method_id, default_zip_id,
    *  discount_item_id, default_salesrep_id,
-   *  estado, autosync_enabled, delegate_billing
+   *  estado, autosync_enabled, delegate_billing,
+   *  sync_mode, so_custom_form_id
    */
   async saveCredentials(tiendaId, payload) {
     const body = { tienda_id: tiendaId, ...payload };
