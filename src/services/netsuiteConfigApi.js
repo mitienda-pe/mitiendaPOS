@@ -39,6 +39,18 @@ export const netsuiteConfigApi = {
   },
 
   /**
+   * Lista de series de facturación mapeadas de la tienda. Cada fila trae
+   * tiendaserieerp_codigo, tiendaserieerp_tipo_documento ('BOLETA'|'FACTURA')
+   * y tiendaserieerp_netsuite_id. Se usa para poblar los selects de override
+   * de serie por sucursal.
+   * @param {number} tiendaId
+   */
+  async getSeries(tiendaId) {
+    const response = await apiClient.get(`/netsuite-credentials/${tiendaId}/series`);
+    return response.data;
+  },
+
+  /**
    * Run the configuration validator. Returns
    *   { error, data: { tienda_id, is_complete, issue_count, by_category, issues } }
    */

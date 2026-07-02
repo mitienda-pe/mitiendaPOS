@@ -113,22 +113,32 @@
 
             <!-- Serie Boleta override -->
             <td class="px-4 py-3">
-              <InlineEditField
-                :model-value="getOverrideValue(branch.tiendadireccion_id, 'serie_boleta')"
-                placeholder="Override (opcional)"
-                :maxlength="20"
-                :on-save="(value) => updateNetsuiteConfig(branch.tiendadireccion_id, { serie_boleta_netsuite_id: value || null })"
-              />
+              <select
+                :value="getOverrideValue(branch.tiendadireccion_id, 'serie_boleta') || ''"
+                @change="changeSerieOverride(branch.tiendadireccion_id, 'serie_boleta_netsuite_id', $event.target.value)"
+                class="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                <option
+                  v-for="opt in serieSelectOptions('BOLETA', getOverrideValue(branch.tiendadireccion_id, 'serie_boleta'))"
+                  :key="opt.value"
+                  :value="opt.value"
+                >{{ opt.label }}</option>
+              </select>
             </td>
 
             <!-- Serie Factura override -->
             <td class="px-4 py-3">
-              <InlineEditField
-                :model-value="getOverrideValue(branch.tiendadireccion_id, 'serie_factura')"
-                placeholder="Override (opcional)"
-                :maxlength="20"
-                :on-save="(value) => updateNetsuiteConfig(branch.tiendadireccion_id, { serie_factura_netsuite_id: value || null })"
-              />
+              <select
+                :value="getOverrideValue(branch.tiendadireccion_id, 'serie_factura') || ''"
+                @change="changeSerieOverride(branch.tiendadireccion_id, 'serie_factura_netsuite_id', $event.target.value)"
+                class="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                <option
+                  v-for="opt in serieSelectOptions('FACTURA', getOverrideValue(branch.tiendadireccion_id, 'serie_factura'))"
+                  :key="opt.value"
+                  :value="opt.value"
+                >{{ opt.label }}</option>
+              </select>
             </td>
 
             <!-- Generic Customer override -->
@@ -184,6 +194,10 @@ const successMessage = ref('');
 // NetSuite branch-level overrides (series + generic customer + location)
 const branchesNetsuiteConfig = ref([]);
 const validationIssues = ref([]);
+// Defaults de la tienda (para el banner y la opción "Heredar") y lista de series
+// configuradas (para los selects de override por sucursal).
+const defaults = ref(null);
+const storeSeries = ref([]);
 
 const currentStoreId = computed(() => authStore.selectedStore?.id || null);
 
@@ -208,16 +222,19 @@ const branchHasMissingLocation = (branchId) =>
 const fetchBranches = async () => {
   try {
     loading.value = true;
-    const [branchesResp, nsResp, validateResp] = await Promise.all([
+    const [branchesResp, nsResp, seriesResp, validateResp] = await Promise.all([
       branchesApi.getAll(currentStoreId.value),
       branchesApi.getNetsuiteConfig(currentStoreId.value).catch(err => {
         console.error('Error fetching NetSuite branch config:', err);
-        return { success: false, data: [] };
+        return { success: false, data: [], defaults: null };
       }),
+      netsuiteConfigApi.getSeries(currentStoreId.value).catch(() => null),
       netsuiteConfigApi.validate(currentStoreId.value).catch(() => null),
     ]);
     branches.value = branchesResp.data || [];
     branchesNetsuiteConfig.value = nsResp?.data || [];
+    defaults.value = nsResp?.defaults || null;
+    storeSeries.value = seriesResp?.data || [];
     validationIssues.value = validateResp?.data?.issues || [];
   } catch (error) {
     console.error('Error fetching branches:', error);
@@ -240,6 +257,42 @@ const getOverrideValue = (branchId, field) => {
   if (field === 'serie_factura') return cfg.serie_factura_is_override ? cfg.serie_factura_netsuite_id : null;
   if (field === 'generic_customer') return cfg.generic_customer_is_override ? cfg.generic_customer_id : null;
   return null;
+};
+
+// Opciones del select de override de serie por sucursal: primero "Heredar de la
+// tienda", luego las series mapeadas de ese tipo. Si el override actual apunta a
+// un ID que ya no está en la lista, se conserva como opción "(actual)".
+const seriesByTipo = (tipo) =>
+  storeSeries.value.filter(s => s.tiendaserieerp_tipo_documento === tipo && s.tiendaserieerp_netsuite_id);
+
+const serieSelectOptions = (tipo, currentValue) => {
+  const heredaId = tipo === 'BOLETA'
+    ? defaults.value?.serie_boleta_netsuite_id
+    : defaults.value?.serie_factura_netsuite_id;
+  const opts = [{
+    value: '',
+    label: heredaId ? `Heredar de la tienda (${heredaId})` : 'Heredar de la tienda',
+  }];
+  for (const s of seriesByTipo(tipo)) {
+    opts.push({
+      value: String(s.tiendaserieerp_netsuite_id),
+      label: `${s.tiendaserieerp_codigo} → ${s.tiendaserieerp_netsuite_id}`,
+    });
+  }
+  const cur = currentValue ? String(currentValue) : '';
+  if (cur && !opts.some(o => o.value === cur)) {
+    opts.push({ value: cur, label: `${cur} (actual)` });
+  }
+  return opts;
+};
+
+// Guarda el override de serie al cambiar el select (vacío = heredar → null).
+const changeSerieOverride = async (branchId, key, value) => {
+  try {
+    await updateNetsuiteConfig(branchId, { [key]: value || null });
+  } catch (e) {
+    // updateNetsuiteConfig ya loguea; evitar unhandled rejection en @change.
+  }
 };
 
 // Guardar override (series o generic customer) por sucursal
