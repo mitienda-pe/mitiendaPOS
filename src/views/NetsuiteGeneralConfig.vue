@@ -153,7 +153,7 @@
         </p>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Modo de sincronización</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Modo de sincronización (default)</label>
             <select
               v-model="form.sync_mode"
               class="block w-full rounded-md shadow-sm sm:text-sm px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
@@ -162,7 +162,43 @@
               <option value="sales_order">Sales Order (web / guía de remisión)</option>
             </select>
           </div>
-          <div v-if="form.sync_mode === 'sales_order'">
+        </div>
+
+        <!-- Overrides por canal de venta -->
+        <div class="mt-4 pt-4 border-t border-gray-200">
+          <p class="text-sm font-medium text-gray-800 mb-1">Por canal de venta</p>
+          <p class="text-xs text-gray-500 mb-3">
+            El storefront y el POS pueden usar modos distintos (ej: web crea Sales Order y POS
+            emite factura directa). <strong>Heredar</strong> usa el modo default de arriba.
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Storefront (web)</label>
+              <select
+                v-model="form.sync_mode_web"
+                class="block w-full rounded-md shadow-sm sm:text-sm px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
+              >
+                <option value="">Heredar (usar default)</option>
+                <option value="invoice_direct">Factura directa (POS)</option>
+                <option value="sales_order">Sales Order (web / guía de remisión)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">POS</label>
+              <select
+                v-model="form.sync_mode_pos"
+                class="block w-full rounded-md shadow-sm sm:text-sm px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
+              >
+                <option value="">Heredar (usar default)</option>
+                <option value="invoice_direct">Factura directa (POS)</option>
+                <option value="sales_order">Sales Order (web / guía de remisión)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+          <div v-if="anySalesOrderMode">
             <label class="block text-sm font-medium text-gray-700 mb-1">
               Custom Form ID del Sales Order
               <span class="text-gray-400 font-normal">(opcional)</span>
@@ -254,6 +290,8 @@ const emptyForm = () => ({
   discount_item_id: '',
   default_salesrep_id: '',
   sync_mode: 'invoice_direct',
+  sync_mode_web: '',
+  sync_mode_pos: '',
   so_custom_form_id: '',
 });
 
@@ -282,6 +320,8 @@ const fieldToColumn = {
   discount_item_id: 'tiendacredencialerp_discount_item_id',
   default_salesrep_id: 'tiendacredencialerp_default_salesrep_id',
   sync_mode: 'tiendacredencialerp_sync_mode',
+  sync_mode_web: 'tiendacredencialerp_sync_mode_web',
+  sync_mode_pos: 'tiendacredencialerp_sync_mode_pos',
   so_custom_form_id: 'tiendacredencialerp_so_custom_form_id',
 };
 
@@ -306,6 +346,12 @@ const criticalIssues = computed(() =>
 );
 const warningIssues = computed(() =>
   (validation.value?.issues || []).filter(i => i.severity === 'warning')
+);
+
+// El Custom Form del Sales Order aplica si el modo default o algún override por
+// canal (web/pos) es 'sales_order'.
+const anySalesOrderMode = computed(() =>
+  [form.sync_mode, form.sync_mode_web, form.sync_mode_pos].includes('sales_order')
 );
 
 async function loadAll() {
