@@ -139,6 +139,22 @@
                     </svg>
                     {{ methodLabel('kasnet-qr', 'Kasnet QR') }}
                   </button>
+                  <button v-if="isMethodVisible('ligo-qr')" @click="selectPaymentMethod('ligo-qr')" :class="[
+                    'btn flex items-center justify-center py-3 rounded-lg transition-colors duration-200',
+                    paymentMethod === 'ligo-qr'
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-purple-100 hover:bg-purple-200 text-purple-800'
+                  ]">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                      <rect x="7" y="7" width="3" height="3"></rect>
+                      <rect x="14" y="7" width="3" height="3"></rect>
+                      <rect x="7" y="14" width="3" height="3"></rect>
+                      <rect x="14" y="14" width="3" height="3"></rect>
+                    </svg>
+                    {{ methodLabel('ligo-qr', 'Ligo QR') }}
+                  </button>
                   <button @click="selectPaymentMethod('credito')" disabled :class="[
                     'btn flex items-center justify-center py-3 rounded-lg transition-colors duration-200',
                     'bg-gray-200 text-gray-400 cursor-not-allowed opacity-50'
@@ -435,6 +451,61 @@
                   </div>
                 </div>
 
+                <!-- Ligo QR Interoperable -->
+                <div v-if="paymentMethod === 'ligo-qr'" class="mb-3">
+                  <RightToLeftMoneyInput v-model="paymentAmount" label="Monto a cobrar"
+                    helpText="Monto del pago Ligo QR" />
+
+                  <!-- Botón para generar el QR -->
+                  <div v-if="!ligoPago" class="mt-3">
+                    <button type="button" @click="startLigoFlow"
+                      :disabled="paymentAmount <= 0 || ligoLoading"
+                      class="w-full py-3 px-3 rounded-lg bg-purple-100 hover:bg-purple-200 text-purple-800 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium">
+                      Generar QR (30 min)
+                    </button>
+                    <div v-if="ligoLoading" class="text-center text-xs text-gray-500 mt-2">Generando código…</div>
+                  </div>
+
+                  <!-- Pago generado -->
+                  <div v-if="ligoPago" class="mt-3 text-center">
+                    <div v-if="ligoQrImage" class="flex justify-center mb-3">
+                      <img :src="ligoQrImage" alt="Ligo QR"
+                        class="border-2 border-purple-200 p-2 rounded-lg bg-white" style="width:200px;height:200px" />
+                    </div>
+
+                    <div class="mb-2">
+                      <div class="text-xs text-gray-500 uppercase tracking-wide">Código de pago</div>
+                      <div class="text-2xl font-mono font-bold tracking-wider text-gray-900">
+                        {{ ligoPago.codigo_pago }}
+                      </div>
+                    </div>
+
+                    <div class="text-xs text-gray-500 mb-3">
+                      Escanea el QR con tu banca móvil o billetera
+                      <br>
+                      Expira: {{ ligoPago.expira_en }}
+                    </div>
+
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm mb-3"
+                      :class="ligoStatusColor">
+                      <span class="w-2 h-2 rounded-full" :class="ligoStatusDot"></span>
+                      {{ ligoStatusLabel }}
+                    </div>
+
+                    <div class="flex gap-2 justify-center flex-wrap">
+                      <button type="button" @click="simulateLigo"
+                        v-if="ligoPago.estado === 'pendiente' && ligoPago.modo === 'dummy'"
+                        class="text-xs px-3 py-1.5 rounded bg-amber-100 hover:bg-amber-200 text-amber-800 font-medium">
+                        Simular confirmación (dev)
+                      </button>
+                      <button type="button" @click="resetLigo"
+                        class="text-xs px-3 py-1.5 rounded bg-gray-100 hover:bg-gray-200 text-gray-700">
+                        Regenerar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
                 <div v-if="paymentMethod === 'giftcard'" class="mb-3">
                   <label class="block text-sm font-medium text-gray-700 mb-1">Monto a cargar</label>
                   <input type="number" v-model="paymentAmount"
@@ -667,6 +738,7 @@ import ReceiptTicket from './ReceiptTicket.vue';
 import { buildCompanyInfo } from '../config/companyConfig';
 import { useThermalPrinter } from '../composables/useThermalPrinter';
 import { kasnetQrApi } from '../services/kasnetQrApi';
+import { ligoQrApi } from '../services/ligoQrApi';
 import { ordersApi } from '../services/ordersApi';
 import {
   suggestOptimalPayments,
@@ -687,7 +759,7 @@ const { isConnected: thermalConnected, isEnabled: thermalEnabled, printReceipt: 
 // 'qr' y 'kasnet-qr' arrancan ocultos: el backend decide si mostrarlos según la
 // config de la tienda (qr solo aparece si hay imagen de QR cargada; kasnet-qr
 // está oculto a nivel plataforma). efectivo/tarjeta siempre visibles (fail-open).
-const DEFAULT_VISIBLE_METHODS = { efectivo: true, tarjeta: true, qr: false, 'kasnet-qr': false, banco: false };
+const DEFAULT_VISIBLE_METHODS = { efectivo: true, tarjeta: true, qr: false, 'kasnet-qr': false, 'ligo-qr': false, banco: false };
 
 // Config del QR de billetera (Yape/Plin) que la tienda usa en el storefront,
 // inyectada por el backend en el método 'qr'. { wallet, name, phone, qr_image_url }
@@ -883,8 +955,118 @@ function resetKasnet() {
   kasnetQrImage.value = '';
 }
 
+// Estado Ligo QR (mismo flujo que Kasnet)
+const ligoPago = ref(null);
+const ligoQrImage = ref('');
+const ligoLoading = ref(false);
+let ligoPollingId = null;
+
+const ligoStatusLabel = computed(() => {
+  const e = ligoPago.value?.estado || 'pendiente';
+  return ({
+    pendiente: 'Esperando pago',
+    confirmado: 'Pago confirmado',
+    expirado: 'Expirado',
+    cancelado: 'Cancelado',
+  })[e] || e;
+});
+const ligoStatusColor = computed(() => {
+  const e = ligoPago.value?.estado || 'pendiente';
+  return ({
+    pendiente: 'bg-amber-50 text-amber-700 border border-amber-200',
+    confirmado: 'bg-green-50 text-green-700 border border-green-200',
+    expirado: 'bg-red-50 text-red-700 border border-red-200',
+    cancelado: 'bg-gray-100 text-gray-600 border border-gray-200',
+  })[e];
+});
+const ligoStatusDot = computed(() => {
+  const e = ligoPago.value?.estado || 'pendiente';
+  return ({
+    pendiente: 'bg-amber-500 animate-pulse',
+    confirmado: 'bg-green-500',
+    expirado: 'bg-red-500',
+    cancelado: 'bg-gray-400',
+  })[e];
+});
+
+async function startLigoFlow() {
+  if (paymentAmount.value <= 0) return;
+  ligoLoading.value = true;
+  try {
+    const result = await ligoQrApi.initiate({
+      monto: Number(paymentAmount.value),
+    });
+    if (!result.success || !result.data) {
+      console.error('[LigoQR] initiate fallo:', result.error);
+      alert(result.error || 'No se pudo iniciar el pago Ligo QR');
+      return;
+    }
+    ligoPago.value = result.data;
+    if (result.data.qr_payload) {
+      try {
+        ligoQrImage.value = await QRCode.toDataURL(result.data.qr_payload, {
+          width: 256,
+          errorCorrectionLevel: 'M',
+          margin: 1,
+        });
+      } catch (e) {
+        console.error('[LigoQR] error renderizando QR:', e);
+      }
+    }
+    startLigoPolling();
+  } finally {
+    ligoLoading.value = false;
+  }
+}
+
+function startLigoPolling() {
+  stopLigoPolling();
+  ligoPollingId = setInterval(async () => {
+    const codigo = ligoPago.value?.codigo_pago;
+    if (!codigo) return;
+    const result = await ligoQrApi.status(codigo);
+    if (result.success && result.data) {
+      ligoPago.value = { ...ligoPago.value, ...result.data };
+      if (['confirmado', 'expirado', 'cancelado'].includes(result.data.estado)) {
+        stopLigoPolling();
+      }
+    }
+  }, 3000);
+}
+
+function stopLigoPolling() {
+  if (ligoPollingId) {
+    clearInterval(ligoPollingId);
+    ligoPollingId = null;
+  }
+}
+
+async function simulateLigo() {
+  const codigo = ligoPago.value?.codigo_pago;
+  if (!codigo) return;
+  const result = await ligoQrApi.simulateConfirm(codigo);
+  if (result.success) {
+    ligoPago.value = { ...ligoPago.value, estado: 'confirmado' };
+    stopLigoPolling();
+  } else {
+    alert(result.error || 'No se pudo simular la confirmación');
+  }
+}
+
+function resetLigo() {
+  stopLigoPolling();
+  const codigo = ligoPago.value?.codigo_pago;
+  const estado = ligoPago.value?.estado;
+  if (codigo && estado === 'pendiente') {
+    ligoQrApi.cancel(codigo); // fire-and-forget
+  }
+  ligoPago.value = null;
+  ligoQrImage.value = '';
+}
+
 onBeforeUnmount(() => {
   resetKasnet();
+  resetLigo();
 });
 
 // Computed properties que usan el snapshot cuando está disponible (para el ticket)
@@ -1006,6 +1188,11 @@ const isPaymentValid = computed(() => {
     return kasnetPago.value?.estado === 'confirmado';
   }
 
+  // Ligo QR: solo válido cuando el pago fue confirmado
+  if (paymentMethod.value === 'ligo-qr') {
+    return ligoPago.value?.estado === 'confirmado';
+  }
+
   return true;
 });
 
@@ -1032,6 +1219,7 @@ const selectPaymentMethod = (method) => {
   cashValidation.value = null;
   changeBreakdownDisplay.value = null;
   resetKasnet();
+  resetLigo();
 
   // Si es efectivo, generar sugerencias de pago usando el saldo con redondeo
   if (method === 'efectivo') {
@@ -1044,6 +1232,11 @@ const selectPaymentMethod = (method) => {
 
   // Kasnet QR: pre-llenar con el saldo pendiente
   if (method === 'kasnet-qr') {
+    paymentAmount.value = Number(props.remainingAmount) || 0;
+  }
+
+  // Ligo QR: pre-llenar con el saldo pendiente
+  if (method === 'ligo-qr') {
     paymentAmount.value = Number(props.remainingAmount) || 0;
   }
 
@@ -1117,6 +1310,7 @@ const getPaymentMethodName = (method) => {
     'banco': 'Transferencia/Depósito bancario',
     'qr': 'Pago con QR',
     'kasnet-qr': 'Kasnet QR',
+    'ligo-qr': 'Ligo QR',
     'credito': 'Crédito',
     'giftcard': 'Gift Card',
     'puntos': 'Puntos',
@@ -1306,6 +1500,13 @@ const addPayment = () => {
       }
       reference = `Kasnet QR: ${kasnetPago.value?.codigo_pago || ''}`.trim();
       break;
+    case 'ligo-qr':
+      amount = Math.min(paymentAmount.value, props.remainingAmount);
+      if (cartStore.appliedRounding !== 0 && props.payments.length > 0) {
+        amount = Math.min(paymentAmount.value, props.remainingAmount - cartStore.appliedRounding);
+      }
+      reference = `Ligo QR: ${ligoPago.value?.codigo_pago || ''}`.trim();
+      break;
     case 'giftcard':
       amount = Math.min(paymentAmount.value, props.remainingAmount);
       if (cartStore.appliedRounding !== 0 && props.payments.length > 0) {
@@ -1413,6 +1614,7 @@ const resetForm = () => {
   cashValidation.value = null;
   changeBreakdownDisplay.value = null;
   resetKasnet();
+  resetLigo();
 };
 
 // Propiedades computadas para el ticket
