@@ -255,8 +255,14 @@ export const inventoryApi = {
     const payload = {
       name: data.name,
       price: data.price !== undefined && data.price !== null ? parseFloat(data.price) : 0,
+      // Publicación por canal: published = tienda virtual, published_pos = catálogo POS.
+      // El formulario del POS crea con published=false / published_pos=true (vendible en
+      // caja, no en la web; la publicación web se decide en el backoffice).
       published: data.published ? true : false
     };
+    if (data.published_pos !== undefined) {
+      payload.published_pos = data.published_pos ? true : false;
+    }
     if (data.sku) payload.sku = data.sku;
     if (data.barcode) payload.barcode = data.barcode;
     if (data.cost !== undefined && data.cost !== null && data.cost !== '') {
@@ -304,9 +310,17 @@ export const inventoryApi = {
       sku: data.sku ? String(data.sku).trim() : '',
       barcode: data.barcode ? String(data.barcode).trim() : '',
       price: data.price !== undefined && data.price !== null ? parseFloat(data.price) : 0,
-      published: data.published ? true : false,
       cost: data.cost !== undefined && data.cost !== null && data.cost !== '' ? parseFloat(data.cost) : null
     };
+    // Publicación: solo se envía si el caller la gestiona explícitamente. El POS ya
+    // no toca la publicación al editar (se gestiona en el backoffice), así que omite
+    // estos campos para NO pisar producto_publicado / producto_publicado_pos.
+    if (data.published !== undefined) {
+      payload.published = data.published ? true : false;
+    }
+    if (data.published_pos !== undefined) {
+      payload.published_pos = data.published_pos ? true : false;
+    }
     if (data.unlimited_stock) {
       payload.unlimited_stock = true;
     } else {

@@ -80,6 +80,41 @@
         />
       </div>
 
+      <!-- Stock (obligatorio: un número o marcar "Ilimitado") -->
+      <div>
+        <label class="block text-sm font-medium text-gray-800 mb-1 ml-1">
+          Stock <span class="text-red-500">*</span>
+        </label>
+        <div class="flex items-center gap-3">
+          <input
+            v-model="form.stock"
+            type="number"
+            min="0"
+            inputmode="numeric"
+            placeholder="0"
+            :disabled="form.unlimited_stock"
+            class="flex-1 px-4 py-4 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-100 disabled:text-gray-400"
+          />
+          <div class="flex flex-col items-center">
+            <span class="text-xs text-gray-600 mb-1">Ilimitado</span>
+            <button
+              type="button"
+              role="switch"
+              :aria-checked="form.unlimited_stock"
+              @click="form.unlimited_stock = !form.unlimited_stock"
+              :class="form.unlimited_stock ? 'bg-primary-500' : 'bg-gray-300'"
+              class="relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <span
+                :class="form.unlimited_stock ? 'translate-x-6' : 'translate-x-1'"
+                class="inline-block h-5 w-5 transform rounded-full bg-white transition-transform shadow"
+              ></span>
+            </button>
+          </div>
+        </div>
+        <p class="text-xs text-gray-400 mt-1 ml-1">Ingresa la cantidad disponible o marca "Ilimitado".</p>
+      </div>
+
       <!-- ══ Campos opcionales ══ -->
       <div class="pt-3 border-t border-gray-200">
         <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Datos opcionales</p>
@@ -155,38 +190,6 @@
         <p class="text-xs text-gray-400 mt-1 ml-1">Exonerado/Inafecto: el precio no incluye IGV.</p>
       </div>
 
-      <!-- Stock + ilimitado -->
-      <div>
-        <label class="block text-sm font-medium text-gray-500 mb-1 ml-1">Stock</label>
-        <div class="flex items-center gap-3">
-          <input
-            v-model="form.stock"
-            type="number"
-            min="0"
-            inputmode="numeric"
-            placeholder="0"
-            :disabled="form.unlimited_stock"
-            class="flex-1 px-4 py-4 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-100 disabled:text-gray-400"
-          />
-          <div class="flex flex-col items-center">
-            <span class="text-xs text-gray-600 mb-1">Ilimitado</span>
-            <button
-              type="button"
-              role="switch"
-              :aria-checked="form.unlimited_stock"
-              @click="form.unlimited_stock = !form.unlimited_stock"
-              :class="form.unlimited_stock ? 'bg-primary-500' : 'bg-gray-300'"
-              class="relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500"
-            >
-              <span
-                :class="form.unlimited_stock ? 'translate-x-6' : 'translate-x-1'"
-                class="inline-block h-5 w-5 transform rounded-full bg-white transition-transform shadow"
-              ></span>
-            </button>
-          </div>
-        </div>
-      </div>
-
       <!-- Categoría (oculto si la tienda no tiene categorías) -->
       <div v-if="categories.length">
         <label class="block text-sm font-medium text-gray-500 mb-1 ml-1">Categoría</label>
@@ -209,27 +212,6 @@
           <option value="">Sin marca</option>
           <option v-for="b in brands" :key="b.id" :value="b.id">{{ b.name }}</option>
         </select>
-      </div>
-
-      <!-- Publicado -->
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-base font-medium text-gray-900">Publicado</p>
-          <p class="text-sm text-gray-500">Disponible para venta en el POS</p>
-        </div>
-        <button
-          type="button"
-          role="switch"
-          :aria-checked="form.published"
-          @click="form.published = !form.published"
-          :class="form.published ? 'bg-primary-500' : 'bg-gray-300'"
-          class="relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500"
-        >
-          <span
-            :class="form.published ? 'translate-x-6' : 'translate-x-1'"
-            class="inline-block h-5 w-5 transform rounded-full bg-white transition-transform shadow"
-          ></span>
-        </button>
       </div>
 
       <!-- Imagen (opcional) — al final del formulario -->
@@ -344,8 +326,9 @@ const form = reactive({
   unlimited_stock: false,
   category_id: '',
   brand_id: '',
-  tax_affectation: 1, // 1=Gravado/afecto, 2=Exonerado, 3=Inafecto
-  published: true
+  tax_affectation: 1 // 1=Gravado/afecto, 2=Exonerado, 3=Inafecto
+  // La publicación NO se gestiona desde el POS: al crear, el producto queda
+  // vendible en el POS pero no en la tienda virtual (se publica en el backoffice).
 });
 
 // Margen estimado = (precio de venta - costo de compra) / precio de venta
@@ -378,7 +361,10 @@ const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const isValid = computed(() => {
   const nameOk = form.name.trim().length >= 3;
   const priceOk = form.price !== '' && form.price !== null && parseFloat(form.price) >= 0;
-  return nameOk && priceOk;
+  // Stock obligatorio: un número >= 0, salvo que el producto sea de stock ilimitado.
+  const stockOk = form.unlimited_stock ||
+    (form.stock !== '' && form.stock !== null && parseInt(form.stock) >= 0);
+  return nameOk && priceOk && stockOk;
 });
 
 const showToast = (type, message, duration = 3000) => {
@@ -523,11 +509,19 @@ const handleSubmit = async () => {
       stock: form.stock,
       unlimited_stock: form.unlimited_stock,
       tax_affectation: form.tax_affectation,
-      published: form.published,
       categories: form.category_id ? [form.category_id] : [],
       // brand_id=0 limpia la marca en el backend (tiendamarca_id=0).
       brand_id: form.brand_id ? parseInt(form.brand_id) : 0
     };
+
+    // Publicación por canal. Solo se define al CREAR: el producto queda vendible en
+    // el POS (published_pos=true) pero no en la tienda virtual (published=false); la
+    // publicación web se decide en el backoffice. Al EDITAR no se envían estos campos
+    // para no pisar el estado de publicación gestionado fuera del POS.
+    if (!isEdit.value) {
+      payload.published = false;
+      payload.published_pos = true;
+    }
 
     const result = isEdit.value
       ? await inventoryStore.updateProduct(productId.value, payload, imageFile.value)
@@ -574,7 +568,6 @@ const loadProductForEdit = async () => {
     form.category_id = product.category_id || '';
     form.brand_id = product.brand?.id || '';
     form.tax_affectation = product.tax_affectation || 1;
-    form.published = !!product.published;
     // Vista previa de la imagen actual (remota). Solo se reemplaza si el usuario
     // elige una nueva foto; no hay forma de "quitar" la imagen remota desde aquí.
     const firstImage = Array.isArray(product.images) && product.images.length ? product.images[0] : null;
