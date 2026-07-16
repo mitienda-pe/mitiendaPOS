@@ -17,46 +17,18 @@
     </div>
 
     <form @submit.prevent="handleSubmit" class="max-w-2xl mx-auto px-4 py-5 space-y-5">
-      <!-- Imagen -->
-      <div class="flex items-center gap-4">
-        <button
-          type="button"
-          @click="imageInput?.click()"
-          class="flex-shrink-0 w-24 h-24 rounded-xl bg-primary-50 border border-primary-100 flex items-center justify-center overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary-500"
-        >
-          <img v-if="imagePreview" :src="imagePreview" alt="Vista previa" class="w-full h-full object-cover" />
-          <svg v-else class="h-9 w-9 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-        </button>
-        <div>
-          <p class="text-base font-medium text-gray-900">Imagen del producto</p>
-          <p class="text-sm text-gray-500">{{ imageFile ? imageFile.name : 'Toca para elegir una foto' }}</p>
-          <button
-            v-if="imageFile"
-            type="button"
-            @click="clearImage"
-            class="mt-1 text-sm text-red-600 hover:text-red-700"
-          >
-            Quitar imagen
-          </button>
-        </div>
-        <input
-          ref="imageInput"
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          capture="environment"
-          class="hidden"
-          @change="onImageSelected"
-        />
-      </div>
+      <!-- ══ Campos obligatorios ══ -->
+      <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Datos obligatorios</p>
 
       <!-- Nombre (con autocompletado del catálogo maestro) -->
       <div class="relative">
+        <label class="block text-sm font-medium text-gray-800 mb-1 ml-1">
+          Nombre <span class="text-red-500">*</span>
+        </label>
         <input
           v-model="form.name"
           type="text"
-          placeholder="Nombre del producto *"
+          placeholder="Ej. Polo de algodón"
           autocomplete="off"
           @input="onNameInput"
           @keydown="onSuggestKeydown"
@@ -92,72 +64,86 @@
         </p>
       </div>
 
-      <!-- SKU -->
+      <!-- Precio de venta -->
       <div>
-        <input
-          v-model="form.sku"
-          type="text"
-          placeholder="SKU"
-          class="w-full px-4 py-4 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-        />
-      </div>
-
-      <!-- Código de barras + escanear -->
-      <div class="flex gap-2">
-        <input
-          v-model="form.barcode"
-          type="text"
-          placeholder="Código de barras"
-          class="flex-1 px-4 py-4 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-        />
-        <button
-          type="button"
-          @click="showScanner = true"
-          class="flex-shrink-0 w-16 rounded-lg bg-primary-200 text-primary-800 flex items-center justify-center hover:bg-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
-          aria-label="Escanear código de barras"
-        >
-          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 7V5a2 2 0 0 1 2-2h2" />
-            <path d="M17 3h2a2 2 0 0 1 2 2v2" />
-            <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
-            <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
-            <rect width="10" height="10" x="7" y="7" rx="1" />
-          </svg>
-        </button>
-      </div>
-
-      <!-- Precio -->
-      <div>
+        <label class="block text-sm font-medium text-gray-800 mb-1 ml-1">
+          Precio de venta (S/) <span class="text-red-500">*</span>
+        </label>
         <input
           v-model="form.price"
           type="number"
           step="0.01"
           min="0"
           inputmode="decimal"
-          placeholder="Precio (S/) *"
+          placeholder="0.00"
           class="w-full px-4 py-4 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
         />
       </div>
 
+      <!-- ══ Campos opcionales ══ -->
+      <div class="pt-3 border-t border-gray-200">
+        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Datos opcionales</p>
+      </div>
+
+      <!-- SKU -->
+      <div>
+        <label class="block text-sm font-medium text-gray-500 mb-1 ml-1">SKU</label>
+        <input
+          v-model="form.sku"
+          type="text"
+          placeholder="Ej. POLO-001"
+          class="w-full px-4 py-4 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+        />
+      </div>
+
+      <!-- Código de barras + escanear -->
+      <div>
+        <label class="block text-sm font-medium text-gray-500 mb-1 ml-1">Código de barras</label>
+        <div class="flex gap-2">
+          <input
+            v-model="form.barcode"
+            type="text"
+            placeholder="Ej. 7501234567890"
+            class="flex-1 px-4 py-4 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          />
+          <button
+            type="button"
+            @click="showScanner = true"
+            class="flex-shrink-0 w-16 rounded-lg bg-primary-200 text-primary-800 flex items-center justify-center hover:bg-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            aria-label="Escanear código de barras"
+          >
+            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+              <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+              <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+              <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+              <rect width="10" height="10" x="7" y="7" rx="1" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
       <!-- Costo de compra (para calcular ganancia; no se muestra al cliente) -->
       <div>
+        <label class="block text-sm font-medium text-gray-500 mb-1 ml-1">Costo de compra (S/)</label>
         <input
           v-model="form.cost"
           type="number"
           step="0.01"
           min="0"
           inputmode="decimal"
-          placeholder="Costo de compra (S/)"
+          placeholder="0.00"
           class="w-full px-4 py-4 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
         />
         <p v-if="estimatedMargin !== null" class="text-xs text-gray-500 mt-1 ml-1">
           Margen estimado: <span class="font-semibold text-primary-600">{{ estimatedMargin }}%</span>
         </p>
+        <p v-else class="text-xs text-gray-400 mt-1 ml-1">Solo para calcular tu ganancia; no se muestra al cliente.</p>
       </div>
 
       <!-- Afectación IGV -->
       <div>
-        <label class="block text-xs text-gray-500 mb-1 ml-1">Afectación IGV</label>
+        <label class="block text-sm font-medium text-gray-500 mb-1 ml-1">Afectación IGV</label>
         <select
           v-model.number="form.tax_affectation"
           class="w-full px-4 py-4 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
@@ -170,37 +156,40 @@
       </div>
 
       <!-- Stock + ilimitado -->
-      <div class="flex items-center gap-3">
-        <input
-          v-model="form.stock"
-          type="number"
-          min="0"
-          inputmode="numeric"
-          placeholder="Stock"
-          :disabled="form.unlimited_stock"
-          class="flex-1 px-4 py-4 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-100 disabled:text-gray-400"
-        />
-        <div class="flex flex-col items-center">
-          <span class="text-xs text-gray-600 mb-1">Ilimitado</span>
-          <button
-            type="button"
-            role="switch"
-            :aria-checked="form.unlimited_stock"
-            @click="form.unlimited_stock = !form.unlimited_stock"
-            :class="form.unlimited_stock ? 'bg-primary-500' : 'bg-gray-300'"
-            class="relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            <span
-              :class="form.unlimited_stock ? 'translate-x-6' : 'translate-x-1'"
-              class="inline-block h-5 w-5 transform rounded-full bg-white transition-transform shadow"
-            ></span>
-          </button>
+      <div>
+        <label class="block text-sm font-medium text-gray-500 mb-1 ml-1">Stock</label>
+        <div class="flex items-center gap-3">
+          <input
+            v-model="form.stock"
+            type="number"
+            min="0"
+            inputmode="numeric"
+            placeholder="0"
+            :disabled="form.unlimited_stock"
+            class="flex-1 px-4 py-4 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-100 disabled:text-gray-400"
+          />
+          <div class="flex flex-col items-center">
+            <span class="text-xs text-gray-600 mb-1">Ilimitado</span>
+            <button
+              type="button"
+              role="switch"
+              :aria-checked="form.unlimited_stock"
+              @click="form.unlimited_stock = !form.unlimited_stock"
+              :class="form.unlimited_stock ? 'bg-primary-500' : 'bg-gray-300'"
+              class="relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <span
+                :class="form.unlimited_stock ? 'translate-x-6' : 'translate-x-1'"
+                class="inline-block h-5 w-5 transform rounded-full bg-white transition-transform shadow"
+              ></span>
+            </button>
+          </div>
         </div>
       </div>
 
       <!-- Categoría (oculto si la tienda no tiene categorías) -->
       <div v-if="categories.length">
-        <label class="block text-xs text-gray-500 mb-1 ml-1">Categoría</label>
+        <label class="block text-sm font-medium text-gray-500 mb-1 ml-1">Categoría</label>
         <select
           v-model="form.category_id"
           class="w-full px-4 py-4 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
@@ -212,7 +201,7 @@
 
       <!-- Marca (oculto si la tienda no tiene marcas) -->
       <div v-if="brands.length">
-        <label class="block text-xs text-gray-500 mb-1 ml-1">Marca</label>
+        <label class="block text-sm font-medium text-gray-500 mb-1 ml-1">Marca</label>
         <select
           v-model="form.brand_id"
           class="w-full px-4 py-4 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
@@ -241,6 +230,42 @@
             class="inline-block h-5 w-5 transform rounded-full bg-white transition-transform shadow"
           ></span>
         </button>
+      </div>
+
+      <!-- Imagen (opcional) — al final del formulario -->
+      <div>
+        <label class="block text-sm font-medium text-gray-500 mb-1 ml-1">Imagen del producto</label>
+        <div class="flex items-center gap-4">
+          <button
+            type="button"
+            @click="imageInput?.click()"
+            class="flex-shrink-0 w-24 h-24 rounded-xl bg-primary-50 border border-primary-100 flex items-center justify-center overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <img v-if="imagePreview" :src="imagePreview" alt="Vista previa" class="w-full h-full object-cover" />
+            <svg v-else class="h-9 w-9 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </button>
+          <div>
+            <p class="text-sm text-gray-500">{{ imageFile ? imageFile.name : 'Toca para elegir una foto' }}</p>
+            <button
+              v-if="imageFile"
+              type="button"
+              @click="clearImage"
+              class="mt-1 text-sm text-red-600 hover:text-red-700"
+            >
+              Quitar imagen
+            </button>
+          </div>
+          <input
+            ref="imageInput"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            capture="environment"
+            class="hidden"
+            @change="onImageSelected"
+          />
+        </div>
       </div>
 
       <!-- Botón crear -->
