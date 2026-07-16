@@ -76,6 +76,7 @@
           min="0"
           inputmode="decimal"
           placeholder="0.00"
+          @blur="formatPrice"
           class="w-full px-4 py-4 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
         />
       </div>
@@ -339,6 +340,14 @@ const estimatedMargin = computed(() => {
   return Math.round(((price - cost) / price) * 100);
 });
 
+// Normaliza el precio a 2 decimales (al perder el foco). Combinado con el
+// formateo en carga (loadProductForEdit), el campo siempre muestra 2 decimales.
+const formatPrice = () => {
+  if (form.price === '' || form.price === null) return;
+  const n = parseFloat(form.price);
+  if (!Number.isNaN(n) && n >= 0) form.price = n.toFixed(2);
+};
+
 const categories = ref([]);
 const brands = ref([]); // [{ id, name }]
 const imageInput = ref(null);
@@ -561,7 +570,7 @@ const loadProductForEdit = async () => {
     form.name = product.name || '';
     form.sku = product.sku || '';
     form.barcode = product.barcode || '';
-    form.price = product.price != null ? String(product.price) : '';
+    form.price = product.price != null ? Number(product.price).toFixed(2) : '';
     form.cost = product.cost != null ? String(product.cost) : '';
     form.stock = product.unlimited_stock ? '' : String(product.stock ?? '');
     form.unlimited_stock = !!product.unlimited_stock;
