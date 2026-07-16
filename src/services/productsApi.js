@@ -30,6 +30,8 @@ const adaptMeiliHit = (hit) => ({
   price: parseFloat(hit.price || 0),
   original_price: hit.originalPrice != null ? parseFloat(hit.originalPrice) : null,
   promotion: null,
+  // Afectación IGV: 1=Gravado, 2=Exonerado, 3=Inafecto (default afecto)
+  tax_affectation: parseInt(hit.tax_affectation || hit.taxAffectation || 1),
   stock: hit.stock || 0,
   unlimited_stock: hit.unlimitedStock === true,
   published: hit.published === true,
@@ -170,6 +172,8 @@ export const productsApi = {
             price: parseFloat(product.price || '0'),
             original_price: product.original_price ? parseFloat(product.original_price) : null,
             promotion: product.promotion || null,
+            // Afectación IGV: 1=Gravado, 2=Exonerado, 3=Inafecto (default afecto)
+            tax_affectation: parseInt(product.tax_affectation || 1),
             stock: product.stock || 0,
             unlimited_stock: product.unlimited_stock === true || product.unlimited_stock === 1,
             published: product.published || false,
@@ -251,6 +255,8 @@ export const productsApi = {
         price: parseFloat(rawData.price || '0'),
         original_price: rawData.original_price ? parseFloat(rawData.original_price) : null,
         promotion: rawData.promotion || null,
+        // Afectación IGV: 1=Gravado, 2=Exonerado, 3=Inafecto (default afecto)
+        tax_affectation: parseInt(rawData.tax_affectation || 1),
         stock: rawData.stock || 0,
         unlimited_stock: rawData.unlimited_stock === true || rawData.unlimited_stock === 1,
         published: rawData.published || false,

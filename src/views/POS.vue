@@ -1160,31 +1160,35 @@ const handlePaymentCompleted = async () => {
         })())
       },
       document_type: billingDocumentType.value, // 'boleta' o 'factura'
-      items: cartItems.value.map(item => ({
-        product_id: item.id,
-        // Variación elegida (productoatributo_id). 0/ausente = producto simple.
-        // El backend (nativo y proxy legacy) usa este id para precio y descuento de stock.
-        productoatributo_id: item.variant_id || 0,
-        sku: item.sku,
-        name: item.variant_name ? `${item.nombre} (${item.variant_name})` : item.nombre,
-        quantity: item.quantity,
-        // Precio de línea con IGV (variación si aplica). El backend nativo lo usa como
-        // precio efectivo; el proxy legacy lo ignora y resuelve el precio por atributoId.
-        price: item.precio,
-        // IMPORTANTE: item.precio YA incluye IGV (precio de la variación si aplica),
-        // debemos extraer el precio base
-        unit_price: item.precio / 1.18, // Precio sin IGV
-        subtotal: (item.precio / 1.18) * item.quantity, // Subtotal sin IGV
-        tax: ((item.precio / 1.18) * item.quantity) * 0.18, // IGV del subtotal
-        total: item.precio * item.quantity, // Total con IGV (precio original * cantidad)
-        // Información de promoción para trazabilidad en NetSuite
-        promotion_id: item.promotion?.id || null,
-        unit_price_original: item.originalPrice || null, // Precio original antes del descuento (con IGV)
-        // Venta al peso: la cantidad ya es el peso (decimal). El nativo resuelve la
-        // unidad SUNAT server-side; estos campos son para el proxy legacy y trazabilidad.
-        sold_by_weight: item.sold_by_weight === true,
-        sale_unit: item.sale_unit || null
-      })),
+      items: cartItems.value.map(item => {
+        // Afectación IGV por producto: exonerado(2)/inafecto(3) NO tributan.
+        // Para exentos el precio ya es sin IGV; para afectos se desincrusta 18%.
+        const exento = parseInt(item.tax_affectation) === 2 || parseInt(item.tax_affectation) === 3;
+        const unitSinIgv = exento ? item.precio : item.precio / 1.18;
+        return {
+          product_id: item.id,
+          // Variación elegida (productoatributo_id). 0/ausente = producto simple.
+          // El backend (nativo y proxy legacy) usa este id para precio y descuento de stock.
+          productoatributo_id: item.variant_id || 0,
+          sku: item.sku,
+          name: item.variant_name ? `${item.nombre} (${item.variant_name})` : item.nombre,
+          quantity: item.quantity,
+          // Precio de línea con IGV (variación si aplica). El backend nativo lo usa como
+          // precio efectivo; el proxy legacy lo ignora y resuelve el precio por atributoId.
+          price: item.precio,
+          unit_price: unitSinIgv, // Precio sin IGV
+          subtotal: unitSinIgv * item.quantity, // Subtotal sin IGV
+          tax: exento ? 0 : (unitSinIgv * item.quantity) * 0.18, // IGV del subtotal (0 si exento)
+          total: item.precio * item.quantity, // Total con IGV (precio original * cantidad)
+          // Información de promoción para trazabilidad en NetSuite
+          promotion_id: item.promotion?.id || null,
+          unit_price_original: item.originalPrice || null, // Precio original antes del descuento (con IGV)
+          // Venta al peso: la cantidad ya es el peso (decimal). El nativo resuelve la
+          // unidad SUNAT server-side; estos campos son para el proxy legacy y trazabilidad.
+          sold_by_weight: item.sold_by_weight === true,
+          sale_unit: item.sale_unit || null
+        };
+      }),
       payments: payments.value.map(payment => ({
         method: payment.method,
         method_name: payment.methodName,
@@ -1587,6 +1591,7 @@ const searchProducts = () => {
           has_variants: item.has_variants === true,
           sold_by_weight: item.sold_by_weight === true,
           sale_unit: item.sale_unit || null,
+          tax_affectation: item.tax_affectation || 1,
           images: item.images || []
         }));
         highlightedIndex.value = -1;
@@ -1701,6 +1706,7 @@ const mapProductsToFormat = (products) => {
     has_variants: item.has_variants === true,
     sold_by_weight: item.sold_by_weight === true,
     sale_unit: item.sale_unit || null,
+    tax_affectation: item.tax_affectation || 1,
     images: item.images || []
   }));
 };

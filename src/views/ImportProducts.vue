@@ -71,6 +71,7 @@
               <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Línea</th>
               <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">SKU</th>
               <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Nombre</th>
+              <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Afectación IGV</th>
               <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Acción</th>
               <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Detalle</th>
             </tr>
@@ -80,6 +81,10 @@
               <td class="px-3 py-2 text-gray-500">{{ r.linea }}</td>
               <td class="px-3 py-2 text-gray-700">{{ r.sku || '—' }}</td>
               <td class="px-3 py-2 text-gray-800">{{ r.nombre }}</td>
+              <td class="px-3 py-2">
+                <span v-if="r.afectacion_label" :class="afectacionClass(r.afectacion)">{{ r.afectacion_label }}</span>
+                <span v-else class="text-gray-300">—</span>
+              </td>
               <td class="px-3 py-2"><span :class="accionClass(r.accion)">{{ accionLabel(r.accion) }}</span></td>
               <td class="px-3 py-2 text-gray-500">{{ r.mensaje }}</td>
             </tr>
@@ -159,6 +164,13 @@ const accionClass = (a) => {
   if (a === 'error') return 'text-red-700 bg-red-50 px-2 py-0.5 rounded text-xs';
   if (a === 'actualizar' || a === 'actualizado') return 'text-blue-700 bg-blue-50 px-2 py-0.5 rounded text-xs';
   return 'text-green-700 bg-green-50 px-2 py-0.5 rounded text-xs';
+};
+
+// afectacion: 1=Gravado, 2=Exonerado, 3=Inafecto
+const afectacionClass = (a) => {
+  if (a === 2) return 'text-amber-700 bg-amber-50 px-2 py-0.5 rounded text-xs';
+  if (a === 3) return 'text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded text-xs';
+  return 'text-gray-600 bg-gray-50 px-2 py-0.5 rounded text-xs';
 };
 
 const errorRows = ref([]);

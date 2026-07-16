@@ -91,7 +91,15 @@
       <div class="mb-3">
         <div class="flex justify-between">
           <span>OPERACIONES GRAVADAS:</span>
-          <span>S/ {{ subtotal.toFixed(2) }}</span>
+          <span>S/ {{ gravadasBase.toFixed(2) }}</span>
+        </div>
+        <div v-if="exoneradasBase > 0" class="flex justify-between">
+          <span>OPERACIONES EXONERADAS:</span>
+          <span>S/ {{ exoneradasBase.toFixed(2) }}</span>
+        </div>
+        <div v-if="inafectasBase > 0" class="flex justify-between">
+          <span>OPERACIONES INAFECTAS:</span>
+          <span>S/ {{ inafectasBase.toFixed(2) }}</span>
         </div>
         <div class="flex justify-between">
           <span>IGV (18%):</span>
@@ -303,6 +311,27 @@ const props = defineProps({
     default: false
   }
 });
+
+// ── Desglose por afectación IGV (1=Gravado, 2=Exonerado, 3=Inafecto) ──
+// Se calcula desde los ítems cuando traen tax_affectation; para exentos el
+// precio de línea ya es sin IGV. Si los ítems no traen afectación, exon/inaf = 0
+// y GRAVADAS = subtotal (compatibilidad con el comportamiento anterior).
+const lineBaseByAffectation = (target) => {
+  return (props.items || []).reduce((sum, it) => {
+    const a = parseInt(it.tax_affectation);
+    if (a !== target) return sum;
+    const qty = parseFloat(it.quantity ?? it.cantidad ?? 1) || 0;
+    const precio = parseFloat(it.precio ?? it.price ?? 0) || 0;
+    const lineTotal = it.total != null ? parseFloat(it.total) : precio * qty;
+    return sum + lineTotal;
+  }, 0);
+};
+
+const exoneradasBase = computed(() => lineBaseByAffectation(2));
+const inafectasBase = computed(() => lineBaseByAffectation(3));
+const gravadasBase = computed(() =>
+  Math.max(0, props.subtotal - exoneradasBase.value - inafectasBase.value)
+);
 
 // Computed para nombre del cliente
 const customerName = computed(() => {

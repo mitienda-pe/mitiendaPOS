@@ -129,7 +129,25 @@ export function buildReceipt(orderData) {
   encoder.line(repeat('-', W))
 
   // --- Totals ---
-  encoder.line(padLine('OPERACIONES GRAVADAS:', `S/ ${num(orderData.subtotal)}`, W))
+  // Desglose por afectación IGV (2=Exonerado, 3=Inafecto no tributan; el precio de
+  // línea ya es sin IGV). Si los ítems no traen afectación, exon/inaf = 0 y
+  // GRAVADAS = subtotal (compatibilidad con el comportamiento anterior).
+  const baseByAffectation = (target) =>
+    items.reduce((sum, it) => {
+      if (parseInt(it.tax_affectation) !== target) return sum
+      const qty = parseFloat(it.quantity || it.cantidad || 1) || 0
+      const precio = parseFloat(it.precio || it.price || 0) || 0
+      const lineTotal =
+        it.total !== undefined && it.total !== null ? parseFloat(it.total) : precio * qty
+      return sum + lineTotal
+    }, 0)
+  const exoneradas = baseByAffectation(2)
+  const inafectas = baseByAffectation(3)
+  const gravadas = Math.max(0, parseFloat(orderData.subtotal || 0) - exoneradas - inafectas)
+
+  encoder.line(padLine('OPERACIONES GRAVADAS:', `S/ ${gravadas.toFixed(2)}`, W))
+  if (exoneradas > 0) encoder.line(padLine('OPERACIONES EXONERADAS:', `S/ ${exoneradas.toFixed(2)}`, W))
+  if (inafectas > 0) encoder.line(padLine('OPERACIONES INAFECTAS:', `S/ ${inafectas.toFixed(2)}`, W))
   encoder.line(padLine('IGV (18%):', `S/ ${num(orderData.tax)}`, W))
 
   const rounding = parseFloat(orderData.roundingAmount || 0)

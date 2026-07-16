@@ -155,6 +155,20 @@
         </p>
       </div>
 
+      <!-- Afectación IGV -->
+      <div>
+        <label class="block text-xs text-gray-500 mb-1 ml-1">Afectación IGV</label>
+        <select
+          v-model.number="form.tax_affectation"
+          class="w-full px-4 py-4 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+        >
+          <option :value="1">Gravado (con IGV)</option>
+          <option :value="2">Exonerado</option>
+          <option :value="3">Inafecto</option>
+        </select>
+        <p class="text-xs text-gray-400 mt-1 ml-1">Exonerado/Inafecto: el precio no incluye IGV.</p>
+      </div>
+
       <!-- Stock + ilimitado -->
       <div class="flex items-center gap-3">
         <input
@@ -286,6 +300,7 @@ const form = reactive({
   stock: '',
   unlimited_stock: false,
   category_id: '',
+  tax_affectation: 1, // 1=Gravado/afecto, 2=Exonerado, 3=Inafecto
   published: true
 });
 
@@ -460,6 +475,7 @@ const handleSubmit = async () => {
       cost: form.cost !== '' && form.cost !== null ? parseFloat(form.cost) : null,
       stock: form.stock,
       unlimited_stock: form.unlimited_stock,
+      tax_affectation: form.tax_affectation,
       published: form.published,
       categories: form.category_id ? [form.category_id] : []
     };

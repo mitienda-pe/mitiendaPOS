@@ -71,6 +71,8 @@ export const inventoryApi = {
           unlimited_stock: product.unlimited_stock === true || product.unlimited_stock === 1,
           published: product.published || false,
           featured: product.featured || false,
+          // Afectación IGV: 1=Gravado, 2=Exonerado, 3=Inafecto (default afecto)
+          tax_affectation: parseInt(product.tax_affectation || '1'),
           images: product.images || [],
           category: product.category || { name: 'Sin categoría' },
           brand: product.brand || null,
@@ -129,6 +131,7 @@ export const inventoryApi = {
           unlimited_stock: rawData.unlimited_stock === true || rawData.unlimited_stock === 1,
           published: rawData.published || false,
           featured: rawData.featured || false,
+          tax_affectation: parseInt(rawData.tax_affectation || '1'),
           images: rawData.images || [],
           category: rawData.category || { name: 'Sin categoría' },
           brand: rawData.brand || null,
@@ -190,6 +193,10 @@ export const inventoryApi = {
     }
     if (data.stock !== undefined && data.stock !== null) {
       payload.stock = parseInt(data.stock);
+    }
+    // Afectación IGV: 1=Gravado, 2=Exonerado, 3=Inafecto
+    if (data.tax_affectation !== undefined && data.tax_affectation !== null) {
+      payload.tax_affectation = parseInt(data.tax_affectation);
     }
 
     const response = await apiClient.put(`/products/${id}`, payload);
@@ -255,6 +262,10 @@ export const inventoryApi = {
       payload.unlimited_stock = true;
     } else if (data.stock !== undefined && data.stock !== null && data.stock !== '') {
       payload.stock = parseInt(data.stock);
+    }
+    // Afectación IGV: 1=Gravado, 2=Exonerado, 3=Inafecto (default 1 en el backend)
+    if (data.tax_affectation !== undefined && data.tax_affectation !== null) {
+      payload.tax_affectation = parseInt(data.tax_affectation);
     }
     if (Array.isArray(data.categories) && data.categories.length) {
       payload.categories = data.categories.map((id) => parseInt(id));

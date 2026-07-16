@@ -198,6 +198,9 @@ export const useInventoryStore = defineStore('inventory', {
             if (data.stock !== undefined) {
               this.products[productIndex].stock = data.stock;
             }
+            if (data.tax_affectation !== undefined) {
+              this.products[productIndex].tax_affectation = data.tax_affectation;
+            }
           }
 
           if (this.currentProduct && this.currentProduct.id === productId) {
@@ -206,6 +209,9 @@ export const useInventoryStore = defineStore('inventory', {
             }
             if (data.stock !== undefined) {
               this.currentProduct.stock = data.stock;
+            }
+            if (data.tax_affectation !== undefined) {
+              this.currentProduct.tax_affectation = data.tax_affectation;
             }
           }
 

@@ -84,6 +84,23 @@
                 />
               </div>
 
+              <!-- Afectación IGV -->
+              <div>
+                <label for="afectacion" class="block text-sm font-medium text-gray-700 mb-1">
+                  Afectación IGV
+                </label>
+                <select
+                  id="afectacion"
+                  v-model.number="form.tax_affectation"
+                  :disabled="readOnly"
+                  :class="readOnly ? 'w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 cursor-not-allowed' : 'w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500'"
+                >
+                  <option :value="1">Gravado (con IGV)</option>
+                  <option :value="2">Exonerado</option>
+                  <option :value="3">Inafecto</option>
+                </select>
+              </div>
+
               <!-- Info adicional -->
               <div class="bg-primary-50 border border-primary-200 rounded-md p-3">
                 <div class="flex items-start">
@@ -160,7 +177,8 @@ const emit = defineEmits(['close', 'save']);
 
 const form = ref({
   price: 0,
-  stock: 0
+  stock: 0,
+  tax_affectation: 1
 });
 
 const loading = ref(false);
@@ -172,7 +190,8 @@ watch(() => props.product, (newProduct) => {
   if (newProduct) {
     form.value = {
       price: newProduct.price || 0,
-      stock: newProduct.stock || 0
+      stock: newProduct.stock || 0,
+      tax_affectation: newProduct.tax_affectation || 1
     };
     error.value = null;
   }
@@ -213,7 +232,8 @@ const handleSubmit = async () => {
     emit('save', {
       productId: props.product.id,
       price: form.value.price,
-      stock: form.value.stock
+      stock: form.value.stock,
+      tax_affectation: form.value.tax_affectation
     });
 
     // El componente padre cerrará el modal después de guardar

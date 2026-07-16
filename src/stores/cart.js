@@ -1,6 +1,12 @@
 import { defineStore } from 'pinia';
 import { ordersApi } from '../services/ordersApi';
 
+// Afectación IGV: 1=Gravado, 2=Exonerado, 3=Inafecto. Exonerado/Inafecto NO tributan.
+const isExemptItem = (item) => {
+  const a = parseInt(item?.tax_affectation);
+  return a === 2 || a === 3;
+};
+
 /**
  * Store de Carrito de Compras con Estados
  *
@@ -73,30 +79,39 @@ export const useCartStore = defineStore('cart', {
     // ========== Cálculos financieros ==========
     // IMPORTANTE: Los totales son calculados por el backend usando el método de NetSuite
     // Esto garantiza que los montos coincidan exactamente con lo que se envía a NetSuite
-    subtotal: (state) => {
+    // Base gravada (sin IGV) de los ítems afectos (afectación 1). Solo esta base tributa.
+    taxableBase: (state) => {
+      return state.items.reduce((sum, item) => {
+        if (isExemptItem(item)) return sum;
+        const cantidad = parseFloat(item.quantity) || 0;
+        let precioSinIGV;
+        if (item.price_without_tax !== null && item.price_without_tax !== undefined) {
+          precioSinIGV = parseFloat(item.price_without_tax) || 0;
+        } else {
+          const precioConIGV = parseFloat(item.precio || item.price) || 0;
+          precioSinIGV = precioConIGV / 1.18;
+        }
+        return sum + (precioSinIGV * cantidad);
+      }, 0);
+    },
+
+    // Base exenta: ítems exonerados (2) o inafectos (3). No tributan; el precio ya es sin IGV.
+    exemptBase: (state) => {
+      return state.items.reduce((sum, item) => {
+        if (!isExemptItem(item)) return sum;
+        const cantidad = parseFloat(item.quantity) || 0;
+        const precio = parseFloat(item.precio || item.price) || 0;
+        return sum + (precio * cantidad);
+      }, 0);
+    },
+
+    subtotal(state) {
       // Si hay totales calculados por el backend, usar esos
       if (state.calculatedTotals) {
         return state.calculatedTotals.subtotal;
       }
-      // Fallback: cálculo local
-      // IMPORTANTE: Usar price_without_tax si está disponible, sino calcular desde precio con IGV
-      return state.items.reduce((sum, item) => {
-        // parseFloat (no parseInt) para soportar venta al peso (ej. 0.250).
-        const cantidad = parseFloat(item.quantity) || 0;
-
-        // Verificar si tenemos precio sin IGV disponible
-        let precioSinIGV;
-        if (item.price_without_tax !== null && item.price_without_tax !== undefined) {
-          // Usar precio sin IGV directamente del backend (ya viene de la columna producto_precio_sin_igv)
-          precioSinIGV = parseFloat(item.price_without_tax) || 0;
-        } else {
-          // Fallback: extraer base desde precio con IGV (puede causar redondeos de 0.01)
-          const precioConIGV = parseFloat(item.precio || item.price) || 0;
-          precioSinIGV = precioConIGV / 1.18;
-        }
-
-        return sum + (precioSinIGV * cantidad);
-      }, 0);
+      // Fallback: base gravada + base exenta (respetando afectación por producto)
+      return this.taxableBase + this.exemptBase;
     },
 
     tax() {
@@ -104,8 +119,8 @@ export const useCartStore = defineStore('cart', {
       if (this.calculatedTotals) {
         return this.calculatedTotals.tax;
       }
-      // Fallback: cálculo local
-      return this.subtotal * 0.18;
+      // Fallback: IGV solo sobre la base gravada (exonerados/inafectos no tributan)
+      return this.taxableBase * 0.18;
     },
 
     total() {
