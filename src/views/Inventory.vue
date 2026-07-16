@@ -11,7 +11,10 @@
             </svg>
             <div>
               <p class="text-sm font-medium text-primary-800">Modo limitado</p>
-              <p class="text-sm text-primary-700">Puedes consultar y sincronizar stock desde el ERP, pero no editar precios ni stock manualmente</p>
+              <p class="text-sm text-primary-700">
+                <template v-if="canNetsuite">Puedes consultar y sincronizar stock desde el ERP, pero no editar precios ni stock manualmente</template>
+                <template v-else>Puedes consultar el inventario, pero no editar precios ni stock manualmente</template>
+              </p>
             </div>
           </div>
         </div>
@@ -45,6 +48,7 @@
               Importar CSV
             </button>
             <button
+              v-if="canNetsuite"
               @click="syncVisibleStock"
               :disabled="batchSyncing || syncingTiendaStock || syncingTiendaPrices || inventoryStore.products.length === 0"
               class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -59,6 +63,7 @@
               {{ batchSyncing ? 'Sincronizando…' : 'Sincronizar visibles' }}
             </button>
             <button
+              v-if="canNetsuite"
               @click="syncTiendaStockNow"
               :disabled="syncingTiendaStock || syncingTiendaPrices || batchSyncing"
               class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -73,6 +78,7 @@
               {{ syncingTiendaStock ? 'Sincronizando…' : 'Stock total' }}
             </button>
             <button
+              v-if="canNetsuite"
               @click="syncTiendaPricesNow"
               :disabled="syncingTiendaPrices || syncingTiendaStock || batchSyncing"
               class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -324,6 +330,7 @@
                 Editar Rápido
               </button>
               <button
+                v-if="canNetsuite"
                 @click="syncProductStock(product)"
                 :disabled="syncingProductIds.has(product.id)"
                 :title="`Sincronizar stock de ${product.name} desde ERP`"
@@ -455,6 +462,7 @@
                       Editar Rápido
                     </button>
                     <button
+                      v-if="canNetsuite"
                       @click="syncProductStock(product)"
                       :disabled="syncingProductIds.has(product.id)"
                       :title="`Sincronizar stock de ${product.name} desde ERP`"
@@ -612,6 +620,10 @@ const canCreate = computed(() => {
   return role === 'administrador' || role === 'supervisor';
 });
 
+// La sincronización de inventario (stock/precios) solo tiene sentido si la
+// tienda tiene integración con NetSuite; sin ERP los endpoints devuelven error.
+const canNetsuite = computed(() => authStore.canNetsuite);
+
 const searchInput = ref('');
 const showQuickEdit = ref(false);
 const selectedProduct = ref(null);
@@ -694,7 +706,8 @@ const closeLots = () => {
 const handleQuickSave = async (data) => {
   const result = await inventoryStore.quickUpdate(data.productId, {
     price: data.price,
-    stock: data.stock
+    stock: data.stock,
+    tax_affectation: data.tax_affectation
   });
 
   if (result.success) {
