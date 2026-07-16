@@ -203,6 +203,32 @@
               />
             </div>
 
+            <!-- Filtro de Categoría (solo si la tienda tiene categorías) -->
+            <div v-if="categories.length">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+              <select
+                v-model="inventoryStore.filters.category_id"
+                @change="handleFilterChange"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option :value="null">Todas las categorías</option>
+                <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+              </select>
+            </div>
+
+            <!-- Filtro de Marca (solo si la tienda tiene marcas) -->
+            <div v-if="brands.length">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Marca</label>
+              <select
+                v-model="inventoryStore.filters.brand_id"
+                @change="handleFilterChange"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option :value="null">Todas las marcas</option>
+                <option v-for="b in brands" :key="b.id" :value="b.id">{{ b.name }}</option>
+              </select>
+            </div>
+
             <!-- Filtro de Stock -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Estado de Stock</label>
@@ -291,7 +317,6 @@
               <div class="min-w-0 flex-1">
                 <div class="text-sm font-medium text-gray-900 truncate">{{ product.name }}</div>
                 <div class="text-xs text-gray-500 mt-0.5">SKU: {{ product.sku }}</div>
-                <div v-if="product.category?.name" class="text-xs text-gray-500">{{ product.category.name }}</div>
                 <div class="mt-2 flex items-center justify-between gap-2 flex-wrap">
                   <span class="text-sm font-semibold text-gray-900">{{ formatCurrency(product.price) }}</span>
                   <span :class="getStockBadgeClass(product)">
@@ -365,9 +390,6 @@
                   </button>
                 </th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Categoría
-                </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <button @click="toggleSort('price')" class="inline-flex items-center gap-1 hover:text-gray-900 transition-colors uppercase">
                     Precio
                     <span class="text-gray-400" v-html="sortIndicator('price')"></span>
@@ -416,11 +438,6 @@
                   <div v-if="product.description" class="text-sm text-gray-500 truncate max-w-xs">
                     {{ product.description }}
                   </div>
-                </td>
-
-                <!-- Categoría -->
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {{ product.category?.name || 'Sin categoría' }}
                 </td>
 
                 <!-- Precio -->
@@ -597,6 +614,8 @@ import { useCashierStore } from '../stores/cashier';
 import QuickEditModal from '../components/QuickEditModal.vue';
 import RegisterLotModal from '../components/RegisterLotModal.vue';
 import { netsuiteStockApi } from '../services/netsuiteStockApi';
+import { inventoryApi } from '../services/inventoryApi';
+import { catalogApi } from '../services/catalogApi';
 
 const router = useRouter();
 const inventoryStore = useInventoryStore();
@@ -630,6 +649,10 @@ const canCreate = computed(() => {
 const canNetsuite = computed(() => authStore.canNetsuite);
 
 const searchInput = ref('');
+// Categorías y marcas para los filtros. Se cargan de sus propios endpoints y los
+// selects solo se muestran si la tienda tiene alguna (ver v-if en el template).
+const categories = ref([]); // [{ id, name }]
+const brands = ref([]);     // [{ id, name }]
 const showQuickEdit = ref(false);
 const selectedProduct = ref(null);
 const batchSyncing = ref(false);
@@ -662,9 +685,28 @@ const debouncedSearch = () => {
   }, 500);
 };
 
-// Manejar cambios de filtros
+// Manejar cambios de filtros: al cambiar cualquier filtro volvemos a la página 1.
 const handleFilterChange = () => {
+  inventoryStore.filters.page = 1;
   loadData();
+};
+
+// Cargar categorías y marcas para los filtros (una sola vez, en el montaje).
+const loadFilterOptions = async () => {
+  try {
+    const [catRes, brandList] = await Promise.all([
+      inventoryApi.getCategories(),
+      catalogApi.getBrands()
+    ]);
+    if (catRes.success) categories.value = catRes.data;
+    if (Array.isArray(brandList)) {
+      brands.value = brandList
+        .filter(b => Number(b.tiendamarca_id) > 0)
+        .map(b => ({ id: b.tiendamarca_id, name: b.tiendamarca_nombre }));
+    }
+  } catch (error) {
+    console.error('Error loading filter options:', error);
+  }
 };
 
 // Sort por columna: alterna dirección si ya está activa
@@ -868,6 +910,7 @@ const getRowClass = (product) => {
 // Lifecycle
 onMounted(() => {
   loadData();
+  loadFilterOptions();
 });
 </script>
 
