@@ -7,6 +7,8 @@ import { useCartStore } from '../stores/cart';
 import { useShiftStore } from '../stores/shift';
 import { useCashierStore } from '../stores/cashier';
 import { productsApi } from '../services/productsApi';
+import { inventoryApi } from '../services/inventoryApi';
+import { catalogApi } from '../services/catalogApi';
 import { ordersApi } from '../services/ordersApi';
 import { netsuiteStockApi } from '../services/netsuiteStockApi';
 import { mockCustomersApi } from '../api/mockCustomers';
@@ -50,7 +52,10 @@ const { items: cartItems, payments, customer: selectedCustomer, status: cartStat
 
 // Local state (no relacionado con carrito)
 const customers = ref([]);
-const categories = ref([]);
+// Catálogo del modal "Lista de Productos": categorías y marcas se cargan de sus
+// propios endpoints (/categories, /brands), NO se derivan de los productos.
+const categories = ref([]); // [{ id, name }]
+const brands = ref([]);     // [{ id, name }]
 const allProducts = ref([]);
 const barcode = ref('');
 const barcodeInput = ref(null);
@@ -60,7 +65,8 @@ const highlightedIndex = ref(-1);
 const resultsList = ref(null);
 let searchDebounce = null;
 const productSearchQuery = ref('');
-const productCategoryFilter = ref('');
+const productCategoryFilter = ref(''); // id de categoría (filtro server-side)
+const productBrandFilter = ref('');    // id de marca (filtro server-side)
 const productSearchResults = ref([]);
 const searchLoading = ref(false);
 const searchAttempted = ref(false);
@@ -127,6 +133,9 @@ const completedSaleSnapshot = ref(null);
 const billingDocumentInfo = ref(null);
 
 // Computed properties
+// El filtrado real (texto + categoría + marca) lo hace el backend en
+// searchProductList(). Aquí solo refinamos el texto en cliente para dar
+// respuesta instantánea mientras corre el debounce de la búsqueda por API.
 const filteredProducts = computed(() => {
   let filtered = [...allProducts.value];
 
@@ -135,12 +144,6 @@ const filteredProducts = computed(() => {
     filtered = filtered.filter(product =>
       product.nombre.toLowerCase().includes(search) ||
       (product.sku ? String(product.sku).toLowerCase().includes(search) : false)
-    );
-  }
-
-  if (productCategoryFilter.value) {
-    filtered = filtered.filter(product =>
-      product.categoria === productCategoryFilter.value
     );
   }
 
@@ -1665,24 +1668,24 @@ const selectProduct = (product) => {
 
 const showProductList = async () => {
   try {
-    const productsResponse = await productsApi.getProducts({
-      limit: 50,
-      published: true
-    });
+    // Cargar categorías y marcas desde sus propios endpoints (una sola vez si ya
+    // están cargadas), no derivadas de los 50 productos del listado.
+    const [catRes, brandList] = await Promise.all([
+      categories.value.length ? Promise.resolve(null) : inventoryApi.getCategories(),
+      brands.value.length ? Promise.resolve(null) : catalogApi.getBrands()
+    ]);
 
-    if (productsResponse.success) {
-      // Extraer categorías únicas de los productos
-      const uniqueCategories = new Set();
-      productsResponse.data.forEach(item => {
-        if (item.category?.name) {
-          uniqueCategories.add(item.category.name);
-        }
-      });
-      categories.value = Array.from(uniqueCategories);
-
-      // Mapear productos al formato del POS
-      allProducts.value = mapProductsToFormat(productsResponse.data);
+    if (catRes && catRes.success) {
+      categories.value = catRes.data;
     }
+    if (Array.isArray(brandList)) {
+      brands.value = brandList
+        .filter(b => Number(b.tiendamarca_id) > 0)
+        .map(b => ({ id: b.tiendamarca_id, name: b.tiendamarca_nombre }));
+    }
+
+    // Cargar el primer set de productos (sin filtros) vía la búsqueda por API.
+    await searchProductList({ immediate: true });
 
     showProductModal.value = true;
   } catch (error) {
@@ -1715,38 +1718,51 @@ const closeProductModal = () => {
   showProductModal.value = false;
   productSearchQuery.value = '';
   productCategoryFilter.value = '';
+  productBrandFilter.value = '';
 };
 
-// Búsqueda en modal de catálogo - ahora busca por API
+// Búsqueda en modal de catálogo: filtra por texto + categoría + marca vía API.
 let searchTimeout = null;
-const searchProductList = async () => {
-  // Cancelar búsqueda anterior si existe
+const fetchProductList = async () => {
+  try {
+    const params = {
+      limit: 50,
+      published: true
+    };
+
+    // Si hay texto de búsqueda (min 2 caracteres), buscar por API
+    if (productSearchQuery.value && productSearchQuery.value.trim().length >= 2) {
+      params.search = productSearchQuery.value.trim();
+    }
+    if (productCategoryFilter.value) {
+      params.category_id = productCategoryFilter.value;
+    }
+    if (productBrandFilter.value) {
+      params.brand_id = productBrandFilter.value;
+    }
+
+    const productsResponse = await productsApi.getProducts(params);
+
+    if (productsResponse.success) {
+      allProducts.value = mapProductsToFormat(productsResponse.data);
+    }
+  } catch (error) {
+    console.error('Error searching products:', error);
+  }
+};
+
+// El input de texto usa debounce; los selects de categoría/marca disparan
+// la búsqueda de inmediato ({ immediate: true }).
+const searchProductList = async ({ immediate = false } = {}) => {
   if (searchTimeout) {
     clearTimeout(searchTimeout);
+    searchTimeout = null;
   }
-
-  // Debounce de 300ms para evitar muchas llamadas
-  searchTimeout = setTimeout(async () => {
-    try {
-      const params = {
-        limit: 50,
-        published: true
-      };
-
-      // Si hay texto de búsqueda (min 2 caracteres), buscar por API
-      if (productSearchQuery.value && productSearchQuery.value.trim().length >= 2) {
-        params.search = productSearchQuery.value.trim();
-      }
-
-      const productsResponse = await productsApi.getProducts(params);
-
-      if (productsResponse.success) {
-        allProducts.value = mapProductsToFormat(productsResponse.data);
-      }
-    } catch (error) {
-      console.error('Error searching products:', error);
-    }
-  }, 300);
+  if (immediate) {
+    await fetchProductList();
+    return;
+  }
+  searchTimeout = setTimeout(fetchProductList, 300);
 };
 
 // Click outside to close search results
@@ -2504,14 +2520,21 @@ const getPaymentMethodName = (method) => {
                 </button>
               </div>
               <!-- Search and Filters -->
-              <div class="mb-4 grid grid-cols-2 gap-4">
+              <div class="mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <input v-model="productSearchQuery" type="text" placeholder="Buscar productos..."
                   class="p-2 border rounded-lg focus:ring-2 focus:ring-primary-500" @input="searchProductList">
                 <select v-model="productCategoryFilter" class="p-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
-                  @change="searchProductList">
+                  @change="searchProductList({ immediate: true })">
                   <option value="">Todas las categorías</option>
-                  <option v-for="category in categories" :key="category" :value="category">
-                    {{ category }}
+                  <option v-for="category in categories" :key="category.id" :value="category.id">
+                    {{ category.name }}
+                  </option>
+                </select>
+                <select v-model="productBrandFilter" class="p-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
+                  @change="searchProductList({ immediate: true })">
+                  <option value="">Todas las marcas</option>
+                  <option v-for="brand in brands" :key="brand.id" :value="brand.id">
+                    {{ brand.name }}
                   </option>
                 </select>
               </div>
