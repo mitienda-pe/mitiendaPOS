@@ -269,6 +269,46 @@ export const useInventoryStore = defineStore('inventory', {
     },
 
     /**
+     * Edición completa de un producto y opcionalmente subir/reemplazar su imagen.
+     * @param {number} id - ID del producto a editar
+     * @param {Object} payload - campos editables (ver inventoryApi.updateProduct)
+     * @param {File|null} imageFile - Imagen opcional a subir tras actualizar
+     * @returns {Promise<{ success: boolean, data?: object, message?: string, imageError?: string }>}
+     */
+    async updateProduct(id, payload, imageFile = null) {
+      try {
+        const response = await inventoryApi.updateProduct(id, payload);
+
+        if (!response.success) {
+          return { success: false, message: response.message || 'Error al actualizar producto' };
+        }
+
+        let imageError = null;
+        if (imageFile) {
+          try {
+            await inventoryApi.uploadProductImage(id, imageFile);
+          } catch (imgErr) {
+            console.error('Error uploading product image:', imgErr);
+            imageError = imgErr.response?.data?.message || imgErr.message || 'Error al subir la imagen';
+          }
+        }
+
+        // Refrescar lista y estadísticas para reflejar los cambios
+        await Promise.all([this.loadProducts(), this.loadStats()]);
+
+        return { success: true, data: response.data, message: response.message, imageError };
+      } catch (error) {
+        console.error('Error updating product:', error);
+        const apiData = error.response?.data;
+        let message = apiData?.message || error.message || 'Error al actualizar producto';
+        if (apiData?.messages && typeof apiData.messages === 'object') {
+          message = Object.values(apiData.messages).join(' ');
+        }
+        return { success: false, message };
+      }
+    },
+
+    /**
      * Cargar estadísticas del inventario
      */
     async loadStats() {

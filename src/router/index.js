@@ -96,6 +96,13 @@ const routes = [
     meta: { requiresAuth: true, roles: ['supervisor', 'administrador'] }
   },
   {
+    path: '/inventory/:id/edit',
+    name: 'EditProduct',
+    // Reutiliza el formulario de CreateProduct en modo edición (detecta route.params.id).
+    component: () => import('../views/CreateProduct.vue'),
+    meta: { requiresAuth: true, roles: ['supervisor', 'administrador'] }
+  },
+  {
     path: '/customers',
     name: 'Customers',
     component: Customers,

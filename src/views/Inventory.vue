@@ -314,6 +314,13 @@
                 Lotes
               </button>
               <button
+                v-if="canCreate"
+                @click="router.push(`/inventory/${product.id}/edit`)"
+                class="text-primary-600 hover:text-primary-700"
+              >
+                Editar
+              </button>
+              <button
                 v-if="canEdit"
                 @click="openQuickEdit(product)"
                 class="text-primary-600 hover:text-primary-700"
@@ -444,6 +451,13 @@
                       class="text-amber-600 hover:text-amber-700 transition-colors"
                     >
                       Lotes
+                    </button>
+                    <button
+                      v-if="canCreate"
+                      @click="router.push(`/inventory/${product.id}/edit`)"
+                      class="text-primary-600 hover:text-primary-800 transition-colors"
+                    >
+                      Editar
                     </button>
                     <button
                       v-if="canEdit"

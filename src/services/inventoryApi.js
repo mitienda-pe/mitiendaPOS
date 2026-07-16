@@ -122,10 +122,12 @@ export const inventoryApi = {
         success: true,
         data: {
           id: rawData.id,
-          sku: rawData.sku || 'N/A',
+          sku: rawData.sku && rawData.sku !== 'N/A' ? rawData.sku : '',
           name: rawData.name,
+          barcode: rawData.barcode || '',
           description: rawData.description || '',
           price: parseFloat(rawData.price || '0'),
+          cost: rawData.cost !== undefined && rawData.cost !== null ? parseFloat(rawData.cost) : null,
           stock: parseInt(rawData.stock || '0'),
           min_stock: parseInt(rawData.min_stock || '5'),
           unlimited_stock: rawData.unlimited_stock === true || rawData.unlimited_stock === 1,
@@ -133,6 +135,8 @@ export const inventoryApi = {
           featured: rawData.featured || false,
           tax_affectation: parseInt(rawData.tax_affectation || '1'),
           images: rawData.images || [],
+          // Detalle expone `categories` (array); guardamos el primer id para el selector del POS.
+          category_id: Array.isArray(rawData.categories) && rawData.categories.length ? rawData.categories[0].id : '',
           category: rawData.category || { name: 'Sin categoría' },
           brand: rawData.brand || null,
           created_at: rawData.created_at || new Date().toISOString(),
@@ -244,7 +248,7 @@ export const inventoryApi = {
 
   /**
    * Crear un producto (formulario mínimo POS)
-   * @param {Object} data - { name, sku, barcode, price, stock, unlimited_stock, categories, published }
+   * @param {Object} data - { name, sku, barcode, price, stock, unlimited_stock, categories, brand_id, published }
    * @returns {Promise} { success, data: { id, ... }, message }
    */
   async createProduct(data) {
@@ -270,6 +274,10 @@ export const inventoryApi = {
     if (Array.isArray(data.categories) && data.categories.length) {
       payload.categories = data.categories.map((id) => parseInt(id));
     }
+    // Marca: el backend mapea brand_id -> tiendamarca_id (0 = sin marca).
+    if (data.brand_id !== undefined && data.brand_id !== null && data.brand_id !== '') {
+      payload.brand_id = parseInt(data.brand_id);
+    }
 
     const response = await apiClient.post('/products', payload);
     // El interceptor normaliza { error:0, data:{...} } -> { success, data:{...} }
@@ -278,6 +286,53 @@ export const inventoryApi = {
       success: true,
       data: created,
       message: 'Producto creado correctamente'
+    };
+  },
+
+  /**
+   * Edición completa de un producto (PUT /products/:id).
+   * A diferencia de quickUpdate (solo precio/stock/IGV), envía todos los campos
+   * editables del formulario del POS. Los campos vacíos se envían explícitamente
+   * para poder limpiarlos (ej. quitar el código de barras).
+   * @param {number} id - ID del producto
+   * @param {Object} data - { name, sku, barcode, price, cost, stock, unlimited_stock, tax_affectation, published, categories, brand_id }
+   * @returns {Promise} { success, data, message }
+   */
+  async updateProduct(id, data) {
+    const payload = {
+      name: data.name,
+      sku: data.sku ? String(data.sku).trim() : '',
+      barcode: data.barcode ? String(data.barcode).trim() : '',
+      price: data.price !== undefined && data.price !== null ? parseFloat(data.price) : 0,
+      published: data.published ? true : false,
+      cost: data.cost !== undefined && data.cost !== null && data.cost !== '' ? parseFloat(data.cost) : null
+    };
+    if (data.unlimited_stock) {
+      payload.unlimited_stock = true;
+    } else {
+      payload.unlimited_stock = false;
+      if (data.stock !== undefined && data.stock !== null && data.stock !== '') {
+        payload.stock = parseInt(data.stock);
+      }
+    }
+    // Afectación IGV: 1=Gravado, 2=Exonerado, 3=Inafecto
+    if (data.tax_affectation !== undefined && data.tax_affectation !== null) {
+      payload.tax_affectation = parseInt(data.tax_affectation);
+    }
+    if (Array.isArray(data.categories)) {
+      payload.categories = data.categories.map((cid) => parseInt(cid));
+    }
+    // Marca: enviar siempre que el formulario la gestione (0 limpia la marca).
+    if (data.brand_id !== undefined && data.brand_id !== null && data.brand_id !== '') {
+      payload.brand_id = parseInt(data.brand_id);
+    }
+
+    const response = await apiClient.put(`/products/${id}`, payload);
+    const updated = response.data?.data ?? response.data;
+    return {
+      success: true,
+      data: updated,
+      message: 'Producto actualizado correctamente'
     };
   },
 

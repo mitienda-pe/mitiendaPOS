@@ -12,7 +12,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
         </button>
-        <h1 class="text-xl font-semibold">Nuevo producto</h1>
+        <h1 class="text-xl font-semibold">{{ isEdit ? 'Editar producto' : 'Nuevo producto' }}</h1>
       </div>
     </div>
 
@@ -198,8 +198,8 @@
         </div>
       </div>
 
-      <!-- Categoría -->
-      <div>
+      <!-- Categoría (oculto si la tienda no tiene categorías) -->
+      <div v-if="categories.length">
         <label class="block text-xs text-gray-500 mb-1 ml-1">Categoría</label>
         <select
           v-model="form.category_id"
@@ -207,6 +207,18 @@
         >
           <option value="">Sin categoría</option>
           <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+        </select>
+      </div>
+
+      <!-- Marca (oculto si la tienda no tiene marcas) -->
+      <div v-if="brands.length">
+        <label class="block text-xs text-gray-500 mb-1 ml-1">Marca</label>
+        <select
+          v-model="form.brand_id"
+          class="w-full px-4 py-4 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+        >
+          <option value="">Sin marca</option>
+          <option v-for="b in brands" :key="b.id" :value="b.id">{{ b.name }}</option>
         </select>
       </div>
 
@@ -241,7 +253,7 @@
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
         </svg>
-        {{ submitting ? 'Creando…' : 'Crear producto' }}
+        {{ submitting ? (isEdit ? 'Guardando…' : 'Creando…') : (isEdit ? 'Guardar cambios' : 'Crear producto') }}
       </button>
     </form>
 
@@ -273,17 +285,23 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useInventoryStore } from '../stores/inventory';
 import { useAuthStore } from '../stores/auth';
 import { useCashierStore } from '../stores/cashier';
 import { inventoryApi } from '../services/inventoryApi';
+import { catalogApi } from '../services/catalogApi';
 import BarcodeScanner from '../components/BarcodeScanner.vue';
 
 const router = useRouter();
+const route = useRoute();
 const inventoryStore = useInventoryStore();
 const authStore = useAuthStore();
 const cashierStore = useCashierStore();
+
+// Modo edición: la ruta /inventory/:id/edit trae el id; sin id es alta de producto.
+const productId = computed(() => route.params.id || null);
+const isEdit = computed(() => !!productId.value);
 
 // Reforzar el gate de la ruta: solo admin/supervisor (rol del cajero activo manda).
 const canCreate = computed(() => {
@@ -300,6 +318,7 @@ const form = reactive({
   stock: '',
   unlimited_stock: false,
   category_id: '',
+  brand_id: '',
   tax_affectation: 1, // 1=Gravado/afecto, 2=Exonerado, 3=Inafecto
   published: true
 });
@@ -313,6 +332,7 @@ const estimatedMargin = computed(() => {
 });
 
 const categories = ref([]);
+const brands = ref([]); // [{ id, name }]
 const imageInput = ref(null);
 const imageFile = ref(null);
 const imagePreview = ref('');
@@ -348,6 +368,8 @@ const onBarcodeDetected = (code) => {
 };
 
 const onNameInput = () => {
+  // El autocompletado del catálogo maestro solo aplica al dar de alta un producto.
+  if (isEdit.value) return;
   // No re-sugerir el valor que acabamos de autocompletar al seleccionar.
   if (suppressSuggest) { suppressSuggest = false; return; }
 
@@ -477,28 +499,65 @@ const handleSubmit = async () => {
       unlimited_stock: form.unlimited_stock,
       tax_affectation: form.tax_affectation,
       published: form.published,
-      categories: form.category_id ? [form.category_id] : []
+      categories: form.category_id ? [form.category_id] : [],
+      // brand_id=0 limpia la marca en el backend (tiendamarca_id=0).
+      brand_id: form.brand_id ? parseInt(form.brand_id) : 0
     };
 
-    const result = await inventoryStore.createProduct(payload, imageFile.value);
+    const result = isEdit.value
+      ? await inventoryStore.updateProduct(productId.value, payload, imageFile.value)
+      : await inventoryStore.createProduct(payload, imageFile.value);
+
+    const doneVerb = isEdit.value ? 'actualizado' : 'creado';
 
     if (result.success) {
       if (result.imageError) {
-        // El producto se creó pero la imagen no se pudo subir.
-        showToast('info', 'Producto creado, pero la imagen no se pudo subir: ' + result.imageError, 4000);
+        // El producto se guardó pero la imagen no se pudo subir.
+        showToast('info', `Producto ${doneVerb}, pero la imagen no se pudo subir: ` + result.imageError, 4000);
         setTimeout(() => router.push('/inventory'), 2500);
       } else {
-        showToast('success', 'Producto creado correctamente');
+        showToast('success', `Producto ${doneVerb} correctamente`);
         setTimeout(() => router.push('/inventory'), 1200);
       }
     } else {
-      showToast('error', result.message || 'No se pudo crear el producto');
+      showToast('error', result.message || `No se pudo ${isEdit.value ? 'actualizar' : 'crear'} el producto`);
     }
   } catch (error) {
-    console.error('Error creating product:', error);
-    showToast('error', error.message || 'No se pudo crear el producto');
+    console.error('Error saving product:', error);
+    showToast('error', error.message || `No se pudo ${isEdit.value ? 'actualizar' : 'crear'} el producto`);
   } finally {
     submitting.value = false;
+  }
+};
+
+// En modo edición: cargar el producto y prellenar el formulario.
+const loadProductForEdit = async () => {
+  try {
+    const product = await inventoryStore.loadProduct(productId.value);
+    if (!product) {
+      showToast('error', 'No se pudo cargar el producto');
+      setTimeout(() => router.push('/inventory'), 1500);
+      return;
+    }
+    form.name = product.name || '';
+    form.sku = product.sku || '';
+    form.barcode = product.barcode || '';
+    form.price = product.price != null ? String(product.price) : '';
+    form.cost = product.cost != null ? String(product.cost) : '';
+    form.stock = product.unlimited_stock ? '' : String(product.stock ?? '');
+    form.unlimited_stock = !!product.unlimited_stock;
+    form.category_id = product.category_id || '';
+    form.brand_id = product.brand?.id || '';
+    form.tax_affectation = product.tax_affectation || 1;
+    form.published = !!product.published;
+    // Vista previa de la imagen actual (remota). Solo se reemplaza si el usuario
+    // elige una nueva foto; no hay forma de "quitar" la imagen remota desde aquí.
+    const firstImage = Array.isArray(product.images) && product.images.length ? product.images[0] : null;
+    imagePreview.value = firstImage?.url || firstImage || '';
+  } catch (error) {
+    console.error('Error loading product for edit:', error);
+    showToast('error', 'Error al cargar el producto');
+    setTimeout(() => router.push('/inventory'), 1500);
   }
 };
 
@@ -508,10 +567,22 @@ onMounted(async () => {
     return;
   }
   try {
-    const res = await inventoryApi.getCategories();
-    if (res.success) categories.value = res.data;
+    const [catRes, brandList] = await Promise.all([
+      inventoryApi.getCategories(),
+      catalogApi.getBrands()
+    ]);
+    if (catRes.success) categories.value = catRes.data;
+    if (Array.isArray(brandList)) {
+      brands.value = brandList
+        .filter(b => Number(b.tiendamarca_id) > 0)
+        .map(b => ({ id: b.tiendamarca_id, name: b.tiendamarca_nombre }));
+    }
   } catch (error) {
-    console.error('Error loading categories:', error);
+    console.error('Error loading categories/brands:', error);
+  }
+
+  if (isEdit.value) {
+    await loadProductForEdit();
   }
 });
 </script>
