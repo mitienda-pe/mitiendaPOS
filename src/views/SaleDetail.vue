@@ -163,22 +163,45 @@
       </div>
 
       <!-- Sincronización ERP -->
-      <div v-if="showErpNotification()" class="mb-4 border-l-4 p-4 rounded" :class="erpSyncSuccess ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'">
+      <div
+        v-if="showErpNotification()"
+        class="mb-4 border-l-4 p-4 rounded"
+        :class="{
+          'bg-green-50 border-green-500': erpSyncState === 'success',
+          'bg-yellow-50 border-yellow-500': erpSyncState === 'pending',
+          'bg-red-50 border-red-500': erpSyncState === 'error',
+        }"
+      >
         <div class="flex items-start">
           <!-- Success icon -->
-          <svg v-if="erpSyncSuccess" class="h-5 w-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg v-if="erpSyncState === 'success'" class="h-5 w-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <!-- Pending icon -->
+          <svg v-else-if="erpSyncState === 'pending'" class="h-5 w-5 text-yellow-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <!-- Error icon -->
           <svg v-else class="h-5 w-5 text-red-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <div class="flex-1">
-            <p class="font-medium mb-1" :class="erpSyncSuccess ? 'text-green-800' : 'text-red-800'">
-              Sincronización ERP: {{ erpSyncSuccess ? 'Exitoso' : 'Error' }}
+            <p
+              class="font-medium mb-1"
+              :class="{
+                'text-green-800': erpSyncState === 'success',
+                'text-yellow-800': erpSyncState === 'pending',
+                'text-red-800': erpSyncState === 'error',
+              }"
+            >
+              Sincronización ERP:
+              {{ erpSyncState === 'success' ? 'Exitoso' : erpSyncState === 'pending' ? 'Pendiente' : 'Error' }}
+            </p>
+            <p v-if="erpSyncState === 'pending'" class="text-yellow-700 text-sm">
+              La venta está en cola para sincronizarse con el ERP.
             </p>
             <!-- Error details -->
-            <div v-if="!erpSyncSuccess && erpErrorDetail" class="text-red-700 text-sm space-y-1">
+            <div v-if="erpSyncState === 'error' && erpErrorDetail" class="text-red-700 text-sm space-y-1">
               <p v-if="erpErrorDetail.error">{{ erpErrorDetail.error }}</p>
               <p v-if="erpErrorDetail.failed_at" class="text-red-600 text-xs">Paso: {{ erpErrorDetail.failed_at }}</p>
             </div>
@@ -1114,16 +1137,36 @@ const canShowEmailButton = () => {
 };
 
 const showErpNotification = () => {
-  // Mostrar notificación si se intentó sincronizar con el ERP (status != null)
+  // Solo tiene sentido si la tienda tiene integración con el ERP (NetSuite).
+  // Sin ERP configurado, toda orden POS queda con estado_notif_erp = 9 (pendiente)
+  // de forma permanente porque no hay nada que la sincronice: no mostramos el bloque.
+  if (!authStore.canNetsuite) return false;
   return order.value?._rawDetail?.tiendaventa_estado_notif_erp != null;
 };
 
-const erpSyncSuccess = computed(() => {
-  return order.value?._rawDetail?.tiendaventa_estado_notif_erp === 0;
+// Estado de sincronización ERP. El código numérico es genérico y ambiguo entre
+// NetSuite y los WMS (p.ej. 1 = éxito en WMS pero no lo usa NetSuite), así que:
+//   0 = éxito · 9 = pendiente (encolada, aún no procesada, NO es error)
+//   resto = se decide por el `success` del JSON de respuesta; si no hay, es error.
+const erpSyncState = computed(() => {
+  const estado = order.value?._rawDetail?.tiendaventa_estado_notif_erp;
+  if (estado == null) return null;
+  const n = Number(estado);
+  if (n === 0) return 'success';
+  if (n === 9) return 'pending';
+
+  const raw = order.value?._rawDetail?.tiendaventa_mensaje_notif_erp;
+  if (raw) {
+    try {
+      const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (parsed && parsed.success === true) return 'success';
+    } catch { /* JSON inválido: tratar como error abajo */ }
+  }
+  return 'error';
 });
 
 const erpErrorDetail = computed(() => {
-  if (erpSyncSuccess.value) return null;
+  if (erpSyncState.value !== 'error') return null;
   const raw = order.value?._rawDetail?.tiendaventa_mensaje_notif_erp;
   if (!raw) return null;
   try {
