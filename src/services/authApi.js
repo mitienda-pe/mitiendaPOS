@@ -98,8 +98,9 @@ export const authApi = {
   // --- Recuperación de contraseña (endpoints públicos) ---
 
   // Solicita el envío del enlace de restablecimiento al correo del administrador.
+  // `source: 'pos'` hace que el enlace del correo apunte al dominio del POS.
   async forgotPassword(email) {
-    const response = await apiClient.post('/auth/forgot-password', { email });
+    const response = await apiClient.post('/auth/forgot-password', { email, source: 'pos' });
     return response.data;
   },
 
