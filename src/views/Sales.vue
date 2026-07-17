@@ -37,7 +37,7 @@
               <input
                 v-model="searchQuery"
                 type="text"
-                placeholder="Cliente o número..."
+                placeholder="Cliente, N° venta o comprobante..."
                 class="w-full p-2 pr-8 border rounded-lg focus:ring-2 focus:ring-primary-500 text-sm"
                 @input="debouncedSearch"
               >
@@ -168,6 +168,21 @@
                       {{ getSourceText(order.source) }}
                     </span>
                   </div>
+                  <div v-if="order.billing.emitted" class="flex items-center gap-2 mt-2">
+                    <span class="text-xs text-gray-600">{{ order.billing.number }}</span>
+                    <button
+                      v-if="order.billing.pdfUrl"
+                      type="button"
+                      @click.stop.prevent="openPdf(order.billing.pdfUrl)"
+                      class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded text-white bg-red-600 hover:bg-red-700"
+                      title="Descargar PDF"
+                    >
+                      <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      PDF
+                    </button>
+                  </div>
                 </div>
                 <div class="text-right flex-shrink-0">
                   <div class="text-base font-semibold text-gray-900">{{ formatCurrency(order.total) }}</div>
@@ -188,10 +203,8 @@
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cajero</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Origen</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comprobante</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
@@ -206,21 +219,27 @@
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {{ truncateText(order.customer?.name || 'Cliente General', 36) }}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                  {{ order.cajero_nombre || '-' }}
-                </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
                   {{ formatCurrency(order.total) }}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span :class="getStatusClass(order.status)" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full">
-                    {{ getStatusText(order.status) }}
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span :class="getSourceClass(order.source)" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full">
-                    {{ getSourceText(order.source) }}
-                  </span>
+                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                  <div v-if="order.billing.emitted" class="flex items-center gap-2">
+                    <span class="text-gray-900 font-medium">{{ order.billing.number }}</span>
+                    <a
+                      v-if="order.billing.pdfUrl"
+                      :href="order.billing.pdfUrl"
+                      target="_blank"
+                      rel="noopener"
+                      class="inline-flex items-center px-2 py-1 text-xs font-medium rounded text-white bg-red-600 hover:bg-red-700"
+                      title="Descargar PDF"
+                    >
+                      <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      PDF
+                    </a>
+                  </div>
+                  <span v-else class="text-gray-400 text-xs">Sin comprobante</span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <router-link
@@ -366,6 +385,29 @@ const activeFiltersCount = computed(() => {
 
 let searchTimeout = null;
 
+// Extrae el comprobante electrónico emitido de la orden (serie-correlativo + PDF).
+// El backend ya lo entrega en billing_info['e-billing'] (misma fuente que Documentos).
+const extractBilling = (order) => {
+  const eb = order?.billing_info?.['e-billing'];
+  if (eb) {
+    const emitted = Number(eb.status) === 1 && !!eb.serie && !!eb.correlative;
+    return {
+      emitted,
+      number: emitted ? `${eb.serie}-${eb.correlative}` : '',
+      pdfUrl: eb.url_pdf || ''
+    };
+  }
+  // Respuesta legacy (array plano): campos crudos de la venta.
+  const serie = order?.tiendaventa_seriefacturacion;
+  const correlative = order?.tiendaventa_correlativofacturacion;
+  const emitted = !!(serie && correlative);
+  return {
+    emitted,
+    number: emitted ? `${serie}-${correlative}` : '',
+    pdfUrl: ''
+  };
+};
+
 // Filtrar órdenes en el frontend para la búsqueda y paginar
 const filteredOrders = computed(() => {
   if (!searchQuery.value) return allOrders.value;
@@ -375,10 +417,12 @@ const filteredOrders = computed(() => {
     const customerName = (order.customer?.name || '').toLowerCase();
     const orderNumber = (order.order_number || '').toString().toLowerCase();
     const orderId = (order.id || '').toString().toLowerCase();
+    const docNumber = (order.billing?.number || '').toLowerCase();
 
     return customerName.includes(query) ||
            orderNumber.includes(query) ||
-           orderId.includes(query);
+           orderId.includes(query) ||
+           docNumber.includes(query);
   });
 });
 
@@ -468,6 +512,7 @@ const fetchOrders = async () => {
         status: order.status, // Ya viene mapeado por el backend
         source: order.source || order.tiendaventa_origen || 'web',
         created_at: order.date_created,
+        billing: extractBilling(order),
         // Guardar datos raw para modal
         _raw: order
       }));
@@ -486,6 +531,7 @@ const fetchOrders = async () => {
         status: order.tiendaventa_pagado || order.status,
         source: order.tiendaventa_origen || order.source || 'web',
         created_at: order.tiendaventa_fecha || order.created_at,
+        billing: extractBilling(order),
         _raw: order
       }));
     } else {
@@ -557,6 +603,10 @@ const getSourceClass = (source) => {
     'api': 'bg-indigo-100 text-indigo-800'
   };
   return classMap[source] || 'bg-primary-100 text-primary-800';
+};
+
+const openPdf = (url) => {
+  if (url) window.open(url, '_blank', 'noopener');
 };
 
 const truncateText = (text, maxLength) => {

@@ -12,7 +12,6 @@ const Customers = () => import('../views/Customers.vue');
 const Vouchers = () => import('../views/Vouchers.vue');
 const Menu = () => import('../views/Menu.vue');
 const Returns = () => import('../views/Returns.vue');
-const Documents = () => import('../views/Documents.vue');
 const Sales = () => import('../views/Sales.vue');
 const Promotions = () => import('../views/Promotions.vue');
 const Cashier = () => import('../views/Cashier.vue');
@@ -121,10 +120,10 @@ const routes = [
     meta: { requiresAuth: true, roles: ['cajero', 'supervisor', 'administrador'] }
   },
   {
+    // Ruta antigua de Documentos: los comprobantes ahora se ven como una
+    // columna dentro del historial de Ventas. Se mantiene el redirect por compatibilidad.
     path: '/documents',
-    name: 'Documents',
-    component: Documents,
-    meta: { requiresAuth: true, roles: ['cajero', 'supervisor', 'administrador'] }
+    redirect: '/sales'
   },
   {
     path: '/sales',
