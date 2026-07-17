@@ -1006,30 +1006,15 @@
             </div>
 
             <div class="border-t pt-6">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="bg-primary-50 p-6 rounded-lg border-l-4 border-primary-500">
-                  <h3 class="text-lg font-semibold text-primary-900 mb-3">Contacto</h3>
-                  <div class="space-y-2 text-sm">
-                    <p class="text-primary-800"><strong>Email:</strong> soporte@mitienda.pe</p>
-                    <p class="text-primary-800"><strong>Teléfono:</strong> (01) 123-4567</p>
-                    <p class="text-primary-800"><strong>WhatsApp:</strong> +51 999 888 777</p>
-                    <p class="text-primary-800"><strong>Horario:</strong> Lun-Vie 9:00 AM - 6:00 PM</p>
-                  </div>
-                </div>
-
-                <div class="bg-green-50 p-6 rounded-lg border-l-4 border-green-500">
-                  <h3 class="text-lg font-semibold text-green-900 mb-3">Recursos Adicionales</h3>
-                  <div class="space-y-2">
-                    <a href="https://docs.mitienda.pe" target="_blank" class="block text-sm text-green-800 hover:text-green-900 hover:underline">
-                      → Documentación completa
-                    </a>
-                    <a href="https://docs.mitienda.pe/videos" target="_blank" class="block text-sm text-green-800 hover:text-green-900 hover:underline">
-                      → Video tutoriales
-                    </a>
-                    <a href="https://docs.mitienda.pe/changelog" target="_blank" class="block text-sm text-green-800 hover:text-green-900 hover:underline">
-                      → Novedades y actualizaciones
-                    </a>
-                  </div>
+              <div class="bg-primary-50 p-6 rounded-lg border-l-4 border-primary-500">
+                <h3 class="text-lg font-semibold text-primary-900 mb-3">Contacto</h3>
+                <div class="space-y-2 text-sm">
+                  <p class="text-primary-800"><strong>Email:</strong> soporte@mitienda.pe</p>
+                  <p class="text-primary-800">
+                    <strong>WhatsApp:</strong>
+                    <a href="https://wa.me/51967797232?text=Hola%20Renato%2C%20necesito%20ayuda%20con%20el%20PDV" target="_blank" class="text-primary-800 hover:text-primary-900 hover:underline">+51 967 797 232</a>
+                  </p>
+                  <p class="text-primary-800"><strong>Horario:</strong> Lun-Vie 9:00 AM - 6:00 PM</p>
                 </div>
               </div>
 
