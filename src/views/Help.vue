@@ -951,6 +951,158 @@
             </div>
           </div>
 
+          <!-- Impresora Térmica / QZ Tray Section -->
+          <div v-show="activeSection === 'impresora'" class="space-y-6">
+            <div>
+              <h2 class="text-2xl font-bold text-gray-900 mb-2">Impresora Térmica con QZ Tray</h2>
+              <p class="text-gray-600">Cómo imprimir tickets en impresoras térmicas (58mm / 80mm)</p>
+            </div>
+
+            <!-- Qué es -->
+            <div class="border-t pt-6">
+              <h3 class="text-xl font-semibold text-gray-900 mb-3 flex items-center">
+                <span class="bg-primary-100 text-primary-800 rounded-full w-8 h-8 flex items-center justify-center mr-3 text-sm font-bold">1</span>
+                ¿Qué es QZ Tray y para qué sirve?
+              </h3>
+              <div class="ml-11 space-y-3">
+                <p class="text-gray-700">
+                  <strong>QZ Tray</strong> es un pequeño programa gratuito que se instala en la computadora
+                  donde está conectada tu impresora térmica de tickets. Funciona como un puente entre el POS
+                  (que corre dentro del navegador) y la impresora.
+                </p>
+                <p class="text-gray-700">
+                  Los navegadores web, por seguridad, no pueden comunicarse directamente con impresoras
+                  térmicas. QZ Tray resuelve esto: recibe el ticket desde el POS y lo envía a la impresora
+                  en formato <strong>ESC/POS</strong>, con el ancho de rollo correcto y
+                  <strong>sin el cuadro de diálogo de impresión del navegador</strong>. El resultado es una
+                  impresión rápida, directa y con el formato de ticket adecuado.
+                </p>
+
+                <div class="bg-primary-50 border-l-4 border-primary-400 p-4">
+                  <p class="text-sm text-primary-700">
+                    <strong>¿Cuándo lo necesito?</strong> Solo si vas a imprimir en una impresora térmica de
+                    tickets (58mm u 80mm). Si imprimes en una impresora común desde el navegador, puedes dejar
+                    la impresión térmica desactivada y no necesitas QZ Tray.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Descargar e instalar -->
+            <div class="border-t pt-6">
+              <h3 class="text-xl font-semibold text-gray-900 mb-3 flex items-center">
+                <span class="bg-primary-100 text-primary-800 rounded-full w-8 h-8 flex items-center justify-center mr-3 text-sm font-bold">2</span>
+                Descargar e instalar
+              </h3>
+              <div class="ml-11 space-y-3">
+                <p class="text-gray-700">
+                  Descarga QZ Tray desde su sitio oficial. Es compatible con <strong>Windows, macOS y Linux</strong>:
+                </p>
+                <a
+                  href="https://qz.io/download/"
+                  target="_blank"
+                  rel="noopener"
+                  class="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
+                >
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Descargar QZ Tray — qz.io/download
+                </a>
+                <ol class="list-decimal list-inside space-y-2 text-gray-700 mt-3">
+                  <li>Descarga el instalador correspondiente a tu sistema operativo</li>
+                  <li>Ejecuta el instalador y sigue los pasos (instalación estándar, "Siguiente → Siguiente")</li>
+                  <li>Al finalizar, QZ Tray se abrirá automáticamente y quedará corriendo en segundo plano</li>
+                  <li>Verás su ícono en la <strong>bandeja del sistema</strong> (junto al reloj, en la esquina de la pantalla)</li>
+                </ol>
+
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mt-3">
+                  <p class="text-sm text-yellow-700">
+                    <strong>Instálalo en la computadora donde está la impresora.</strong> Cada equipo que vaya
+                    a imprimir tickets necesita su propia instalación de QZ Tray.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Configurar en el POS -->
+            <div class="border-t pt-6">
+              <h3 class="text-xl font-semibold text-gray-900 mb-3 flex items-center">
+                <span class="bg-primary-100 text-primary-800 rounded-full w-8 h-8 flex items-center justify-center mr-3 text-sm font-bold">3</span>
+                Configurar la impresora en el POS
+              </h3>
+              <div class="ml-11 space-y-3">
+                <p class="text-gray-700">Con QZ Tray instalado y corriendo:</p>
+                <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                  <li>Asegúrate de que QZ Tray esté abierto (ícono visible en la bandeja del sistema)</li>
+                  <li>En el POS, ve a <strong>Configuración → Impresora Térmica</strong></li>
+                  <li>
+                    La primera vez, QZ Tray mostrará un <strong>aviso de confianza</strong> pidiendo permiso
+                    para la conexión. Haz clic en <strong>Permitir / Allow</strong> y marca la opción de
+                    recordarlo para no repetir el aviso
+                  </li>
+                  <li>El estado debe cambiar a <strong>Conectado</strong> (indicador en verde)</li>
+                  <li>Activa el interruptor de <strong>impresión térmica</strong></li>
+                  <li>Pulsa <strong>Detectar impresoras</strong> y selecciona tu impresora de la lista</li>
+                  <li>Pulsa <strong>Imprimir ticket de prueba</strong> para verificar que todo funcione</li>
+                </ol>
+
+                <div class="bg-green-50 border-l-4 border-green-400 p-4 mt-3">
+                  <p class="text-sm text-green-700">
+                    <strong>Listo:</strong> a partir de ahora, cada venta que cobres se imprimirá directamente
+                    en tu impresora térmica sin necesidad de confirmar el diálogo del navegador.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Solución de problemas -->
+            <div class="border-t pt-6">
+              <h3 class="text-xl font-semibold text-gray-900 mb-3 flex items-center">
+                <span class="bg-primary-100 text-primary-800 rounded-full w-8 h-8 flex items-center justify-center mr-3 text-sm font-bold">4</span>
+                Solución de problemas
+              </h3>
+              <div class="ml-11 space-y-3">
+                <div class="bg-red-50 p-3 rounded border-l-4 border-red-400">
+                  <p class="font-semibold text-red-800">El estado aparece como "Desconectado"</p>
+                  <p class="text-sm text-red-700">
+                    Verifica que QZ Tray esté abierto (ícono en la bandeja del sistema). Si acabas de reiniciar
+                    la computadora, ábrelo manualmente. Luego pulsa <strong>Reintentar conexión</strong>.
+                  </p>
+                </div>
+                <div class="bg-red-50 p-3 rounded border-l-4 border-red-400">
+                  <p class="font-semibold text-red-800">No aparece ninguna impresora al detectar</p>
+                  <p class="text-sm text-red-700">
+                    Confirma que la impresora esté encendida, conectada y con sus controladores instalados en
+                    el sistema operativo. Debe aparecer en la lista de impresoras de Windows/macOS antes de que
+                    QZ Tray pueda verla.
+                  </p>
+                </div>
+                <div class="bg-red-50 p-3 rounded border-l-4 border-red-400">
+                  <p class="font-semibold text-red-800">No aparece el aviso de confianza / no imprime</p>
+                  <p class="text-sm text-red-700">
+                    Cierra por completo QZ Tray desde la bandeja del sistema y vuelve a abrirlo. Luego recarga
+                    la página del POS y reintenta la conexión.
+                  </p>
+                </div>
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                  <p class="text-sm text-yellow-700">
+                    <strong>Recuerda:</strong> QZ Tray debe permanecer abierto todo el tiempo que uses la
+                    impresión térmica. Se recomienda configurarlo para que <strong>se inicie automáticamente</strong>
+                    con la computadora (opción disponible en las preferencias del propio QZ Tray).
+                  </p>
+                </div>
+                <div class="bg-gray-50 border-l-4 border-gray-400 p-4">
+                  <p class="text-sm text-gray-700">
+                    Si la impresión térmica está desactivada, el POS usará la <strong>impresión estándar del
+                    navegador</strong> como alternativa. También puedes enviar el comprobante por email al
+                    cliente en cualquier momento.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- FAQ Section -->
           <div v-show="activeSection === 'faq'" class="space-y-6">
             <div>
@@ -978,7 +1130,7 @@
 
               <div class="bg-gray-50 p-4 rounded-lg">
                 <h3 class="font-semibold text-gray-900 mb-2">¿Qué hago si la impresora no funciona?</h3>
-                <p class="text-gray-700">Verifica que la impresora esté encendida y conectada. Si el problema persiste, puedes enviar el comprobante por email al cliente y solicitar soporte técnico.</p>
+                <p class="text-gray-700">Verifica que la impresora esté encendida y conectada. Si usas una impresora térmica, revisa que <strong>QZ Tray</strong> esté abierto y conectado (ver la sección <strong>"Impresora Térmica (QZ Tray)"</strong> de este manual). Mientras tanto, puedes enviar el comprobante por email al cliente y solicitar soporte técnico.</p>
               </div>
 
               <div class="bg-gray-50 p-4 rounded-lg">
@@ -1045,6 +1197,7 @@ const activeSection = ref('cajero');
 const sections = [
   { id: 'cajero', title: 'Manual Cajero' },
   { id: 'administrador', title: 'Manual Administrador' },
+  { id: 'impresora', title: 'Impresora Térmica (QZ Tray)' },
   { id: 'faq', title: 'Preguntas Frecuentes' },
   { id: 'soporte', title: 'Soporte Técnico' }
 ];

@@ -2,6 +2,78 @@
   <div>
     <h1 class="text-2xl font-bold text-gray-900 mb-6">Impresora Térmica</h1>
 
+    <!-- ¿Qué es QZ Tray? -->
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+      <button
+        @click="showQzInfo = !showQzInfo"
+        class="w-full flex items-center justify-between text-left"
+      >
+        <span class="flex items-center gap-2 text-lg font-semibold text-gray-800">
+          <svg class="h-5 w-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          ¿Qué es QZ Tray y por qué lo necesito?
+        </span>
+        <svg
+          class="h-5 w-5 text-gray-400 transition-transform"
+          :class="showQzInfo ? 'rotate-180' : ''"
+          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      <div v-show="showQzInfo" class="mt-4 space-y-4 text-sm text-gray-700">
+        <p>
+          <strong>QZ Tray</strong> es un pequeño programa gratuito que se instala en la computadora
+          donde está conectada tu impresora térmica. Actúa como puente entre el POS (que corre en el
+          navegador) y la impresora, permitiendo enviar los tickets directamente en formato ESC/POS
+          <strong>sin el cuadro de diálogo de impresión del navegador</strong> y con el formato correcto
+          de rollo térmico.
+        </p>
+
+        <div class="bg-primary-50 border-l-4 border-primary-400 p-4">
+          <p class="font-medium text-primary-800 mb-1">¿Cuándo lo necesito?</p>
+          <p class="text-primary-700">
+            Solo si vas a imprimir en una impresora térmica de tickets (58mm / 80mm). Si imprimes en
+            una impresora normal desde el navegador, puedes dejar la impresión térmica desactivada.
+          </p>
+        </div>
+
+        <div>
+          <p class="font-medium text-gray-800 mb-2">Cómo instalarlo y configurarlo</p>
+          <ol class="list-decimal list-inside space-y-1.5">
+            <li>
+              Descarga QZ Tray desde
+              <a href="https://qz.io/download/" target="_blank" rel="noopener" class="text-primary-600 underline font-medium">qz.io/download</a>
+              (disponible para Windows, macOS y Linux) e instálalo en la computadora donde está la impresora.
+            </li>
+            <li>Ábrelo. Quedará corriendo en segundo plano; verás su ícono en la bandeja del sistema (junto al reloj).</li>
+            <li>La primera vez que el POS intente conectarse, QZ Tray mostrará un aviso de confianza: haz clic en <strong>Permitir / Allow</strong> (marca "Recordar" para no repetirlo).</li>
+            <li>Vuelve a esta pantalla: el estado debe cambiar a <strong>Conectado</strong>.</li>
+            <li>Activa <strong>impresión térmica</strong>, pulsa <strong>Detectar impresoras</strong>, selecciona la tuya e imprime un ticket de prueba.</li>
+          </ol>
+        </div>
+
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+          <p class="text-yellow-800">
+            <strong>Importante:</strong> QZ Tray debe estar siempre abierto mientras usas el POS. Si lo
+            cierras o reinicias la computadora sin abrirlo, la impresión térmica no funcionará y verás el
+            estado "Desconectado".
+          </p>
+        </div>
+
+        <p>
+          <a href="https://qz.io/download/" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Descargar QZ Tray
+          </a>
+        </p>
+      </div>
+    </div>
+
     <!-- Connection Status -->
     <div class="bg-white rounded-lg shadow p-6 mb-6">
       <h2 class="text-lg font-semibold text-gray-800 mb-4">Estado de QZ Tray</h2>
@@ -159,6 +231,7 @@ const {
   printTestPage,
 } = useThermalPrinter()
 
+const showQzInfo = ref(false)
 const testPrinting = ref(false)
 const testSuccess = ref(false)
 const testError = ref(null)
