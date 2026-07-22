@@ -659,6 +659,29 @@
                 </span>
               </button>
 
+              <!-- Emitir comprobante (modo facturación manual). Deshabilitado +
+                   tooltip cuando está delegado al ERP o no hay proveedor. -->
+              <button
+                v-if="showEmitButton"
+                :disabled="!canEmitManually || emitting"
+                :title="emitDisabledReason"
+                class="w-full py-3 px-6 rounded-lg text-base font-medium transition-all duration-200 bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl inline-flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                @click="handleEmitDocument">
+                <svg v-if="emitting" class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                {{ emitting ? 'Emitiendo...' : 'Emitir comprobante' }}
+              </button>
+
+              <!-- Error de emisión manual -->
+              <div v-if="emitError" class="bg-red-50 border-l-4 border-red-500 p-3 rounded text-left">
+                <p class="text-sm text-red-700">{{ emitError }}</p>
+              </div>
+
               <!-- Divisor -->
               <div class="border-t border-gray-300 my-2"></div>
 
@@ -732,6 +755,7 @@ import { ref, computed, watch, onBeforeUnmount } from 'vue';
 import QRCode from 'qrcode';
 import { useCartStore } from '../stores/cart';
 import { useAuthStore } from '../stores/auth';
+import { useBillingStore } from '../stores/billing';
 import { usePaymentMethodsStore } from '../stores/paymentMethods';
 import RightToLeftMoneyInput from './RightToLeftMoneyInput.vue';
 import ReceiptTicket from './ReceiptTicket.vue';
@@ -750,6 +774,7 @@ import { formatCurrency } from '../utils/formatters.js';
 
 const cartStore = useCartStore();
 const authStore = useAuthStore();
+const billingStore = useBillingStore();
 const paymentMethodsStore = usePaymentMethodsStore();
 const { isConnected: thermalConnected, isEnabled: thermalEnabled, printReceipt: thermalPrint } = useThermalPrinter();
 
@@ -1142,9 +1167,57 @@ const displayCajero = computed(() => {
   return props.completedSaleData?.cajero || '';
 });
 
+// Comprobante emitido manualmente desde este modal (tiene prioridad sobre el
+// que vino en completedSaleData por auto-emisión).
+const emittedDocument = ref(null);
 const displayBillingDocument = computed(() => {
-  return props.completedSaleData?.billingDocument || null;
+  return emittedDocument.value || props.completedSaleData?.billingDocument || null;
 });
+
+// --- Emisión manual de comprobante (modo facturación manual) ---
+// order_id numérico (tiendaventa_id) requerido por /billing/documents/emit.
+const emitOrderId = computed(() => props.completedSaleData?.orderId || null);
+const emitError = ref(null);
+const emitting = computed(() => billingStore.isEmitting);
+
+// Botón habilitado solo en modo manual y mientras no exista comprobante.
+const canEmitManually = computed(
+  () => authStore.isBillingManual && !!emitOrderId.value && !displayBillingDocument.value
+);
+const billingDelegated = computed(() => authStore.isBillingDelegated);
+const billingProviderMissing = computed(
+  () => !authStore.hasBillingProvider && !authStore.isBillingDelegated
+);
+const emitDisabledReason = computed(() => {
+  if (billingDelegated.value) return 'La facturación está delegada al ERP; el comprobante se emite automáticamente.';
+  if (billingProviderMissing.value) return 'Configura un proveedor de facturación electrónica para emitir comprobantes.';
+  if (!emitOrderId.value) return 'No se pudo identificar la venta para emitir el comprobante.';
+  return '';
+});
+// Mostrar el botón cuando aún no hay comprobante y la tienda tiene facturación
+// (manual → habilitado; delegada / sin proveedor → deshabilitado + tooltip).
+const showEmitButton = computed(
+  () => !displayBillingDocument.value
+    && (authStore.isBillingManual || billingDelegated.value || billingProviderMissing.value)
+);
+
+const handleEmitDocument = async () => {
+  if (!canEmitManually.value || !emitOrderId.value) return;
+  emitError.value = null;
+
+  // El tipo de comprobante (boleta/factura) lo deriva el backend del
+  // documento_id_facturacion de la orden; aquí solo pedimos la emisión.
+  const result = await billingStore.emitDocument({
+    order_id: Number(emitOrderId.value),
+    pdf_format: 'TICKET',
+  });
+
+  if (result.success) {
+    emittedDocument.value = result.data;
+  } else {
+    emitError.value = result.error || 'No se pudo emitir el comprobante';
+  }
+};
 
 // Validaciones
 const isPaymentValid = computed(() => {
@@ -2127,6 +2200,9 @@ const sendByWhatsApp = () => {
 watch(() => props.showTicket, (newValue) => {
   if (newValue) {
     showTicket.value = true;
+    // Limpiar el estado de emisión manual al abrir el ticket de una venta nueva.
+    emittedDocument.value = null;
+    emitError.value = null;
   }
 });
 
