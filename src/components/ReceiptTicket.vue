@@ -89,7 +89,7 @@
 
       <!-- Totales -->
       <div class="mb-3">
-        <div class="flex justify-between">
+        <div v-if="gravadasBase > 0" class="flex justify-between">
           <span>OPERACIONES GRAVADAS:</span>
           <span>S/ {{ gravadasBase.toFixed(2) }}</span>
         </div>

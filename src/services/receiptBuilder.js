@@ -145,7 +145,7 @@ export function buildReceipt(orderData) {
   const inafectas = baseByAffectation(3)
   const gravadas = Math.max(0, parseFloat(orderData.subtotal || 0) - exoneradas - inafectas)
 
-  encoder.line(padLine('OPERACIONES GRAVADAS:', `S/ ${gravadas.toFixed(2)}`, W))
+  if (gravadas > 0) encoder.line(padLine('OPERACIONES GRAVADAS:', `S/ ${gravadas.toFixed(2)}`, W))
   if (exoneradas > 0) encoder.line(padLine('OPERACIONES EXONERADAS:', `S/ ${exoneradas.toFixed(2)}`, W))
   if (inafectas > 0) encoder.line(padLine('OPERACIONES INAFECTAS:', `S/ ${inafectas.toFixed(2)}`, W))
   encoder.line(padLine('IGV (18%):', `S/ ${num(orderData.tax)}`, W))

@@ -560,7 +560,8 @@ const getProducts = () => {
       total: parseFloat(item.total || 0),
       unit_cost: item.unit_cost != null ? parseFloat(item.unit_cost) : 0,
       cost_total: item.cost_total != null ? parseFloat(item.cost_total) : 0,
-      profit: item.profit != null ? parseFloat(item.profit) : null
+      profit: item.profit != null ? parseFloat(item.profit) : null,
+      tax_affectation: parseInt(item.tax_affectation) || 1
     }));
   }
 
@@ -576,7 +577,8 @@ const getProducts = () => {
       total: parseFloat(item.total || ((item.quantity || item.cantidad) * (item.price || item.precio)) || 0),
       unit_cost: item.unit_cost != null ? parseFloat(item.unit_cost) : 0,
       cost_total: item.cost_total != null ? parseFloat(item.cost_total) : 0,
-      profit: item.profit != null ? parseFloat(item.profit) : null
+      profit: item.profit != null ? parseFloat(item.profit) : null,
+      tax_affectation: parseInt(item.tax_affectation) || 1
     }));
   }
 
@@ -587,9 +589,10 @@ const getProducts = () => {
 const getSubtotal = () => {
   if (!order.value) return 0;
 
-  // Si viene en el _rawDetail, usarlo
-  if (order.value._rawDetail?.subtotal) {
-    return parseFloat(order.value._rawDetail.subtotal);
+  // Si viene en el _rawDetail, usarlo (respetar 0: ventas exoneradas/inafectas).
+  const raw = order.value._rawDetail?.subtotal;
+  if (raw !== undefined && raw !== null && raw !== '') {
+    return parseFloat(raw);
   }
 
   // Calcular desde total_amount si existe
@@ -601,9 +604,12 @@ const getSubtotal = () => {
 const getTax = () => {
   if (!order.value) return 0;
 
-  // Si viene en el _rawDetail, usarlo
-  if (order.value._rawDetail?.tax) {
-    return parseFloat(order.value._rawDetail.tax);
+  // Si viene en el _rawDetail, usarlo. IMPORTANTE: respetar el 0 de ventas
+  // exoneradas/inafectas; antes `if (tax)` trataba el 0 como ausente y volvía
+  // a estimar 18% sobre el total, mostrando IGV en comprobantes sin IGV.
+  const raw = order.value._rawDetail?.tax;
+  if (raw !== undefined && raw !== null && raw !== '') {
+    return parseFloat(raw);
   }
 
   // Calcular como 18% del total
@@ -860,6 +866,16 @@ const printTicket = async () => {
   const storeAddress = getStoreAddress();
   const storePhone = getStorePhone();
 
+  // Desglose por afectación IGV (2=Exonerado, 3=Inafecto no tributan; su precio
+  // de línea ya es sin IGV). Si los ítems no traen afectación, exon/inaf = 0 y
+  // GRAVADAS = subtotal (compatibilidad con el comportamiento anterior).
+  const baseByAffectation = (target) => products.reduce((sum, it) => (
+    parseInt(it.tax_affectation) === target ? sum + parseFloat(it.total || 0) : sum
+  ), 0);
+  const exoneradasBase = baseByAffectation(2);
+  const inafectasBase = baseByAffectation(3);
+  const gravadasBase = Math.max(0, getSubtotal() - exoneradasBase - inafectasBase);
+
   // Determinar tipo de documento
   let docType = 'COMPROBANTE ELECTRÓNICO';
   if (billingDoc?.serie) {
@@ -938,10 +954,21 @@ const printTicket = async () => {
 
       <!-- Totales -->
       <table>
+        ${gravadasBase > 0 ? `
         <tr>
           <td>OPERACIONES GRAVADAS:</td>
-          <td class="right">S/ ${getSubtotal().toFixed(2)}</td>
-        </tr>
+          <td class="right">S/ ${gravadasBase.toFixed(2)}</td>
+        </tr>` : ''}
+        ${exoneradasBase > 0 ? `
+        <tr>
+          <td>OPERACIONES EXONERADAS:</td>
+          <td class="right">S/ ${exoneradasBase.toFixed(2)}</td>
+        </tr>` : ''}
+        ${inafectasBase > 0 ? `
+        <tr>
+          <td>OPERACIONES INAFECTAS:</td>
+          <td class="right">S/ ${inafectasBase.toFixed(2)}</td>
+        </tr>` : ''}
         <tr>
           <td>IGV (18%):</td>
           <td class="right">S/ ${getTax().toFixed(2)}</td>
