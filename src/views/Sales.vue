@@ -204,14 +204,19 @@
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comprobante</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
               <tr v-for="order in orders" :key="order.id" class="hover:bg-gray-50">
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {{ order.order_number || order.id }}
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <router-link
+                    :to="`/sales/${order.id}`"
+                    class="text-primary-600 hover:text-primary-900"
+                  >
+                    {{ order.order_number || order.id }}
+                  </router-link>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {{ formatDate(order.created_at) }}
@@ -221,6 +226,11 @@
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
                   {{ formatCurrency(order.total) }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                  <span :class="getStatusClass(order.status)" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full">
+                    {{ getStatusText(order.status) }}
+                  </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm">
                   <div v-if="order.billing.emitted" class="flex items-center gap-2">
@@ -240,14 +250,6 @@
                     </a>
                   </div>
                   <span v-else class="text-gray-400 text-xs">Sin comprobante</span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <router-link
-                    :to="`/sales/${order.id}`"
-                    class="text-primary-600 hover:text-primary-900 mr-3"
-                  >
-                    Ver Detalle
-                  </router-link>
                 </td>
               </tr>
             </tbody>
