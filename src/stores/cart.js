@@ -137,6 +137,32 @@ export const useCartStore = defineStore('cart', {
       return this.calculatedTotals !== null;
     },
 
+    // ========== Promociones V2 (descuento automático / cupón) ==========
+    // El backend ya resta el descuento V2 de subtotal/tax/total; estos getters exponen
+    // el desglose para mostrarlo (línea "Descuento promoción" + regalos) y el feedback
+    // de cupón al cajero.
+    promotionsV2: (state) => state.calculatedTotals?.promotions_v2 ?? null,
+
+    promoV2Discount() {
+      return this.promotionsV2?.applied ? parseFloat(this.promotionsV2.discount_total || 0) : 0;
+    },
+
+    hasPromoV2Discount() {
+      return this.promoV2Discount > 0.005;
+    },
+
+    // Total antes del descuento V2 (para mostrar el "antes/después" si se quiere).
+    totalBeforePromos(state) {
+      const t = state.calculatedTotals?.total_before_promos;
+      return t != null ? parseFloat(t) : this.total;
+    },
+
+    // Regalos emitidos por el motor (gasta X → producto gratis), si los hubiera.
+    promoV2GiftItems: (state) => state.calculatedTotals?.promotions_v2?.gift_items ?? [],
+
+    // Feedback de cupón para el cajero: { code, valid, message } | null.
+    promoV2Coupon: (state) => state.calculatedTotals?.promotions_v2?.coupon ?? null,
+
     // 🔧 FIX: Redondeo aplicado (solo cuando hay pago en efectivo registrado)
     // Ya no calculamos redondeo anticipado - solo usamos el que se guardó al registrar el pago
     appliedRounding(state) {
