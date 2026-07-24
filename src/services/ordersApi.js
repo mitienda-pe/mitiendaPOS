@@ -161,10 +161,14 @@ export const ordersApi = {
 
   // Calcular total de la orden usando el método de NetSuite
   // Este endpoint garantiza que los totales coincidan exactamente con lo que NetSuite espera
-  async calculateTotal(items) {
+  async calculateTotal(items, couponCode = null) {
     try {
       console.log('🧮 [ordersApi] Calculating total with NetSuite method:', items);
-      const response = await apiClient.post('/orders/calculate-total', { items });
+      const body = { items };
+      if (couponCode) {
+        body.coupon_code = couponCode; // Promociones V2: el backend valida y aplica el cupón
+      }
+      const response = await apiClient.post('/orders/calculate-total', body);
       console.log('✅ [ordersApi] Total calculated:', response.data);
       return response.data;
     } catch (error) {

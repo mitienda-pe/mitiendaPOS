@@ -33,7 +33,10 @@ export const useCartStore = defineStore('cart', {
     pendingAuthorization: null, // { action: 'remove_item', data: {...}, resolve, reject }
 
     // Totales calculados por el backend (método NetSuite)
-    calculatedTotals: null // { subtotal, tax, total, items: [...] }
+    calculatedTotals: null, // { subtotal, tax, total, items: [...], promotions_v2 }
+
+    // Cupón de Promociones V2 ingresado por el cajero (se envía a calculate-total y a la venta)
+    couponCode: null
   }),
 
   getters: {
@@ -283,7 +286,7 @@ export const useCartStore = defineStore('cart', {
           tiendaventa_cantidad: item.quantity
         }));
 
-        const response = await ordersApi.calculateTotal(itemsForCalculation);
+        const response = await ordersApi.calculateTotal(itemsForCalculation, this.couponCode);
 
         if (response.success) {
           this.calculatedTotals = response.data;
@@ -673,6 +676,22 @@ export const useCartStore = defineStore('cart', {
       this.unsavedChanges = true;
     },
 
+    /**
+     * Aplicar/limpiar un cupón de Promociones V2. Normaliza a mayúsculas y
+     * recalcula el total (el backend valida el cupón y devuelve el feedback en
+     * calculatedTotals.promotions_v2.coupon).
+     */
+    async setCouponCode(code) {
+      const normalized = code ? String(code).trim().toUpperCase() : null;
+      this.couponCode = normalized || null;
+      this.unsavedChanges = true;
+      await this.recalculateTotals();
+    },
+
+    async clearCoupon() {
+      await this.setCouponCode(null);
+    },
+
     // ========== Finalizar Venta ==========
 
     /**
@@ -715,6 +734,7 @@ export const useCartStore = defineStore('cart', {
       this.pendingAuthorization = null;
       this.roundingAdjustment = 0;
       this.calculatedTotals = null;
+      this.couponCode = null;
     },
 
     /**

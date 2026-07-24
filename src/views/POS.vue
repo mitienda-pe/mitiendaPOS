@@ -179,6 +179,29 @@ const totalPaid = computed(() => cartStore.totalPaid);
 const remainingAmount = computed(() => cartStore.remainingAmount);
 const totalChange = computed(() => cartStore.totalChange);
 
+// Promociones V2 (descuento automático). El backend ya resta el descuento de
+// subtotal/tax/total; estos exponen el monto para mostrar la línea "Descuento".
+const hasPromoV2Discount = computed(() => cartStore.hasPromoV2Discount);
+const promoV2Discount = computed(() => cartStore.promoV2Discount);
+
+// Cupón V2: input del cajero + feedback (válido/rechazo) que devuelve el backend.
+const couponInput = ref('');
+const applyingCoupon = ref(false);
+const couponFeedback = computed(() => cartStore.promoV2Coupon);
+const applyCoupon = async () => {
+  if (!couponInput.value || !couponInput.value.trim()) return;
+  applyingCoupon.value = true;
+  try {
+    await cartStore.setCouponCode(couponInput.value);
+  } finally {
+    applyingCoupon.value = false;
+  }
+};
+const removeCoupon = async () => {
+  couponInput.value = '';
+  await cartStore.clearCoupon();
+};
+
 // Methods
 // formatCurrency is now imported from utils/formatters.js
 
@@ -1206,7 +1229,9 @@ const handlePaymentCompleted = async () => {
       rounding_amount: cartStore.appliedRounding, // Redondeo aplicado (puede ser positivo o negativo)
       total_after_rounding: cartStore.totalWithRounding, // Total final después de redondeo
       currency: 'PEN',
-      notes: '' // Campo para notas adicionales
+      notes: '', // Campo para notas adicionales
+      // Promociones V2: cupón ingresado por el cajero (el backend nativo lo valida y aplica).
+      v2_coupon_codes: cartStore.couponCode ? [cartStore.couponCode] : []
     };
 
     // 🔥 NUEVO: Enviar IDs específicos de bonificaciones a excluir (no todas)
@@ -2299,9 +2324,44 @@ const getPaymentMethodName = (method) => {
                 <span class="text-gray-600">IGV (18%)</span>
                 <span>{{ formatCurrency(tax) }}</span>
               </div>
+              <div v-if="hasPromoV2Discount" class="flex justify-between text-primary-600">
+                <span>Descuento promoción</span>
+                <span>- {{ formatCurrency(promoV2Discount) }}</span>
+              </div>
               <div class="border-t pt-2 mt-2 flex justify-between font-medium">
                 <span>Total</span>
                 <span>{{ formatCurrency(total) }}</span>
+              </div>
+
+              <!-- Cupón de descuento (Promociones V2) -->
+              <div class="border-t pt-3 mt-2">
+                <label class="block text-xs font-medium text-gray-500 mb-1">Cupón de descuento</label>
+                <div class="flex gap-2">
+                  <input
+                    v-model="couponInput"
+                    type="text"
+                    placeholder="Código"
+                    class="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 rounded-lg uppercase focus:ring-primary-500 focus:border-primary-500"
+                    @keyup.enter="applyCoupon"
+                  />
+                  <button
+                    v-if="!cartStore.couponCode"
+                    type="button"
+                    :disabled="applyingCoupon || !couponInput.trim()"
+                    class="px-3 py-2 text-sm rounded-lg bg-primary-600 text-white disabled:opacity-50 hover:bg-primary-700"
+                    @click="applyCoupon"
+                  >Aplicar</button>
+                  <button
+                    v-else
+                    type="button"
+                    class="px-3 py-2 text-sm rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    @click="removeCoupon"
+                  >Quitar</button>
+                </div>
+                <p v-if="couponFeedback" class="mt-1 text-xs"
+                  :class="couponFeedback.valid ? 'text-green-600' : 'text-red-600'">
+                  {{ couponFeedback.message }}
+                </p>
               </div>
 
               <!-- Pagos Parciales -->
@@ -2426,6 +2486,10 @@ const getPaymentMethodName = (method) => {
           <div class="flex justify-between text-sm">
             <span class="text-gray-600">IGV (18%)</span>
             <span>{{ formatCurrency(tax) }}</span>
+          </div>
+          <div v-if="hasPromoV2Discount" class="flex justify-between text-sm text-primary-600">
+            <span>Descuento promoción</span>
+            <span>- {{ formatCurrency(promoV2Discount) }}</span>
           </div>
           <div class="border-t pt-2 mt-2 flex justify-between font-semibold">
             <span>Total</span>
