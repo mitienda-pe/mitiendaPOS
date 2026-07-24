@@ -110,6 +110,7 @@
           <div>
             <p class="text-red-800 font-semibold">VENTA ANULADA</p>
             <p v-if="getVoidReason()" class="text-red-700 text-sm mt-1">Motivo: {{ getVoidReason() }}</p>
+            <p v-if="getVoidBillingMessage()" class="text-red-700 text-sm mt-1">{{ getVoidBillingMessage() }}</p>
           </div>
         </div>
       </div>
@@ -1110,6 +1111,16 @@ const getVoidReason = () => {
   }
 };
 
+// Estado de la baja del comprobante electrónico ante SUNAT tras anular:
+// swestadofacturacion 4 = baja en curso (diferida), 5 = comprobante dado de baja.
+// null = la venta no tenía comprobante electrónico.
+const getVoidBillingMessage = () => {
+  const estado = Number(order.value?._rawDetail?.tiendaventa_swestadofacturacion);
+  if (estado === 4) return 'Baja del comprobante ante SUNAT en proceso (normalmente al día siguiente).';
+  if (estado === 5) return 'Comprobante electrónico dado de baja ante SUNAT.';
+  return null;
+};
+
 const closeVoidModal = () => {
   if (!voidLoading.value) {
     showVoidModal.value = false;
@@ -1143,8 +1154,13 @@ const confirmVoid = async () => {
     // Update local state
     order.value.status = 4;
     showVoidModal.value = false;
-    voidSuccess.value = 'Venta anulada correctamente';
-    setTimeout(() => voidSuccess.value = null, 5000);
+    // Si la venta tenía comprobante electrónico, el backend encola su baja ante
+    // SUNAT (diferida) y devuelve el mensaje a mostrar al cajero.
+    const billingMsg = result?.data?.billing_void_message;
+    voidSuccess.value = billingMsg
+      ? `Venta anulada correctamente. ${billingMsg}`
+      : 'Venta anulada correctamente';
+    setTimeout(() => voidSuccess.value = null, 8000);
 
     // Reload order to get updated data
     await loadOrderDetail();
