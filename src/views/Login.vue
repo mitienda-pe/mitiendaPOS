@@ -84,10 +84,12 @@
 
 <script setup>
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import StoreSelector from '../components/StoreSelector.vue';
 
 const authStore = useAuthStore();
+const router = useRouter();
 const email = ref('');
 const password = ref('');
 const showStoreSelector = ref(false);
@@ -95,6 +97,12 @@ const showStoreSelector = ref(false);
 const handleLogin = async () => {
   try {
     await authStore.login(email.value, password.value);
+
+    // Superadmin: elige la tienda a impersonar en su propio selector.
+    if (authStore.isSuperAdmin) {
+      router.push('/superadmin/stores');
+      return;
+    }
 
     // Si hay múltiples tiendas y no hay tienda seleccionada, mostrar selector
     // Esto solo sucede cuando no hay VITE_DEFAULT_STORE_ID configurado

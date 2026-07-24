@@ -180,6 +180,9 @@
           Cerrar sesión
         </button>
       </div>
+
+      <!-- Banner de impersonación: superadmin operando como otra tienda -->
+      <ImpersonationBanner />
     </template>
 
     <!-- Loading Overlay -->
@@ -245,6 +248,7 @@ import { useRouter, useRoute } from 'vue-router';
 import LockScreenModal from './components/LockScreenModal.vue';
 import OpenShiftModal from './components/OpenShiftModal.vue';
 import CloseShiftModal from './components/CloseShiftModal.vue';
+import ImpersonationBanner from './components/ImpersonationBanner.vue';
 import { MENU_ITEMS } from './config/menuItems';
 import { useTawkTo } from './composables/useTawkTo';
 

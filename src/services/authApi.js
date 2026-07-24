@@ -95,6 +95,38 @@ export const authApi = {
     return response.data;
   },
 
+  // --- Superadmin / impersonación ---
+
+  // Indica si el usuario autenticado es superadministrador de la plataforma.
+  // Devuelve { is_superadmin, superadmin_type_name, partner_name, ... }.
+  async checkSuperAdmin() {
+    const response = await apiClient.get('/superadmin/check');
+    return response.data;
+  },
+
+  // Lista TODAS las tiendas de la plataforma (solo superadmin), con búsqueda y
+  // paginación. Devuelve { stores: [...], pagination: {...} }.
+  async getSuperAdminStores(params = {}) {
+    const response = await apiClient.get('/superadmin/stores', { params });
+    return response.data;
+  },
+
+  // Genera un token scopeado a `storeId` para operar como esa tienda.
+  // Devuelve { access_token, expires_in, store_id, impersonation_context }.
+  async impersonate(storeId) {
+    const response = await apiClient.post('/superadmin/impersonate', { store_id: storeId });
+    return response.data;
+  },
+
+  // Restaura la sesión original del superadmin a partir de su token guardado.
+  // Devuelve { access_token, message }.
+  async exitImpersonation(originalToken) {
+    const response = await apiClient.post('/superadmin/exit-impersonation', {
+      original_token: originalToken,
+    });
+    return response.data;
+  },
+
   // --- Recuperación de contraseña (endpoints públicos) ---
 
   // Solicita el envío del enlace de restablecimiento al correo del administrador.

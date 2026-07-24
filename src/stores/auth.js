@@ -55,6 +55,9 @@ export const useAuthStore = defineStore('auth', {
     refreshToken: localStorage.getItem('refresh_token'),
     selectedStore: JSON.parse(localStorage.getItem('selected_store') || 'null'),
     stores: [],
+    // Info de superadmin ({ is_superadmin, superadmin_type_name, ... }) resuelta
+    // en el login vía /superadmin/check. Habilita el modo impersonación.
+    superAdminInfo: JSON.parse(localStorage.getItem('superadmin_info') || 'null'),
     loading: false,
     error: null,
   }),
@@ -88,6 +91,18 @@ export const useAuthStore = defineStore('auth', {
     isAdminToken() {
       return !!this.accessToken && !this.isCashierToken;
     },
+
+    // true si el usuario autenticado es superadministrador de la plataforma.
+    isSuperAdmin: (state) => !!state.superAdminInfo?.is_superadmin,
+    // true si el token activo es de impersonación (superadmin operando como
+    // otra tienda). Se deriva del propio JWT, así sobrevive recargas.
+    isImpersonating: (state) => decodeJwtPayload(state.accessToken)?.is_impersonating === true,
+    // Contexto de impersonación embebido en el JWT: incluye original_token
+    // (el token del superadmin) para poder salir de la impersonación.
+    impersonationContext: (state) =>
+      decodeJwtPayload(state.accessToken)?.impersonation_context ?? null,
+    // Nombre de la tienda impersonada, para el banner.
+    impersonatedStoreName: (state) => state.selectedStore?.name || null,
 
     // Flags de acceso por módulo (de /pos/access), usados por el sidebar de
     // Settings y los guards de ruta para mostrar/ocultar secciones de admin.
@@ -146,8 +161,18 @@ export const useAuthStore = defineStore('auth', {
           localStorage.setItem('refresh_token', refresh_token);
           localStorage.setItem('user', JSON.stringify(this.user));
 
+          // Resolver si el usuario es superadmin (habilita impersonación).
+          // La redirección al selector de superadmin la decide Login.vue.
+          await this.checkSuperAdmin();
+
           // Obtener las tiendas del usuario
           await this.fetchStores();
+
+          // Un superadmin elige tienda desde /superadmin/stores (impersonación),
+          // no desde el selector normal: no autoseleccionar aquí.
+          if (this.isSuperAdmin) {
+            return;
+          }
 
           // Si solo tiene una tienda, seleccionarla automáticamente
           if (this.stores.length === 1) {
@@ -327,6 +352,110 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    // --- Superadmin / impersonación ---
+
+    // Resuelve si el usuario autenticado es superadmin y lo persiste.
+    // Fail-safe: cualquier error (no superadmin / red) deja superAdminInfo en null.
+    async checkSuperAdmin() {
+      try {
+        const response = await authApi.checkSuperAdmin();
+        const info = response?.data ?? null;
+        this.superAdminInfo = info;
+        if (info) {
+          localStorage.setItem('superadmin_info', JSON.stringify(info));
+        } else {
+          localStorage.removeItem('superadmin_info');
+        }
+        return info;
+      } catch (error) {
+        this.superAdminInfo = null;
+        localStorage.removeItem('superadmin_info');
+        return null;
+      }
+    },
+
+    // Impersona una tienda (solo superadmin). `store` es la entrada cruda de
+    // /superadmin/stores ({ id, name, slug, url, plan, owner, ... }).
+    // Swappea el token activo por el de impersonación y valida mod_pos. Si la
+    // tienda no tiene POS (403), restaura el token del superadmin y re-lanza.
+    async impersonateStore(store) {
+      const storeId = store.id;
+      const response = await authApi.impersonate(storeId);
+      if (!response?.success) {
+        throw new Error(response?.message || 'No se pudo impersonar la tienda');
+      }
+
+      const { access_token, impersonation_context } = response.data;
+      const originalToken = impersonation_context?.original_token;
+
+      // Swappear el token: a partir de aquí axios opera como la tienda destino.
+      this.accessToken = access_token;
+      localStorage.setItem('access_token', access_token);
+
+      let access;
+      try {
+        // Valida mod_pos y trae los flags por módulo del destino.
+        access = await this.assertPosAccess();
+      } catch (error) {
+        // La tienda no tiene POS (u otro error): revertir al token del superadmin.
+        if (originalToken) {
+          this.accessToken = originalToken;
+          localStorage.setItem('access_token', originalToken);
+        }
+        throw error;
+      }
+
+      // Construir la tienda seleccionada (sin pasar por /user/stores, que no
+      // lista tiendas ajenas). Igual que el "fake store" del backoffice.
+      const selected = {
+        id: Number(storeId),
+        name: store.name,
+        slug: store.slug,
+        url: store.url,
+        plan: store.plan?.name || store.plan || null,
+        status: 'active',
+        netsuite_enabled: !!access?.netsuite_enabled,
+        access: normalizeAccessFlags(access),
+      };
+      this.selectedStore = selected;
+      this.stores = [selected];
+      localStorage.setItem('selected_store', JSON.stringify(selected));
+
+      // Resolver modo de facturación y limpiar caches cross-tenant.
+      await this.fetchBillingStatus();
+      const { useShiftStore } = await import('./shift');
+      useShiftStore().clearActiveShift();
+      const { usePaymentMethodsStore } = await import('./paymentMethods');
+      usePaymentMethodsStore().reset();
+
+      return selected;
+    },
+
+    // Sale de la impersonación restaurando el token original del superadmin.
+    async exitImpersonation() {
+      const originalToken = this.impersonationContext?.original_token;
+      if (!originalToken) {
+        throw new Error('No hay contexto de impersonación activo');
+      }
+
+      const response = await authApi.exitImpersonation(originalToken);
+      // El backend devuelve el token del superadmin; si falla usamos el guardado.
+      const restoredToken = response?.data?.access_token || originalToken;
+
+      this.accessToken = restoredToken;
+      localStorage.setItem('access_token', restoredToken);
+
+      // Limpiar la tienda impersonada y caches cross-tenant.
+      this.selectedStore = null;
+      this.stores = [];
+      localStorage.removeItem('selected_store');
+
+      const { useShiftStore } = await import('./shift');
+      useShiftStore().clearActiveShift();
+      const { usePaymentMethodsStore } = await import('./paymentMethods');
+      usePaymentMethodsStore().reset();
+    },
+
     async fetchUserProfile() {
       if (!this.accessToken) return;
 
@@ -373,10 +502,12 @@ export const useAuthStore = defineStore('auth', {
         this.refreshToken = null;
         this.selectedStore = null;
         this.stores = [];
+        this.superAdminInfo = null;
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('user');
         localStorage.removeItem('selected_store');
+        localStorage.removeItem('superadmin_info');
 
         // Limpiar sesión de cajero
         const { useCashierStore } = await import('./cashier');
@@ -448,6 +579,16 @@ export const useAuthStore = defineStore('auth', {
       try {
         // Actualizar datos del servidor (en background)
         console.log('📡 [AUTH] Fetching fresh data from server...');
+
+        // En impersonación el token apunta a la tienda destino pero con el
+        // user_id del superadmin: fetchUserProfile/fetchStores traerían datos
+        // del superadmin y clobberearían la sesión impersonada. Solo refrescar
+        // los flags de acceso (que sí son de la tienda destino).
+        if (this.isImpersonating) {
+          await this.refreshAccessFlags();
+          return true;
+        }
+
         await this.fetchUserProfile();
         await this.fetchStores();
         await this.refreshAccessFlags();

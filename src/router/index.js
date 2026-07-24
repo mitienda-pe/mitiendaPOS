@@ -297,6 +297,12 @@ const routes = [
     meta: { requiresAuth: true, roles: ['cajero', 'supervisor', 'administrador'] }
   },
   {
+    path: '/superadmin/stores',
+    name: 'SuperAdminStores',
+    component: () => import('../views/SuperAdminStores.vue'),
+    meta: { requiresAuth: true, requiresSuperAdmin: true }
+  },
+  {
     path: '/',
     redirect: '/menu'
   }
@@ -323,6 +329,12 @@ router.beforeEach(async (to, from, next) => {
     // Redirigir a login de cajeros por defecto (más común en POS)
     // El usuario puede cambiar manualmente a /login si es admin
     next('/cashier-login');
+    return;
+  }
+
+  // Superadmin-only routes (p.ej. el selector de tiendas para impersonar)
+  if (to.meta.requiresSuperAdmin && !authStore.isSuperAdmin) {
+    next('/menu');
     return;
   }
 
