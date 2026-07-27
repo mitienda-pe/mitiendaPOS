@@ -1,5 +1,21 @@
 import axios from 'axios';
 
+// Decodifica el payload de un JWT sin verificar la firma. Devuelve null ante
+// cualquier entrada malformada. (Espejo del helper del auth store; aquí no
+// importamos el store para evitar dependencias circulares en el interceptor.)
+const decodeJwtPayload = (token) => {
+  if (!token || typeof token !== 'string') return null;
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  try {
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+    return JSON.parse(decodeURIComponent(escape(atob(padded))));
+  } catch (e) {
+    return null;
+  }
+};
+
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'https://api2.mitienda.pe/api/v1',
   headers: {
@@ -61,6 +77,29 @@ apiClient.interceptors.response.use(
 
       if (isNonCritical) {
         console.warn('⚠️ [AXIOS] 401 on non-critical endpoint, not logging out:', originalRequest.url);
+        return Promise.reject(error);
+      }
+
+      // Impersonación: el token activo es de un superadmin operando como otra
+      // tienda. NO refrescar — el refresh_token guardado es del superadmin y
+      // /auth/refresh devolvería un token scopeado a SU tienda, rompiendo la
+      // impersonación de forma silenciosa (aparecería el banner "Sesión
+      // cruzada"). En su lugar, restaurar el token original del superadmin
+      // (embebido en el propio JWT) y volver al selector de tiendas.
+      const currentToken = localStorage.getItem('access_token');
+      const payload = decodeJwtPayload(currentToken);
+      if (payload?.is_impersonating) {
+        const originalToken = payload?.impersonation_context?.original_token;
+        if (originalToken) {
+          localStorage.setItem('access_token', originalToken);
+          localStorage.removeItem('selected_store');
+        } else {
+          // Sin token original recuperable: cerrar sesión de forma segura.
+          localStorage.clear();
+        }
+        if (window.location.pathname !== '/superadmin/stores') {
+          window.location.href = '/superadmin/stores';
+        }
         return Promise.reject(error);
       }
 
