@@ -10,6 +10,7 @@ const ALL_MENU_ITEMS = [
   { to: '/pos',        label: 'POS',                               description: 'Gestiona ventas y emite comprobantes',            roles: ROLES_ALL,        borderClass: 'border-primary-500', iconClass: 'text-primary-500' },
   // Ventas ahora incluye el historial de ventas y los comprobantes emitidos (pestañas dentro del módulo).
   { to: '/sales',      label: 'Ventas',                            description: 'Historial de ventas y comprobantes',              roles: ROLES_ALL,        borderClass: 'border-pink-500',    iconClass: 'text-pink-500'    },
+  { to: '/cotizaciones', label: 'Cotizaciones',                    description: 'Proformas sin descontar stock: comparte y convierte en venta', roles: ROLES_ALL, borderClass: 'border-teal-500',    iconClass: 'text-teal-500'    },
   { to: '/inventory',  label: 'Inventario',                        description: 'Gestiona productos, stock y categorías',          roles: ROLES_ALL,        borderClass: 'border-lime-500',    iconClass: 'text-lime-500'    },
   // Oculto: módulo de poco valor para la operación diaria del POS.
   { to: '/customers',  label: 'Clientes',                          description: 'Administra tu cartera de clientes',               roles: ROLES_ALL,        borderClass: 'border-purple-500',  iconClass: 'text-purple-500', hidden: true },

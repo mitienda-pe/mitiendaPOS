@@ -77,6 +77,13 @@ const IconDocuments = svgIcon([
   { tag: 'line', attrs: { x1: '16', y1: '17', x2: '8', y2: '17' } },
   { tag: 'polyline', attrs: { points: '10 9 9 9 8 9' } }
 ]);
+const IconCotizaciones = svgIcon([
+  'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z',
+  { tag: 'polyline', attrs: { points: '14 2 14 8 20 8' } },
+  { tag: 'line', attrs: { x1: '8', y1: '13', x2: '13', y2: '13' } },
+  { tag: 'line', attrs: { x1: '8', y1: '17', x2: '13', y2: '17' } },
+  'M16.5 14.5a1.5 1.5 0 0 1 0 3'
+]);
 const IconInventory = svgIcon([
   'M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z',
   'm7 16.5-4.74-2.85', 'm7 16.5 5-3', 'M7 16.5v5.17',
@@ -121,6 +128,7 @@ const ICONS_BY_PATH = {
   '/my-shift':   IconShift,
   '/pos':        IconPOS,
   '/sales':      IconSales,
+  '/cotizaciones': IconCotizaciones,
   '/documents':  IconDocuments,
   '/inventory':  IconInventory,
   '/customers':  IconCustomers,

@@ -138,6 +138,12 @@ const routes = [
     meta: { requiresAuth: true, roles: ['cajero', 'supervisor', 'administrador'] }
   },
   {
+    path: '/cotizaciones',
+    name: 'Cotizaciones',
+    component: () => import('../views/Cotizaciones.vue'),
+    meta: { requiresAuth: true, roles: ['cajero', 'supervisor', 'administrador'] }
+  },
+  {
     path: '/promotions',
     name: 'Promotions',
     component: Promotions,

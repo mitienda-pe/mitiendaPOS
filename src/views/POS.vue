@@ -1,6 +1,7 @@
 <script setup>
 import { cdnThumb } from '@/utils/cdnImage';
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import { useRoute } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useAuthStore } from '../stores/auth';
 import { useCartStore } from '../stores/cart';
@@ -10,6 +11,7 @@ import { productsApi } from '../services/productsApi';
 import { inventoryApi } from '../services/inventoryApi';
 import { catalogApi } from '../services/catalogApi';
 import { ordersApi } from '../services/ordersApi';
+import { cotizacionesApi } from '../services/cotizacionesApi';
 import { netsuiteStockApi } from '../services/netsuiteStockApi';
 import { mockCustomersApi } from '../api/mockCustomers';
 import { useSavedSalesStore } from '../stores/savedSales';
@@ -38,6 +40,13 @@ import { useToast } from '../composables/useToast';
 import { formatCurrency } from '../utils/formatters.js';
 
 const { showToast } = useToast();
+
+const route = useRoute();
+
+// Cotización de origen del carrito actual (si se retomó una). Al completar la
+// venta, se sella la conversión (cotización → venta) con este id.
+const activeCotizacionId = ref(null);
+const savingQuote = ref(false);
 
 // Stores
 const authStore = useAuthStore();
@@ -719,6 +728,123 @@ const resumeSavedSale = (sale) => {
   saleHasUnsavedChanges.value = false;
 };
 
+// ========== Cotizaciones / Proformas ==========
+
+// Cliente en el shape que espera el backend (customer{}). Mismo mapeo que arma
+// la orden en handlePaymentCompleted, extraído para reusarlo en la cotización.
+const buildCustomerPayload = () => {
+  const c = selectedCustomer.value;
+  const docTypeRaw = c?.document_type || '1';
+  const isRuc = docTypeRaw === 'ruc' || docTypeRaw === '2' || docTypeRaw === '6';
+  const docType = isRuc ? '2' : (docTypeRaw === 'dni' || docTypeRaw === '1' ? '1' : docTypeRaw);
+
+  const base = {
+    id: c?.id || null,
+    email: c?.email || c?.correoElectronico || c?.correo || c?.tiendacliente_correo_electronico || c?.tiendacliente_correo || '',
+    phone: c?.phone || c?.telefono || c?.tiendacliente_telefono || '',
+    document_number: c?.document_number || c?.numeroDocumento || '',
+    document_type: docType
+  };
+
+  if (isRuc) {
+    return { ...base, business_name: c?.business_name || c?.name || 'EMPRESA', name: '', lastname: '' };
+  }
+  let firstName = '', lastName = '';
+  if (c?.nombres || c?.apellidos) {
+    firstName = c?.nombres || '';
+    lastName = c?.apellidos || '';
+  } else if (c?.name) {
+    const parts = (c.name || 'Cliente General').trim().split(' ');
+    firstName = parts[0] || '';
+    lastName = parts.slice(1).join(' ') || '';
+  } else {
+    firstName = 'Cliente'; lastName = 'General';
+  }
+  return { ...base, name: firstName, lastname: lastName, business_name: '' };
+};
+
+// Items en el shape que espera el backend (mismo mapeo que la orden).
+const buildItemsPayload = () => cartItems.value.map(item => {
+  const exento = parseInt(item.tax_affectation) === 2 || parseInt(item.tax_affectation) === 3;
+  const unitSinIgv = exento ? item.precio : item.precio / 1.18;
+  return {
+    product_id: item.id,
+    productoatributo_id: item.variant_id || 0,
+    sku: item.sku,
+    name: item.variant_name ? `${item.nombre} (${item.variant_name})` : item.nombre,
+    quantity: item.quantity,
+    price: item.precio,
+    unit_price: unitSinIgv,
+    subtotal: unitSinIgv * item.quantity,
+    tax: exento ? 0 : (unitSinIgv * item.quantity) * 0.18,
+    total: item.precio * item.quantity,
+    promotion_id: item.promotion?.id || null,
+    unit_price_original: item.originalPrice || null,
+    sold_by_weight: item.sold_by_weight === true,
+    sale_unit: item.sale_unit || null
+  };
+});
+
+// Guardar el carrito actual como cotización (NO descuenta stock, NO cobra).
+const saveAsQuote = async () => {
+  if (!cartItems.value.length) {
+    showToast('warning', 'Agrega productos al carrito antes de guardar la cotización');
+    return;
+  }
+  savingQuote.value = true;
+  try {
+    const payload = {
+      source: 'pos',
+      tiendadireccion_id: shiftStore.activeShift?.tiendadireccion_id || null,
+      cajero_id: cashierStore.cashier?.empleado_id || null,
+      customer: buildCustomerPayload(),
+      document_type: billingDocumentType.value,
+      items: buildItemsPayload(),
+      // Snapshot crudo del carrito para retomar/editar tal cual desde el listado.
+      pos_snapshot: cartStore.getSnapshot()
+    };
+
+    let resp;
+    if (activeCotizacionId.value) {
+      // Editar la cotización que se está retomando.
+      resp = await cotizacionesApi.update(activeCotizacionId.value, payload);
+      showToast('success', 'Cotización actualizada');
+    } else {
+      resp = await cotizacionesApi.create(payload);
+      activeCotizacionId.value = resp.data?.id || null;
+      showToast('success', `Cotización ${resp.data?.codigo || ''} guardada`);
+    }
+  } catch (e) {
+    showToast('error', e.message || 'No se pudo guardar la cotización');
+  } finally {
+    savingQuote.value = false;
+  }
+};
+
+// Retomar una cotización en el POS: restaura el carrito desde el snapshot crudo.
+const loadCotizacion = async (cotizacionId) => {
+  try {
+    const resp = await cotizacionesApi.get(cotizacionId);
+    const q = resp.data;
+    if (!q) return;
+
+    if (q.estado === 'convertida') {
+      showToast('info', 'Esta cotización ya fue convertida en venta');
+      return;
+    }
+
+    const snap = q.pos_snapshot;
+    if (snap && Array.isArray(snap.items)) {
+      // Restaurar tal cual el carrito guardado (items, cliente, tipo de documento).
+      cartStore.restoreSnapshot({ ...snap, payments: [], status: 'ABIERTO' });
+    }
+    activeCotizacionId.value = q.id;
+    showToast('success', `Cotización ${q.codigo || ''} cargada. Edita y cobra para convertirla en venta.`);
+  } catch (e) {
+    showToast('error', 'No se pudo cargar la cotización');
+  }
+};
+
 const processPayment = async () => {
   // Validar que hay turno de caja abierto
   if (!shiftStore.hasActiveShift) {
@@ -1341,6 +1467,19 @@ const handlePaymentCompleted = async () => {
       console.log('🔍 [POS] Extracted orderId:', orderId);
       console.log('🔍 [POS] Extracted orderNumber:', orderNumber);
 
+      // Si esta venta proviene de una cotización, sellar la conversión
+      // (cotización → venta). No bloqueante: un fallo aquí no afecta la venta.
+      if (activeCotizacionId.value && orderId) {
+        try {
+          await cotizacionesApi.convert(activeCotizacionId.value, parseInt(orderId, 10));
+          console.log('✅ [POS] Cotización convertida:', activeCotizacionId.value, '→ venta', orderId);
+        } catch (convErr) {
+          console.error('⚠️ [POS] No se pudo sellar la conversión de la cotización:', convErr);
+        } finally {
+          activeCotizacionId.value = null;
+        }
+      }
+
       const orderInfo = {
         order_id: orderId ? parseInt(orderId, 10) : null,
         order_code: orderNumber || (orderId ? `VENTA-${orderId}` : `VENTA-${Date.now()}`),
@@ -1535,6 +1674,7 @@ const resetSale = (orderData = null) => {
   searchResults.value = [];
   saleHasUnsavedChanges.value = false;
   billingDocumentType.value = 'boleta'; // Reset to default
+  activeCotizacionId.value = null; // Ya no hay cotización de origen para esta venta
 
   // 🔥 OPTIMIZATION: Clear validated inventory numbers and stock validation flag
   validatedInventoryNumbers.value = null;
@@ -1808,6 +1948,12 @@ const handleCustomerSelect = (customer) => {
 onMounted(async () => {
   fetchCustomers();
 
+  // Retomar una cotización si se llegó con ?cotizacion=<id> (desde el listado).
+  const cotizacionId = route.query.cotizacion;
+  if (cotizacionId) {
+    await loadCotizacion(cotizacionId);
+  }
+
   // Esperar a que el DOM se actualice y luego intentar hacer focus
   await nextTick();
   if (barcodeInput.value) {
@@ -1989,6 +2135,14 @@ const getPaymentMethodName = (method) => {
                 <rect width="20" height="8" x="2" y="14" rx="2" />
                 <path d="M6 18h.01" />
                 <path d="M10 18h.01" />
+              </svg>
+            </button>
+            <button @click="saveAsQuote" :disabled="!cartItems.length || savingQuote" class="p-2 text-teal-600 hover:bg-teal-50 rounded-md disabled:opacity-40 disabled:hover:bg-transparent" title="Guardar como cotización" aria-label="Guardar como cotización">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="8" y1="13" x2="13" y2="13" />
+                <line x1="8" y1="17" x2="13" y2="17" />
               </svg>
             </button>
             <button @click="showSavedSalesModal = true" class="p-2 text-primary-600 hover:bg-primary-50 rounded-md" title="Ventas guardadas" aria-label="Ventas guardadas">
@@ -2275,6 +2429,18 @@ const getPaymentMethodName = (method) => {
                 <path d="M10 18h.01" />
               </svg>
               Guardar Venta
+            </button>
+
+            <button @click="saveAsQuote" :disabled="!cartItems.length || savingQuote"
+              class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-colors duration-200 disabled:opacity-50">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="8" y1="13" x2="13" y2="13" />
+                <line x1="8" y1="17" x2="13" y2="17" />
+              </svg>
+              {{ activeCotizacionId ? 'Actualizar cotización' : 'Guardar cotización' }}
             </button>
 
             <button @click="newSale"
