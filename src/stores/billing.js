@@ -248,17 +248,20 @@ export const useBillingStore = defineStore('billing', {
           this.successMessage = 'Comprobante emitido exitosamente'
           return { success: true, data: response.data }
         } else {
-          this.error = response.message || 'Error al emitir comprobante'
+          this.error = response.message || response.messages?.error || 'Error al emitir comprobante'
           return { success: false, error: this.error }
         }
       } catch (err) {
         console.error('Error al emitir comprobante:', err)
         console.error('Response data:', err.response?.data)
 
-        // Try to extract more detailed error message
-        const errorMsg = err.response?.data?.message
-          || (typeof err.response?.data === 'string' ? err.response.data : null)
-          || JSON.stringify(err.response?.data)
+        // Extraer el mensaje real. El backend responde con {message} (nuevo) o con
+        // el formato CI4 fail() {messages:{error}} (idempotencia 409, guard RUC 422,
+        // rechazo de Nubefact 400); leer ambos para no mostrar JSON crudo al cajero.
+        const data = err.response?.data
+        const errorMsg = data?.message
+          || data?.messages?.error
+          || (typeof data === 'string' ? data : null)
           || 'Error al emitir comprobante'
 
         this.error = errorMsg
