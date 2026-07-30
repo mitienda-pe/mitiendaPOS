@@ -121,6 +121,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <NetsuiteIdField v-model="form.bonification_item_id" label="Bonification Item ID" :missing="missing('tiendacredencialerp_bonification_item_id')" />
           <NetsuiteIdField v-model="form.discount_item_id" label="Discount Item ID" :missing="missing('tiendacredencialerp_discount_item_id')" />
+          <NetsuiteIdField v-model="form.shipping_item_id" label="Ítem de envío / Delivery" :missing="false" />
         </div>
       </section>
 
@@ -288,6 +289,7 @@ const emptyForm = () => ({
   payment_method_id: '',
   default_zip_id: '',
   discount_item_id: '',
+  shipping_item_id: '',
   default_salesrep_id: '',
   sync_mode: 'invoice_direct',
   sync_mode_web: '',
@@ -318,6 +320,7 @@ const fieldToColumn = {
   payment_method_id: 'tiendacredencialerp_payment_method_id',
   default_zip_id: 'tiendacredencialerp_default_zip_id',
   discount_item_id: 'tiendacredencialerp_discount_item_id',
+  shipping_item_id: 'tiendacredencialerp_shipping_item_id',
   default_salesrep_id: 'tiendacredencialerp_default_salesrep_id',
   sync_mode: 'tiendacredencialerp_sync_mode',
   sync_mode_web: 'tiendacredencialerp_sync_mode_web',
