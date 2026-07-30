@@ -33,9 +33,10 @@ export const inventoryApi = {
     if (filters.search) params.append('search', filters.search);
     if (filters.category_id) params.append('category_id', filters.category_id.toString());
     if (filters.brand_id) params.append('brand_id', filters.brand_id.toString());
-    if (filters.published !== null && filters.published !== undefined) {
-      params.append('published', filters.published ? '1' : '0');
-    }
+    // Contexto POS declarado: la visibilidad la rige producto_publicado_pos. NO
+    // enviar `published` (flag de storefront): ocultaba los productos creados
+    // desde el POS, que nacen sin publicar en la tienda virtual.
+    params.append('pos', '1');
     if (filters.stock_status && filters.stock_status !== 'all') {
       params.append('stock_status', filters.stock_status);
     }

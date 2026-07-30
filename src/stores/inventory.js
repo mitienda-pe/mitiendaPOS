@@ -10,7 +10,10 @@ export const useInventoryStore = defineStore('inventory', {
       category_id: null,
       brand_id: null,
       stock_status: 'all', // 'all', 'in_stock', 'low_stock', 'out_of_stock'
-      published: true, // Por defecto solo productos publicados en POS
+      // La visibilidad en el POS la rige producto_publicado_pos, que el backend
+      // aplica solo con el contexto POS declarado (pos=1, ver inventoryApi).
+      // Enviar `published` aquí filtraba por el flag de storefront y ocultaba los
+      // productos creados desde el POS.
       sort_by: null,   // 'sku' | 'name' | 'price' | 'stock' (null = default por fecha)
       sort_dir: 'asc', // 'asc' | 'desc'
       page: 1,
@@ -343,7 +346,6 @@ export const useInventoryStore = defineStore('inventory', {
         category_id: null,
         brand_id: null,
         stock_status: 'all',
-        published: true, // Mantener solo productos publicados en POS
         sort_by: null,
         sort_dir: 'asc',
         page: 1,
