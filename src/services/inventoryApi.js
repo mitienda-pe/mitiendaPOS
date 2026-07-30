@@ -70,6 +70,7 @@ export const inventoryApi = {
           min_stock: parseInt(product.min_stock || '5'), // Stock mínimo por defecto
           unlimited_stock: product.unlimited_stock === true || product.unlimited_stock === 1,
           published: product.published || false,
+          published_pos: product.published_pos !== false,
           featured: product.featured || false,
           // Afectación IGV: 1=Gravado, 2=Exonerado, 3=Inafecto (default afecto)
           tax_affectation: parseInt(product.tax_affectation || '1'),
@@ -132,6 +133,9 @@ export const inventoryApi = {
           min_stock: parseInt(rawData.min_stock || '5'),
           unlimited_stock: rawData.unlimited_stock === true || rawData.unlimited_stock === 1,
           published: rawData.published || false,
+          // Default true: si el backend aún no lo expone, no apagamos el toggle
+          // por accidente al guardar desde el POS.
+          published_pos: rawData.published_pos !== false,
           featured: rawData.featured || false,
           tax_affectation: parseInt(rawData.tax_affectation || '1'),
           images: rawData.images || [],
@@ -248,10 +252,11 @@ export const inventoryApi = {
 
   /**
    * Crear un producto (formulario mínimo POS)
-   * @param {Object} data - { name, sku, barcode, price, stock, unlimited_stock, categories, brand_id, published }
+   * @param {Object} data - { name, sku, barcode, price, stock, unlimited_stock, categories, brand_id, published, published_pos }
    * @returns {Promise} { success, data: { id, ... }, message }
    */
   async createProduct(data) {
+    /** @type {Record<string, any>} */
     const payload = {
       name: data.name,
       price: data.price !== undefined && data.price !== null ? parseFloat(data.price) : 0,

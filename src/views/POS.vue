@@ -1704,8 +1704,7 @@ const searchProducts = () => {
     try {
       const response = await productsApi.getProducts({
         search: query,
-        limit: 20,
-        published: true
+        limit: 20
       });
 
       if (barcode.value !== query) return; // input cambió mientras esperábamos
@@ -1855,8 +1854,7 @@ let searchTimeout = null;
 const fetchProductList = async () => {
   try {
     const params = {
-      limit: 50,
-      published: true
+      limit: 50
     };
 
     // Si hay texto de búsqueda (min 2 caracteres), buscar por API

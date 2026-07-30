@@ -116,6 +116,32 @@
         <p class="text-xs text-gray-400 mt-1 ml-1">Ingresa la cantidad disponible o marca "Ilimitado".</p>
       </div>
 
+      <!-- Visible en el POS -->
+      <div>
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Visible en el POS</label>
+            <p class="text-xs text-gray-400 mt-1">
+              Si lo apagas, el producto deja de aparecer en el catálogo de caja.
+              No afecta a la tienda virtual.
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            :aria-checked="form.published_pos"
+            @click="form.published_pos = !form.published_pos"
+            :class="form.published_pos ? 'bg-primary-500' : 'bg-gray-300'"
+            class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <span
+              :class="form.published_pos ? 'translate-x-6' : 'translate-x-1'"
+              class="inline-block h-5 w-5 transform rounded-full bg-white transition-transform shadow"
+            ></span>
+          </button>
+        </div>
+      </div>
+
       <!-- ══ Campos opcionales ══ -->
       <div class="pt-3 border-t border-gray-200">
         <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Datos opcionales</p>
@@ -327,9 +353,10 @@ const form = reactive({
   unlimited_stock: false,
   category_id: '',
   brand_id: '',
-  tax_affectation: 1 // 1=Gravado/afecto, 2=Exonerado, 3=Inafecto
-  // La publicación NO se gestiona desde el POS: al crear, el producto queda
-  // vendible en el POS pero no en la tienda virtual (se publica en el backoffice).
+  tax_affectation: 1, // 1=Gravado/afecto, 2=Exonerado, 3=Inafecto
+  // Visibilidad en el catálogo de caja. La publicación en la tienda virtual
+  // (`published`) se gestiona aparte, en el backoffice.
+  published_pos: true
 });
 
 // Margen estimado = (precio de venta - costo de compra) / precio de venta
@@ -523,13 +550,12 @@ const handleSubmit = async () => {
       brand_id: form.brand_id ? parseInt(form.brand_id) : 0
     };
 
-    // Publicación por canal. Solo se define al CREAR: el producto queda vendible en
-    // el POS (published_pos=true) pero no en la tienda virtual (published=false); la
-    // publicación web se decide en el backoffice. Al EDITAR no se envían estos campos
-    // para no pisar el estado de publicación gestionado fuera del POS.
+    // Publicación por canal. `published_pos` (catálogo de caja) sí se gestiona
+    // desde aquí, al crear y al editar. `published` (tienda virtual) solo se fija
+    // al crear —en false— y nunca se pisa al editar: esa decisión es del backoffice.
+    payload.published_pos = form.published_pos;
     if (!isEdit.value) {
       payload.published = false;
-      payload.published_pos = true;
     }
 
     const result = isEdit.value
@@ -577,6 +603,7 @@ const loadProductForEdit = async () => {
     form.category_id = product.category_id || '';
     form.brand_id = product.brand?.id || '';
     form.tax_affectation = product.tax_affectation || 1;
+    form.published_pos = product.published_pos !== false;
     // Vista previa de la imagen actual (remota). Solo se reemplaza si el usuario
     // elige una nueva foto; no hay forma de "quitar" la imagen remota desde aquí.
     const firstImage = Array.isArray(product.images) && product.images.length ? product.images[0] : null;

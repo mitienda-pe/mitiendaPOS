@@ -65,12 +65,10 @@ const buildMeiliSearchParams = (filters, tiendadireccionId) => {
   if (filters.brand_id) params.append('brand_id', String(filters.brand_id));
   if (tiendadireccionId) params.append('tiendadireccion_id', String(tiendadireccionId));
 
-  // El POS muestra todo el catálogo (con badges visuales).
-  // Solo si el caller explícitamente pidió `published=1` o filtró stock,
-  // restringimos.
-  if (filters.published === true || filters.published === 1 || filters.published === '1') {
-    params.append('include_unpublished', 'false');
-  }
+  // Contexto POS declarado: el backend aplica producto_publicado_pos como
+  // criterio de visibilidad. No depende de que haya turno abierto.
+  params.append('pos', '1');
+
   if (filters.stock_status === 'in_stock') {
     params.append('include_out_of_stock', 'false');
   }
@@ -116,9 +114,11 @@ export const productsApi = {
     if (filters.search) params.append('search', filters.search);
     if (filters.category_id) params.append('category_id', filters.category_id.toString());
     if (filters.brand_id) params.append('brand_id', filters.brand_id.toString());
-    if (filters.published !== null && filters.published !== undefined) {
-      params.append('published', filters.published ? '1' : '0');
-    }
+    // Contexto POS declarado: la visibilidad la rige producto_publicado_pos, no
+    // el flag de storefront. Enviar `published` aquí ocultaba los productos
+    // creados desde el POS (que nacen sin publicar en storefront) cada vez que
+    // el usuario no tenía turno abierto.
+    params.append('pos', '1');
     if (filters.stock_status && filters.stock_status !== 'all') {
       params.append('stock_status', filters.stock_status);
     }
@@ -295,7 +295,7 @@ export const productsApi = {
     // si `code` es un barcode (8-14 dígitos) y rutea al filter exacto.
     if (useMeiliSearch()) {
       const tiendadireccionId = getActiveTiendadireccionId();
-      const params = new URLSearchParams({ q: code, limit: '1' });
+      const params = new URLSearchParams({ q: code, limit: '1', pos: '1' });
       if (tiendadireccionId) params.append('tiendadireccion_id', String(tiendadireccionId));
 
       const meiliResponse = await apiClient.get(`/products/search?${params.toString()}`);
@@ -307,7 +307,7 @@ export const productsApi = {
       return { success: false, data: null, message: 'Producto no encontrado' };
     }
 
-    const response = await apiClient.get(`/products?search=${encodeURIComponent(code)}`);
+    const response = await apiClient.get(`/products?pos=1&search=${encodeURIComponent(code)}`);
     const rawData = response.data;
 
     if (Array.isArray(rawData) && rawData.length > 0) {
