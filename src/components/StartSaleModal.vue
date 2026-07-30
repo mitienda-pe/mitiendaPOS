@@ -294,7 +294,10 @@ const newCustomer = ref({
   direccion: '',
   departamento: '',
   provincia: '',
-  distrito: ''
+  distrito: '',
+  // Ubigeo fiscal (codigo INEI de 6 digitos que devuelve SUNAT). No se edita en el
+  // formulario; viaja al API para resolver el ubigeo_id de la direccion.
+  ubigeo: ''
 });
 
 // Auto-focus on document input when modal opens
@@ -385,12 +388,14 @@ const searchCustomer = async () => {
           newCustomer.value.departamento = '';
           newCustomer.value.provincia = '';
           newCustomer.value.distrito = '';
+          newCustomer.value.ubigeo = '';
         } else {
           newCustomer.value.razonSocial = lookupData.value.razonSocial || '';
           newCustomer.value.direccion = lookupData.value.direccion || '';
           newCustomer.value.departamento = lookupData.value.departamento || '';
           newCustomer.value.provincia = lookupData.value.provincia || '';
           newCustomer.value.distrito = lookupData.value.distrito || '';
+          newCustomer.value.ubigeo = lookupData.value.ubigeo || '';
           newCustomer.value.nombres = '';
           newCustomer.value.apellidos = '';
         }
@@ -432,7 +437,8 @@ const createAndSelectCustomer = async () => {
       direccion: newCustomer.value.direccion,
       departamento: newCustomer.value.departamento,
       provincia: newCustomer.value.provincia,
-      distrito: newCustomer.value.distrito
+      distrito: newCustomer.value.distrito,
+      ubigeo: newCustomer.value.ubigeo
     };
 
     const response = await customersApi.createCustomer(customerData);

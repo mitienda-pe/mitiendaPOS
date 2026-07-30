@@ -159,9 +159,13 @@ export const customersApi = {
         backendData.tiendacliente_apellidos = '';
       }
 
-      // Note: Address fields (direccion, departamento, provincia, distrito) from Decolecta
-      // are NOT saved to tiendasclientes table (they go to tiendasclientes_direcciones)
-      // For POS, we only need the basic customer info
+      // Domicilio fiscal (lookup SUNAT). No son columnas de tiendasclientes: el API
+      // los guarda en tiendasclientesdirecciones etiquetados como "Fiscal", para que
+      // la siguiente venta al mismo RUC no dependa de volver a consultar SUNAT.
+      if (customerData.direccion) {
+        backendData.fiscal_address = customerData.direccion;
+        backendData.fiscal_ubigeo = customerData.ubigeo || '';
+      }
 
       const response = await apiClient.post('/customers', backendData);
       console.log('Backend response:', response.data);

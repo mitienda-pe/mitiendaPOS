@@ -370,7 +370,11 @@ const customerForm = ref({
   apellidos: '',
   razonSocial: '',
   email: '',
-  phone: ''
+  phone: '',
+  // Domicilio fiscal del RUC (lookup SUNAT). No se edita: se guarda como direccion
+  // "Fiscal" del cliente. fiscalUbigeo es el codigo INEI de 6 digitos.
+  fiscalAddress: '',
+  fiscalUbigeo: ''
 });
 
 // Computed properties
@@ -495,9 +499,13 @@ async function consultarDocumento() {
         // Poblar datos de RENIEC
         customerForm.value.nombres = lookupResponse.data.nombres || '';
         customerForm.value.apellidos = `${lookupResponse.data.apellidoPaterno || ''} ${lookupResponse.data.apellidoMaterno || ''}`.trim();
+        customerForm.value.fiscalAddress = '';
+        customerForm.value.fiscalUbigeo = '';
       } else {
         // Poblar datos de SUNAT
         customerForm.value.razonSocial = lookupResponse.data.razonSocial || '';
+        customerForm.value.fiscalAddress = lookupResponse.data.direccion || '';
+        customerForm.value.fiscalUbigeo = lookupResponse.data.ubigeo || '';
       }
 
       alert('Documento encontrado. Complete los datos restantes.');
@@ -521,7 +529,9 @@ function openAddModal() {
     apellidos: '',
     razonSocial: '',
     email: '',
-    phone: ''
+    phone: '',
+    fiscalAddress: '',
+    fiscalUbigeo: ''
   };
 
   isEditing.value = false;
@@ -554,7 +564,9 @@ function closeModal() {
     apellidos: '',
     razonSocial: '',
     email: '',
-    phone: ''
+    phone: '',
+    fiscalAddress: '',
+    fiscalUbigeo: ''
   };
 }
 
@@ -586,7 +598,9 @@ async function saveCustomer() {
           ? customerForm.value.apellidos
           : '',
         email: customerForm.value.email,
-        telefono: customerForm.value.phone
+        telefono: customerForm.value.phone,
+        direccion: customerForm.value.fiscalAddress,
+        ubigeo: customerForm.value.fiscalUbigeo
       });
     }
 

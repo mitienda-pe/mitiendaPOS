@@ -747,7 +747,24 @@ const buildCustomerPayload = () => {
   };
 
   if (isRuc) {
-    return { ...base, business_name: c?.business_name || c?.name || 'EMPRESA', name: '', lastname: '' };
+    // Domicilio fiscal: de la direccion "Fiscal" del cliente registrado (trae el
+    // ubigeo_id ya resuelto) o, si no existe, de la predeterminada. El API lo persiste
+    // en la venta para que el comprobante y NetSuite usen la geografia fiscal y no la
+    // de la tienda.
+    const addresses = Array.isArray(c?.addresses) ? c.addresses : [];
+    const fiscal = addresses.find(a => a?.label === 'Fiscal')
+      || addresses.find(a => a?.is_default)
+      || addresses[0];
+
+    return {
+      ...base,
+      business_name: c?.business_name || c?.name || 'EMPRESA',
+      name: '',
+      lastname: '',
+      fiscal_address: fiscal?.address || c?.direccion || '',
+      fiscal_ubigeo_id: fiscal?.ubigeo_id || 0,
+      fiscal_ubigeo: c?.ubigeo || ''
+    };
   }
   let firstName = '', lastName = '';
   if (c?.nombres || c?.apellidos) {
@@ -1256,61 +1273,8 @@ const handlePaymentCompleted = async () => {
       pasarela_id: 98, // ID especial para ventas del POS
       tiendadireccion_id: shiftStore.activeShift?.tiendadireccion_id || null, // ID de la sucursal desde el turno activo
       cajero_id: cashierStore.cashier?.empleado_id || null, // ID del cajero (empleado local, no NetSuite)
-      customer: {
-        id: selectedCustomer.value ? selectedCustomer.value.id : null,
-        email: selectedCustomer.value?.email || selectedCustomer.value?.correoElectronico || selectedCustomer.value?.correo || selectedCustomer.value?.tiendacliente_correo_electronico || selectedCustomer.value?.tiendacliente_correo || '',
-        phone: selectedCustomer.value?.phone || selectedCustomer.value?.telefono || selectedCustomer.value?.tiendacliente_telefono || '',
-        document_number: selectedCustomer.value?.document_number || selectedCustomer.value?.numeroDocumento || '',
-        // Convertir document_type a código numérico si viene como string
-        document_type: (() => {
-          const docType = selectedCustomer.value?.document_type || '1';
-          // Normalizar a esquema MiTienda: DNI=1, RUC=2
-          if (docType === 'ruc' || docType === '2' || docType === '6') return '2';
-          if (docType === 'dni' || docType === '1') return '1';
-          return docType; // Si ya es numérico, usarlo tal cual
-        })(),
-        // Para RUC (tipo 2): enviar business_name y dejar name/lastname vacíos
-        // Para DNI (tipo 1): enviar name/lastname y dejar business_name vacío
-        ...((() => {
-          const docType = selectedCustomer.value?.document_type || '1';
-          const isRuc = docType === 'ruc' || docType === '2' || docType === '6';
-
-          if (isRuc) {
-            // Para RUC: toda la razón social va en business_name
-            return {
-              business_name: selectedCustomer.value?.business_name || selectedCustomer.value?.name || 'EMPRESA',
-              name: '',
-              lastname: ''
-            };
-          } else {
-            // Para DNI: usar nombres y apellidos directos si están disponibles
-            // Si no, intentar separar desde 'name' como fallback
-            let firstName = '';
-            let lastName = '';
-
-            if (selectedCustomer.value?.nombres || selectedCustomer.value?.apellidos) {
-              // Prioridad 1: usar campos nombres/apellidos directos
-              firstName = selectedCustomer.value?.nombres || '';
-              lastName = selectedCustomer.value?.apellidos || '';
-            } else if (selectedCustomer.value?.name) {
-              // Fallback: separar desde 'name' si es todo lo que tenemos
-              const fullName = selectedCustomer.value?.name || 'Cliente General';
-              const nameParts = fullName.trim().split(' ');
-              firstName = nameParts[0] || '';
-              lastName = nameParts.slice(1).join(' ') || '';
-            } else {
-              firstName = 'Cliente';
-              lastName = 'General';
-            }
-
-            return {
-              name: firstName,
-              lastname: lastName,
-              business_name: ''
-            };
-          }
-        })())
-      },
+      // Mismo mapeo que la cotizacion (incluye el domicilio fiscal en Facturas).
+      customer: buildCustomerPayload(),
       document_type: billingDocumentType.value, // 'boleta' o 'factura'
       items: cartItems.value.map(item => {
         // Afectación IGV por producto: exonerado(2)/inafecto(3) NO tributan.

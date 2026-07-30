@@ -186,7 +186,11 @@ const newCustomer = ref({
   apellidos: '',
   razonSocial: '',
   correoElectronico: '',
-  telefono: ''
+  telefono: '',
+  // Domicilio fiscal del RUC (lookup SUNAT). No se edita en el formulario; se guarda
+  // como direccion "Fiscal" del cliente. ubigeo es el codigo INEI de 6 digitos.
+  direccion: '',
+  ubigeo: ''
 });
 
 // Auto-focus on document input when modal opens
@@ -289,12 +293,16 @@ const searchByDocument = async () => {
             newCustomer.value.nombres = lookupData.value.nombres || '';
             newCustomer.value.apellidos = `${lookupData.value.apellidoPaterno || ''} ${lookupData.value.apellidoMaterno || ''}`.trim();
             newCustomer.value.razonSocial = '';
+            newCustomer.value.direccion = '';
+            newCustomer.value.ubigeo = '';
             console.log('Pre-filled DNI customer:', {
               nombres: newCustomer.value.nombres,
               apellidos: newCustomer.value.apellidos
             });
           } else {
             newCustomer.value.razonSocial = lookupData.value.razonSocial || '';
+            newCustomer.value.direccion = lookupData.value.direccion || '';
+            newCustomer.value.ubigeo = lookupData.value.ubigeo || '';
             newCustomer.value.nombres = '';
             newCustomer.value.apellidos = '';
             console.log('Pre-filled RUC customer:', {
@@ -344,7 +352,9 @@ const createCustomer = async () => {
       email: newCustomer.value.correoElectronico,
       telefono: newCustomer.value.telefono,
       numeroDocumento: numDoc.value,
-      tipoDocumento: tipoDoc.value === 'DNI' ? '1' : '6'
+      tipoDocumento: tipoDoc.value === 'DNI' ? '1' : '6',
+      direccion: newCustomer.value.direccion,
+      ubigeo: newCustomer.value.ubigeo
     };
 
     const response = await customersApi.createCustomer(customerData);
