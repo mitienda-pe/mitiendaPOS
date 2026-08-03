@@ -183,6 +183,11 @@ const saleState = computed(() => {
 // Usar getters del cart store
 const subtotal = computed(() => cartStore.subtotal);
 const tax = computed(() => cartStore.tax);
+// ICBPER (Ley 30884): tributo fijo por bolsa. Aparte de subtotal/tax porque no es
+// base imponible ni IGV; `total` ya lo incluye.
+const icbper = computed(() => cartStore.icbper);
+const hasIcbper = computed(() => cartStore.hasIcbper);
+const icbperRate = computed(() => cartStore.icbperRate);
 const total = computed(() => cartStore.total);
 const totalPaid = computed(() => cartStore.totalPaid);
 const remainingAmount = computed(() => cartStore.remainingAmount);
@@ -780,25 +785,38 @@ const buildCustomerPayload = () => {
   return { ...base, name: firstName, lastname: lastName, business_name: '' };
 };
 
-// Items en el shape que espera el backend (mismo mapeo que la orden).
+// Items en el shape que espera el backend. ÚNICO mapeo: lo usan tanto la orden
+// como la cotización (antes estaba duplicado y las dos copias divergían).
 const buildItemsPayload = () => cartItems.value.map(item => {
+  // Afectación IGV por producto: exonerado(2)/inafecto(3) NO tributan.
+  // Para exentos el precio ya es sin IGV; para afectos se desincrusta 18%.
   const exento = parseInt(item.tax_affectation) === 2 || parseInt(item.tax_affectation) === 3;
   const unitSinIgv = exento ? item.precio : item.precio / 1.18;
   return {
     product_id: item.id,
+    // Variación elegida (productoatributo_id). 0/ausente = producto simple.
+    // El backend (nativo y proxy legacy) usa este id para precio y descuento de stock.
     productoatributo_id: item.variant_id || 0,
     sku: item.sku,
     name: item.variant_name ? `${item.nombre} (${item.variant_name})` : item.nombre,
     quantity: item.quantity,
+    // Precio de línea con IGV (variación si aplica). El backend nativo lo usa como
+    // precio efectivo; el proxy legacy lo ignora y resuelve el precio por atributoId.
     price: item.precio,
-    unit_price: unitSinIgv,
-    subtotal: unitSinIgv * item.quantity,
-    tax: exento ? 0 : (unitSinIgv * item.quantity) * 0.18,
-    total: item.precio * item.quantity,
+    unit_price: unitSinIgv, // Precio sin IGV
+    subtotal: unitSinIgv * item.quantity, // Subtotal sin IGV
+    tax: exento ? 0 : (unitSinIgv * item.quantity) * 0.18, // IGV del subtotal (0 si exento)
+    total: item.precio * item.quantity, // Total con IGV (precio original * cantidad)
+    // Información de promoción para trazabilidad en NetSuite
     promotion_id: item.promotion?.id || null,
-    unit_price_original: item.originalPrice || null,
+    unit_price_original: item.originalPrice || null, // Precio original antes del descuento (con IGV)
+    // Venta al peso: la cantidad ya es el peso (decimal). El nativo resuelve la
+    // unidad SUNAT server-side; estos campos son para el proxy legacy y trazabilidad.
     sold_by_weight: item.sold_by_weight === true,
-    sale_unit: item.sale_unit || null
+    sale_unit: item.sale_unit || null,
+    // ICBPER (Ley 30884): informativo. El backend resuelve el flag y el monto
+    // desde el catálogo (server-trusted); el POS no decide tributos.
+    icbper: item.icbper === true
   };
 });
 
@@ -1276,35 +1294,7 @@ const handlePaymentCompleted = async () => {
       // Mismo mapeo que la cotizacion (incluye el domicilio fiscal en Facturas).
       customer: buildCustomerPayload(),
       document_type: billingDocumentType.value, // 'boleta' o 'factura'
-      items: cartItems.value.map(item => {
-        // Afectación IGV por producto: exonerado(2)/inafecto(3) NO tributan.
-        // Para exentos el precio ya es sin IGV; para afectos se desincrusta 18%.
-        const exento = parseInt(item.tax_affectation) === 2 || parseInt(item.tax_affectation) === 3;
-        const unitSinIgv = exento ? item.precio : item.precio / 1.18;
-        return {
-          product_id: item.id,
-          // Variación elegida (productoatributo_id). 0/ausente = producto simple.
-          // El backend (nativo y proxy legacy) usa este id para precio y descuento de stock.
-          productoatributo_id: item.variant_id || 0,
-          sku: item.sku,
-          name: item.variant_name ? `${item.nombre} (${item.variant_name})` : item.nombre,
-          quantity: item.quantity,
-          // Precio de línea con IGV (variación si aplica). El backend nativo lo usa como
-          // precio efectivo; el proxy legacy lo ignora y resuelve el precio por atributoId.
-          price: item.precio,
-          unit_price: unitSinIgv, // Precio sin IGV
-          subtotal: unitSinIgv * item.quantity, // Subtotal sin IGV
-          tax: exento ? 0 : (unitSinIgv * item.quantity) * 0.18, // IGV del subtotal (0 si exento)
-          total: item.precio * item.quantity, // Total con IGV (precio original * cantidad)
-          // Información de promoción para trazabilidad en NetSuite
-          promotion_id: item.promotion?.id || null,
-          unit_price_original: item.originalPrice || null, // Precio original antes del descuento (con IGV)
-          // Venta al peso: la cantidad ya es el peso (decimal). El nativo resuelve la
-          // unidad SUNAT server-side; estos campos son para el proxy legacy y trazabilidad.
-          sold_by_weight: item.sold_by_weight === true,
-          sale_unit: item.sale_unit || null
-        };
-      }),
+      items: buildItemsPayload(),
       payments: payments.value.map(payment => ({
         method: payment.method,
         method_name: payment.methodName,
@@ -1315,6 +1305,9 @@ const handlePaymentCompleted = async () => {
       subtotal: subtotal.value,
       tax: tax.value,
       tax_rate: 0.18,
+      // ICBPER (Ley 30884): ya incluido en `total`. Va explícito para el ticket y
+      // la trazabilidad; el backend lo recalcula del catálogo, no confía en esto.
+      icbper: icbper.value,
       total: total.value, // Total original (antes de redondeo)
       rounding_amount: cartStore.appliedRounding, // Redondeo aplicado (puede ser positivo o negativo)
       total_after_rounding: cartStore.totalWithRounding, // Total final después de redondeo
@@ -1492,6 +1485,9 @@ const handlePaymentCompleted = async () => {
             precio: parseFloat(item.price || item.precio || 0),
             precio_original: item.original_price ? parseFloat(item.original_price) : null,
             discount_percent: item.discount_percent || null,
+            // El ticket desglosa GRAVADAS/EXONERADAS/INAFECTAS con este campo; sin
+            // él todo caía a gravado en la reimpresión.
+            tax_affectation: item.tax_affectation || 1,
             total: parseFloat(item.total || 0)
           })),
           // Usar pagos locales en lugar de los del backend (que pueden venir como 'unknown')
@@ -1504,6 +1500,8 @@ const handlePaymentCompleted = async () => {
           })),
           subtotal: parseFloat(orderDetails.subtotal || 0),
           tax: parseFloat(orderDetails.tax || 0),
+          // ICBPER (Ley 30884): el backend lo devuelve aparte de subtotal/tax.
+          icbper: parseFloat(orderDetails.icbper || 0),
           total: parseFloat(orderDetails.tiendaventa_totalpagar || orderDetails.total || 0),
           roundingAmount: cartStore.appliedRounding, // Redondeo aplicado desde el cart store
           totalAfterRounding: cartStore.totalWithRounding, // Total después del redondeo
@@ -1553,6 +1551,7 @@ const handlePaymentCompleted = async () => {
           payments: payments.value.map(payment => ({ ...payment })),
           subtotal: subtotal.value,
           tax: tax.value,
+          icbper: icbper.value,
           total: total.value,
           roundingAmount: cartStore.appliedRounding, // Redondeo aplicado desde el cart store
           totalAfterRounding: cartStore.totalWithRounding, // Total después del redondeo
@@ -1723,6 +1722,8 @@ const searchProducts = () => {
           sold_by_weight: item.sold_by_weight === true,
           sale_unit: item.sale_unit || null,
           tax_affectation: item.tax_affectation || 1,
+          // Bolsa plástica afecta a ICBPER (Ley 30884)
+          icbper: item.icbper === true,
           images: item.images || []
         }));
         highlightedIndex.value = -1;
@@ -1838,6 +1839,8 @@ const mapProductsToFormat = (products) => {
     sold_by_weight: item.sold_by_weight === true,
     sale_unit: item.sale_unit || null,
     tax_affectation: item.tax_affectation || 1,
+    // Bolsa plástica afecta a ICBPER (Ley 30884)
+    icbper: item.icbper === true,
     images: item.images || []
   }));
 };
@@ -2452,6 +2455,11 @@ const getPaymentMethodName = (method) => {
                 <span class="text-gray-600">IGV (18%)</span>
                 <span>{{ formatCurrency(tax) }}</span>
               </div>
+              <!-- ICBPER (Ley 30884): monto fijo por bolsa, encima del IGV -->
+              <div v-if="hasIcbper" class="flex justify-between">
+                <span class="text-gray-600">ICBPER (bolsas)</span>
+                <span>{{ formatCurrency(icbper) }}</span>
+              </div>
               <div v-if="hasPromoV2Discount" class="flex justify-between text-primary-600">
                 <span>Descuento promoción</span>
                 <span>- {{ formatCurrency(promoV2Discount) }}</span>
@@ -2614,6 +2622,11 @@ const getPaymentMethodName = (method) => {
           <div class="flex justify-between text-sm">
             <span class="text-gray-600">IGV (18%)</span>
             <span>{{ formatCurrency(tax) }}</span>
+          </div>
+          <!-- ICBPER (Ley 30884): monto fijo por bolsa, encima del IGV -->
+          <div v-if="hasIcbper" class="flex justify-between text-sm">
+            <span class="text-gray-600">ICBPER (bolsas)</span>
+            <span>{{ formatCurrency(icbper) }}</span>
           </div>
           <div v-if="hasPromoV2Discount" class="flex justify-between text-sm text-primary-600">
             <span>Descuento promoción</span>
@@ -2789,7 +2802,8 @@ const getPaymentMethodName = (method) => {
   <CustomerSearchModal v-model="showCustomerSearch" @select="handleCustomerSelect" />
 
   <!-- Payment Modal -->
-  <PaymentModal v-model="showPaymentModal" :total="total" :subtotal="subtotal" :tax="tax" :customer="selectedCustomer" :items="cartItems"
+  <PaymentModal v-model="showPaymentModal" :total="total" :subtotal="subtotal" :tax="tax" :icbper="icbper"
+    :icbper-rate="icbperRate" :customer="selectedCustomer" :items="cartItems"
     :payments="payments" :document-type="documentType" :remaining-amount="remainingAmount" :show-ticket="showTicket"
     :completed-sale-data="completedSaleSnapshot"
     @payment-added="handlePaymentAdded" @sale-finalized="resetSale" @update:show-ticket="showTicket = $event" />

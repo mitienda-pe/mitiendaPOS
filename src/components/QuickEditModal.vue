@@ -101,6 +101,22 @@
                 </select>
               </div>
 
+              <!-- ICBPER (Ley 30884): bolsa plástica -->
+              <div>
+                <label class="flex items-start gap-3" :class="readOnly ? 'cursor-not-allowed' : 'cursor-pointer'">
+                  <input
+                    v-model="form.icbper"
+                    type="checkbox"
+                    :disabled="readOnly"
+                    class="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 disabled:opacity-50"
+                  />
+                  <span>
+                    <span class="block text-sm font-medium text-gray-700">Bolsa plástica (ICBPER)</span>
+                    <span class="block text-xs text-gray-500">Cobra S/ 0.50 por unidad además del IGV.</span>
+                  </span>
+                </label>
+              </div>
+
               <!-- Info adicional -->
               <div class="bg-primary-50 border border-primary-200 rounded-md p-3">
                 <div class="flex items-start">
@@ -178,7 +194,8 @@ const emit = defineEmits(['close', 'save']);
 const form = ref({
   price: 0,
   stock: 0,
-  tax_affectation: 1
+  tax_affectation: 1,
+  icbper: false // Bolsa plástica afecta a ICBPER (Ley 30884)
 });
 
 const loading = ref(false);
@@ -191,7 +208,8 @@ watch(() => props.product, (newProduct) => {
     form.value = {
       price: newProduct.price || 0,
       stock: newProduct.stock || 0,
-      tax_affectation: newProduct.tax_affectation || 1
+      tax_affectation: newProduct.tax_affectation || 1,
+      icbper: newProduct.icbper === true
     };
     error.value = null;
   }
@@ -233,7 +251,8 @@ const handleSubmit = async () => {
       productId: props.product.id,
       price: form.value.price,
       stock: form.value.stock,
-      tax_affectation: form.value.tax_affectation
+      tax_affectation: form.value.tax_affectation,
+      icbper: form.value.icbper === true
     });
 
     // El componente padre cerrará el modal después de guardar

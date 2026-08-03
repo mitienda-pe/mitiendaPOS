@@ -150,6 +150,13 @@ export function buildReceipt(orderData) {
   if (inafectas > 0) encoder.line(padLine('OPERACIONES INAFECTAS:', `S/ ${inafectas.toFixed(2)}`, W))
   encoder.line(padLine('IGV (18%):', `S/ ${num(orderData.tax)}`, W))
 
+  // ICBPER (Ley 30884): tributo fijo por bolsa, encima del IGV y fuera de su base.
+  const icbper = parseFloat(orderData.icbper || 0)
+  if (icbper > 0) {
+    const icbperRate = parseFloat(orderData.icbperRate || 0.5)
+    encoder.line(padLine(`ICBPER (${icbperRate.toFixed(2)} x bolsa):`, `S/ ${icbper.toFixed(2)}`, W))
+  }
+
   const rounding = parseFloat(orderData.roundingAmount || 0)
   if (rounding !== 0) {
     encoder.line(padLine('Redondeo:', `S/ ${rounding.toFixed(2)}`, W))

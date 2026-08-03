@@ -7,6 +7,11 @@ const isExemptItem = (item) => {
   return a === 2 || a === 3;
 };
 
+// ICBPER (Ley 30884): bolsa plástica. Monto FIJO por bolsa, cobrado ENCIMA del IGV
+// y fuera de su base imponible — la bolsa paga IGV sobre su propio precio y el
+// ICBPER se suma después. El flag lo decide el catálogo, no el POS.
+const isBagItem = (item) => item?.icbper === true || parseInt(item?.icbper) === 1;
+
 /**
  * Store de Carrito de Compras con Estados
  *
@@ -33,7 +38,11 @@ export const useCartStore = defineStore('cart', {
     pendingAuthorization: null, // { action: 'remove_item', data: {...}, resolve, reject }
 
     // Totales calculados por el backend (método NetSuite)
-    calculatedTotals: null, // { subtotal, tax, total, items: [...], promotions_v2 }
+    calculatedTotals: null, // { subtotal, tax, icbper, total, items: [...], promotions_v2 }
+
+    // Monto ICBPER por bolsa (S/). Lo manda el backend en calculate-total
+    // (icbper_rate); este valor es solo el respaldo del cálculo local.
+    icbperRate: 0.5,
 
     // Cupón de Promociones V2 ingresado por el cajero (se envía a calculate-total y a la venta)
     couponCode: null
@@ -126,13 +135,29 @@ export const useCartStore = defineStore('cart', {
       return this.taxableBase * 0.18;
     },
 
+    // ICBPER: tributo fijo por bolsa. NO entra a subtotal ni a tax.
+    icbper(state) {
+      if (state.calculatedTotals) {
+        return parseFloat(state.calculatedTotals.icbper || 0);
+      }
+      // Fallback local: tasa vigente × cantidad de bolsas.
+      return state.items.reduce((sum, item) => {
+        if (!isBagItem(item)) return sum;
+        return sum + state.icbperRate * (parseFloat(item.quantity) || 0);
+      }, 0);
+    },
+
+    hasIcbper() {
+      return this.icbper > 0.005;
+    },
+
     total() {
-      // Si hay totales calculados por el backend, usar esos
+      // Si hay totales calculados por el backend, usar esos (ya incluyen ICBPER)
       if (this.calculatedTotals) {
         return this.calculatedTotals.total;
       }
       // Fallback: cálculo local
-      return this.subtotal + this.tax;
+      return this.subtotal + this.tax + this.icbper;
     },
 
     // Indica si los totales vienen del backend (precisos) o son cálculo local (impreciso)
@@ -290,6 +315,11 @@ export const useCartStore = defineStore('cart', {
 
         if (response.success) {
           this.calculatedTotals = response.data;
+          // Cachear la tasa ICBPER vigente: el cálculo local de respaldo la usa
+          // cuando el backend no responde.
+          if (response.data?.icbper_rate) {
+            this.icbperRate = parseFloat(response.data.icbper_rate);
+          }
           console.log('✅ [CART] Totals calculated:', this.calculatedTotals);
         } else {
           console.error('❌ [CART] Backend returned error calculating totals');

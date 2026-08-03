@@ -585,6 +585,8 @@
                 :payments="displayPayments"
                 :subtotal="displaySubtotal"
                 :tax="displayTax"
+                :icbper="displayIcbper"
+                :icbper-rate="props.icbperRate"
                 :total="displayTotal"
                 :rounding-amount="displayRoundingAmount"
                 :total-after-rounding="displayTotalAfterRounding"
@@ -816,6 +818,16 @@ const props = defineProps({
   tax: {
     type: Number,
     required: true
+  },
+  // ICBPER (Ley 30884): tributo fijo por bolsa. Aparte de subtotal/tax; `total`
+  // ya lo incluye.
+  icbper: {
+    type: Number,
+    default: 0
+  },
+  icbperRate: {
+    type: Number,
+    default: 0.5
   },
   customer: {
     type: Object,
@@ -1114,6 +1126,10 @@ const displaySubtotal = computed(() => {
 
 const displayTax = computed(() => {
   return props.completedSaleData?.tax ?? props.tax;
+});
+
+const displayIcbper = computed(() => {
+  return props.completedSaleData?.icbper ?? props.icbper;
 });
 
 const displayTotal = computed(() => {
@@ -1880,6 +1896,8 @@ const buildThermalOrderData = () => ({
   customer: displayCustomer.value,
   subtotal: displaySubtotal.value,
   tax: displayTax.value,
+  icbper: displayIcbper.value,
+  icbperRate: props.icbperRate,
   total: displayTotal.value,
   roundingAmount: displayRoundingAmount.value,
   totalAfterRounding: displayTotalAfterRounding.value,
@@ -2039,6 +2057,12 @@ const printTicketDirect = async () => {
           <td>IGV (18%):</td>
           <td class="right">S/ ${parseFloat(displayTax.value || 0).toFixed(2)}</td>
         </tr>
+        ${parseFloat(displayIcbper.value || 0) > 0 ? `
+        <tr>
+          <td>ICBPER (${parseFloat(props.icbperRate).toFixed(2)} x bolsa):</td>
+          <td class="right">S/ ${parseFloat(displayIcbper.value).toFixed(2)}</td>
+        </tr>
+        ` : ''}
         ${displayRoundingAmount.value && parseFloat(displayRoundingAmount.value) !== 0 ? `
         <tr>
           <td>Redondeo:</td>

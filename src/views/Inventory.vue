@@ -754,7 +754,8 @@ const handleQuickSave = async (data) => {
   const result = await inventoryStore.quickUpdate(data.productId, {
     price: data.price,
     stock: data.stock,
-    tax_affectation: data.tax_affectation
+    tax_affectation: data.tax_affectation,
+    icbper: data.icbper === true // Bolsa plástica (ICBPER, Ley 30884)
   });
 
   if (result.success) {

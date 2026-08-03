@@ -105,6 +105,11 @@
           <span>IGV (18%):</span>
           <span>S/ {{ tax.toFixed(2) }}</span>
         </div>
+        <!-- ICBPER (Ley 30884): tributo fijo por bolsa entregada -->
+        <div v-if="icbper > 0" class="flex justify-between">
+          <span>ICBPER ({{ icbperRate.toFixed(2) }} x bolsa):</span>
+          <span>S/ {{ icbper.toFixed(2) }}</span>
+        </div>
         <div class="flex justify-between font-bold text-base mt-2">
           <span>TOTAL GENERAL S/:</span>
           <span>S/ {{ total.toFixed(2) }}</span>
@@ -230,6 +235,16 @@ const props = defineProps({
   tax: {
     type: Number,
     default: 0
+  },
+  // ICBPER (Ley 30884): monto fijo por bolsa. NO entra a subtotal ni a tax; el
+  // TOTAL GENERAL sí lo incluye.
+  icbper: {
+    type: Number,
+    default: 0
+  },
+  icbperRate: {
+    type: Number,
+    default: 0.5
   },
   total: {
     type: Number,

@@ -32,6 +32,8 @@ const adaptMeiliHit = (hit) => ({
   promotion: null,
   // Afectación IGV: 1=Gravado, 2=Exonerado, 3=Inafecto (default afecto)
   tax_affectation: parseInt(hit.tax_affectation || hit.taxAffectation || 1),
+  // ICBPER (Ley 30884): bolsa plástica. El monto por bolsa lo resuelve el backend.
+  icbper: hit.icbper === true,
   stock: hit.stock || 0,
   unlimited_stock: hit.unlimitedStock === true,
   published: hit.published === true,
@@ -174,6 +176,8 @@ export const productsApi = {
             promotion: product.promotion || null,
             // Afectación IGV: 1=Gravado, 2=Exonerado, 3=Inafecto (default afecto)
             tax_affectation: parseInt(product.tax_affectation || 1),
+            // ICBPER (Ley 30884): bolsa plástica afecta.
+            icbper: product.icbper === true,
             stock: product.stock || 0,
             unlimited_stock: product.unlimited_stock === true || product.unlimited_stock === 1,
             published: product.published || false,
@@ -257,6 +261,8 @@ export const productsApi = {
         promotion: rawData.promotion || null,
         // Afectación IGV: 1=Gravado, 2=Exonerado, 3=Inafecto (default afecto)
         tax_affectation: parseInt(rawData.tax_affectation || 1),
+        // ICBPER (Ley 30884): bolsa plástica afecta.
+        icbper: rawData.icbper === true,
         stock: rawData.stock || 0,
         unlimited_stock: rawData.unlimited_stock === true || rawData.unlimited_stock === 1,
         published: rawData.published || false,

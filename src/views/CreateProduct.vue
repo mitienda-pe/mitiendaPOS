@@ -217,6 +217,23 @@
         <p class="text-xs text-gray-400 mt-1 ml-1">Exonerado/Inafecto: el precio no incluye IGV.</p>
       </div>
 
+      <!-- ICBPER (Ley 30884): bolsa plástica -->
+      <div>
+        <label class="flex items-start gap-3 cursor-pointer">
+          <input
+            v-model="form.icbper"
+            type="checkbox"
+            class="mt-1 h-5 w-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+          />
+          <span>
+            <span class="block text-sm font-medium text-gray-700">Bolsa plástica (ICBPER)</span>
+            <span class="block text-xs text-gray-400">
+              Cobra S/ 0.50 por unidad además del IGV (Ley N.° 30884).
+            </span>
+          </span>
+        </label>
+      </div>
+
       <!-- Categoría (oculto si la tienda no tiene categorías) -->
       <div v-if="categories.length">
         <label class="block text-sm font-medium text-gray-500 mb-1 ml-1">Categoría</label>
@@ -354,6 +371,7 @@ const form = reactive({
   category_id: '',
   brand_id: '',
   tax_affectation: 1, // 1=Gravado/afecto, 2=Exonerado, 3=Inafecto
+  icbper: false, // Bolsa plástica afecta a ICBPER (Ley 30884)
   // Visibilidad en el catálogo de caja. La publicación en la tienda virtual
   // (`published`) se gestiona aparte, en el backoffice.
   published_pos: true
@@ -545,6 +563,9 @@ const handleSubmit = async () => {
       stock: form.stock,
       unlimited_stock: form.unlimited_stock,
       tax_affectation: form.tax_affectation,
+      // ICBPER (Ley 30884). El backend rechaza con 422 si la tienda emite por
+      // NetSuite o por el POS legacy, que aún no declaran el tributo.
+      icbper: form.icbper === true,
       categories: form.category_id ? [form.category_id] : [],
       // brand_id=0 limpia la marca en el backend (tiendamarca_id=0).
       brand_id: form.brand_id ? parseInt(form.brand_id) : 0
@@ -603,6 +624,7 @@ const loadProductForEdit = async () => {
     form.category_id = product.category_id || '';
     form.brand_id = product.brand?.id || '';
     form.tax_affectation = product.tax_affectation || 1;
+    form.icbper = product.icbper === true;
     form.published_pos = product.published_pos !== false;
     // Vista previa de la imagen actual (remota). Solo se reemplaza si el usuario
     // elige una nueva foto; no hay forma de "quitar" la imagen remota desde aquí.
