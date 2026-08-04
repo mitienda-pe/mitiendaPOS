@@ -2,7 +2,7 @@
   <div>
     <div class="mb-6">
       <h1 class="text-2xl font-bold text-gray-800">Reportes</h1>
-      <p class="text-sm text-gray-500 mt-1">Consulta y exporta tus ventas. La vista previa muestra las primeras filas.</p>
+      <p class="text-sm text-gray-500 mt-1">Consulta y exporta tus ventas de caja. La vista previa muestra las primeras filas.</p>
     </div>
 
     <!-- Tabs -->
@@ -36,6 +36,24 @@
             <option value="1">Pagado</option>
             <option value="2">Pendiente</option>
             <option value="0">Rechazado</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Sucursal</label>
+          <select v-model="filters.tiendadireccion_id" class="input-field">
+            <option value="">Todas</option>
+            <option v-for="b in branches" :key="b.tiendadireccion_id" :value="b.tiendadireccion_id">
+              {{ b.tiendadireccion_nombresucursal }}
+            </option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Cajero</label>
+          <select v-model="filters.cajero_id" class="input-field">
+            <option value="">Todos</option>
+            <option v-for="e in cashiers" :key="e.empleado_id" :value="e.empleado_id">
+              {{ e.empleado_nombres }} {{ e.empleado_apellidos }}
+            </option>
           </select>
         </div>
         <div class="flex gap-2">
@@ -87,8 +105,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import reportsApi from '../../services/reportsApi';
+import { branchesApi } from '../../services/branchesApi';
+import { posEmpleadosApi } from '../../services/posEmpleadosApi';
 import { useAuthStore } from '../../stores/auth';
 
 const authStore = useAuthStore();
@@ -112,7 +132,35 @@ const filters = reactive({
   date_from: '',
   date_to: '',
   payment_status: '',
+  tiendadireccion_id: '',
+  cajero_id: '',
 });
+
+const branches = ref([]);
+const cashiers = ref([]);
+
+// Los desplegables son opcionales: si fallan, el reporte sigue funcionando
+// con el resto de filtros.
+const loadFilterOptions = async () => {
+  const storeId = authStore.selectedStore?.id;
+  if (!storeId) return;
+
+  try {
+    const response = await branchesApi.getAll(storeId, true); // con_pos=true
+    branches.value = response.data || [];
+  } catch (e) {
+    branches.value = [];
+  }
+
+  try {
+    const response = await posEmpleadosApi.getAll(storeId);
+    cashiers.value = (response.data || []).filter((emp) => emp.empleado_activo == 1);
+  } catch (e) {
+    cashiers.value = [];
+  }
+};
+
+onMounted(loadFilterOptions);
 
 const columns = computed(() => (rows.value.length ? Object.keys(rows.value[0]) : []));
 

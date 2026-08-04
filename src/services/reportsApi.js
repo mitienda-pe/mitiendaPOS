@@ -10,12 +10,17 @@ import apiClient from './axios';
 
 const buildParams = (filters = {}) => {
   const params = new URLSearchParams();
+  // El POS solo reporta lo vendido en caja: sin este filtro el backend
+  // devuelve también las ventas web y los totales no cuadran con el turno.
+  params.append('origen', 'pos');
   if (filters.date_from) params.append('date_from', filters.date_from);
   if (filters.date_to) params.append('date_to', filters.date_to);
   if (filters.payment_status !== undefined && filters.payment_status !== '') {
     params.append('payment_status', String(filters.payment_status));
   }
   if (filters.payment_gateway_id) params.append('payment_gateway_id', String(filters.payment_gateway_id));
+  if (filters.tiendadireccion_id) params.append('tiendadireccion_id', String(filters.tiendadireccion_id));
+  if (filters.cajero_id) params.append('cajero_id', String(filters.cajero_id));
   return params;
 };
 
