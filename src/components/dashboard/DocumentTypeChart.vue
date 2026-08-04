@@ -25,6 +25,7 @@ const props = defineProps({
 const colorByName = {
   Boleta: '#00b2a6',
   Factura: '#0ea5e9',
+  'Sin emitir': '#f59e0b',
   Otro: '#94a3b8'
 };
 
