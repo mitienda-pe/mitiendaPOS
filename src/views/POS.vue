@@ -1678,7 +1678,10 @@ const handlePaymentCompleted = async () => {
           totalAfterRounding: cartStore.totalWithRounding, // Total después del redondeo
           documentType: billingDocumentType.value,
           createdAt: orderDetails.tiendaventa_fecha || new Date().toISOString(),
-          cajero: orderDetails.cajero_nombre || authStore.user?.name || '',
+          // El cajero de la sesión manda sobre authStore: si no hay cajero_nombre
+          // del backend, caer al dueño de la tienda ponía SU nombre en el ticket
+          // de una venta hecha por un cajero.
+          cajero: orderDetails.cajero_nombre || cashierStore.cashierName || authStore.user?.name || '',
           // Información del comprobante electrónico (si está facturado)
           billingDocument: orderDetails.billing_info?.['e-billing'] ? {
             serie: orderDetails.billing_info['e-billing'].serie,
@@ -1729,7 +1732,7 @@ const handlePaymentCompleted = async () => {
           totalAfterRounding: cartStore.totalWithRounding, // Total después del redondeo
           documentType: billingDocumentType.value,
           createdAt: new Date().toISOString(),
-          cajero: authStore.user?.name || '',
+          cajero: cashierStore.cashierName || authStore.user?.name || '',
           delivery: deliveryInfo,
         };
 
