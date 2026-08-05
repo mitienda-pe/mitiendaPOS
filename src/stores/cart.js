@@ -45,7 +45,26 @@ export const useCartStore = defineStore('cart', {
     icbperRate: 0.5,
 
     // Cupón de Promociones V2 ingresado por el cajero (se envía a calculate-total y a la venta)
-    couponCode: null
+    couponCode: null,
+
+    // ========== Entrega ==========
+    // 'mostrador' = venta presencial (el cliente se lleva la mercadería).
+    // 'domicilio' = el vendedor toma el pedido y se despacha a la dirección del cliente.
+    deliveryMode: 'mostrador',
+
+    // Destino del reparto. { customer_address_id, address, interior, reference,
+    // ubigeo_id, department, province, district, latitude, longitude,
+    // receiver_first_name, receiver_last_name, receiver_phone,
+    // receiver_document_id, receiver_document_number, fecha_reparto, hora_reparto }
+    deliveryAddress: null,
+
+    // Cotización del envío. El monto es referencial: el servidor vuelve a cotizar
+    // al registrar la venta y su tarifa es la que manda.
+    // { cost, free, service_type_code, service_type_name, eta }
+    shippingQuote: null,
+
+    // 'immediate' = se cobra ahora en caja. 'cod' = contra-entrega (solo domicilio).
+    paymentMode: 'immediate'
   }),
 
   getters: {
@@ -151,13 +170,39 @@ export const useCartStore = defineStore('cart', {
       return this.icbper > 0.005;
     },
 
-    total() {
-      // Si hay totales calculados por el backend, usar esos (ya incluyen ICBPER)
+    // ========== Entrega ==========
+    isHomeDelivery: (state) => state.deliveryMode === 'domicilio',
+
+    // Contra-entrega: la venta se registra sin pago y se cobra al entregar.
+    isCod: (state) => state.paymentMode === 'cod',
+
+    // Costo de envío a mostrar. Solo aplica a domicilio; en mostrador es 0 aunque
+    // haya quedado una cotización de un cambio de modalidad a mitad de la venta.
+    shippingCost(state) {
+      if (state.deliveryMode !== 'domicilio' || !state.shippingQuote) return 0;
+      return parseFloat(state.shippingQuote.cost || 0);
+    },
+
+    hasShippingCost() {
+      return this.shippingCost > 0.005;
+    },
+
+    // Envío gratis por umbral: se muestra como beneficio, no como línea en cero.
+    isFreeShipping: (state) => state.deliveryMode === 'domicilio' && !!state.shippingQuote?.free,
+
+    // Total de productos, sin envío. Es lo que compara el backend con el tarifario.
+    itemsTotal() {
       if (this.calculatedTotals) {
         return this.calculatedTotals.total;
       }
-      // Fallback: cálculo local
       return this.subtotal + this.tax + this.icbper;
+    },
+
+    total() {
+      // El envío se suma sobre el total de ítems, igual que en el checkout web
+      // (CheckoutController: total = subtotal - descuentos + envío). De aquí lo
+      // heredan totalWithRounding y remainingAmount.
+      return Math.round((this.itemsTotal + this.shippingCost) * 100) / 100;
     },
 
     // Indica si los totales vienen del backend (precisos) o son cálculo local (impreciso)
@@ -765,6 +810,10 @@ export const useCartStore = defineStore('cart', {
       this.roundingAdjustment = 0;
       this.calculatedTotals = null;
       this.couponCode = null;
+      this.deliveryMode = 'mostrador';
+      this.deliveryAddress = null;
+      this.shippingQuote = null;
+      this.paymentMode = 'immediate';
     },
 
     /**
@@ -786,12 +835,23 @@ export const useCartStore = defineStore('cart', {
         customer: this.customer ? { ...this.customer } : null,
         documentType: this.documentType,
         status: this.status,
+        deliveryMode: this.deliveryMode,
+        deliveryAddress: this.deliveryAddress ? { ...this.deliveryAddress } : null,
+        shippingQuote: this.shippingQuote ? { ...this.shippingQuote } : null,
+        paymentMode: this.paymentMode,
         timestamp: new Date().toISOString()
       };
     },
 
     /**
      * Restaurar carrito desde snapshot
+     *
+     * Los defaults importan: las ventas guardadas y cotizaciones creadas antes de
+     * que existiera el envío a domicilio no traen estos campos.
+     *
+     * La cotización de envío restaurada es referencial —pudo cambiar el tarifario
+     * desde que se guardó—; quien restaure debe volver a cotizar antes de cobrar.
+     * De todos modos el servidor recotiza al registrar la venta.
      */
     restoreSnapshot(snapshot) {
       this.items = [...snapshot.items];
@@ -799,7 +859,74 @@ export const useCartStore = defineStore('cart', {
       this.customer = snapshot.customer ? { ...snapshot.customer } : null;
       this.documentType = snapshot.documentType || 'boleta';
       this.status = snapshot.status || 'ABIERTO';
+      this.deliveryMode = snapshot.deliveryMode || 'mostrador';
+      this.deliveryAddress = snapshot.deliveryAddress ? { ...snapshot.deliveryAddress } : null;
+      this.shippingQuote = snapshot.shippingQuote ? { ...snapshot.shippingQuote } : null;
+      this.paymentMode = snapshot.paymentMode || 'immediate';
       this.unsavedChanges = false;
+    },
+
+    // ========== Entrega ==========
+
+    /**
+     * Cambia la modalidad de entrega. Volver a mostrador limpia el destino, la
+     * cotización y el contra-entrega (que solo existe con reparto).
+     */
+    setDeliveryMode(mode) {
+      this.deliveryMode = mode === 'domicilio' ? 'domicilio' : 'mostrador';
+
+      if (this.deliveryMode === 'mostrador') {
+        this.deliveryAddress = null;
+        this.shippingQuote = null;
+        this.paymentMode = 'immediate';
+      }
+
+      this.unsavedChanges = true;
+    },
+
+    setDeliveryAddress(address) {
+      this.deliveryAddress = address ? { ...address } : null;
+      this.unsavedChanges = true;
+    },
+
+    setShippingQuote(quote) {
+      this.shippingQuote = quote ? { ...quote } : null;
+      this.unsavedChanges = true;
+    },
+
+    setPaymentMode(mode) {
+      this.paymentMode = mode === 'cod' ? 'cod' : 'immediate';
+    },
+
+    /**
+     * Bloque `delivery` del payload de la venta. `mostrador` es el default y no
+     * lleva datos. El costo NO va: lo resuelve el servidor.
+     */
+    buildDeliveryPayload() {
+      if (this.deliveryMode !== 'domicilio' || !this.deliveryAddress) {
+        return { mode: 'mostrador' };
+      }
+
+      const a = this.deliveryAddress;
+
+      return {
+        mode: 'domicilio',
+        customer_address_id: a.customer_address_id ?? null,
+        address: a.address ?? '',
+        interior: a.interior ?? null,
+        reference: a.reference ?? null,
+        ubigeo_id: a.ubigeo_id ?? null,
+        latitude: a.latitude ?? null,
+        longitude: a.longitude ?? null,
+        receiver_first_name: a.receiver_first_name ?? null,
+        receiver_last_name: a.receiver_last_name ?? null,
+        receiver_phone: a.receiver_phone ?? null,
+        receiver_document_id: a.receiver_document_id ?? null,
+        receiver_document_number: a.receiver_document_number ?? null,
+        service_type_code: this.shippingQuote?.service_type_code ?? null,
+        fecha_reparto: a.fecha_reparto ?? null,
+        hora_reparto: a.hora_reparto ?? null
+      };
     },
 
     // ========== Utilidades ==========

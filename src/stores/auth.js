@@ -45,6 +45,11 @@ const normalizeAccessFlags = (access) => {
     categories: !!a.categories_enabled,
     paymentMethods: !!a.payment_methods_enabled,
     branchStock: !!a.branch_stock_enabled,
+    // Envío a domicilio: no depende del plan sino de configuración de la tienda
+    // (reparto activo, cobertura cargada y, si delega facturación, ítem de envío
+    // en el ERP). El motivo se muestra al cajero cuando está apagado.
+    delivery: !!a.pos_delivery_enabled,
+    deliveryDisabledReason: a.pos_delivery_disabled_reason ?? null,
   };
 };
 
@@ -116,6 +121,7 @@ export const useAuthStore = defineStore('auth', {
     canCategories() { return !!this.accessFlags.categories; },
     canPaymentMethods() { return !!this.accessFlags.paymentMethods; },
     canBranchStock() { return !!this.accessFlags.branchStock; },
+    canDelivery() { return !!this.accessFlags.delivery; },
     canNetsuite() {
       return !!this.accessFlags.netsuite || !!this.selectedStore?.netsuite_enabled;
     },

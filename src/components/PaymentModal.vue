@@ -599,6 +599,7 @@
                 :store-address="getStoreAddress()"
                 :store-phone="getStorePhone()"
                 :netsuite-customer-code="getNetsuiteCustomerCode()"
+                :delivery="props.completedSaleData?.delivery || { mode: 'mostrador' }"
                 :show-badges="false"
                 :show-reprint="false"
               />

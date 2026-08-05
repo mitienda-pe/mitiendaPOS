@@ -43,6 +43,18 @@
         </router-link>
 
         <div class="flex flex-wrap gap-2 sm:gap-3">
+          <!-- Cobro de una venta contra-entrega -->
+          <button
+            v-if="isPendingCollection"
+            @click="showCollectModal = true"
+            class="inline-flex items-center px-3 sm:px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-sm sm:text-base"
+          >
+            <svg class="h-4 w-4 sm:h-5 sm:w-5 mr-1.5 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-2M9 12h12l-3-3m0 6l3-3" />
+            </svg>
+            Cobrar
+          </button>
+
           <button
             v-if="canShowEmailButton()"
             @click="openEmailModal"
@@ -112,6 +124,29 @@
             <p v-if="getVoidReason()" class="text-red-700 text-sm mt-1">Motivo: {{ getVoidReason() }}</p>
             <p v-if="getVoidBillingMessage()" class="text-red-700 text-sm mt-1">{{ getVoidBillingMessage() }}</p>
           </div>
+        </div>
+      </div>
+
+      <!-- Venta contra-entrega sin cobrar -->
+      <div v-if="isPendingCollection" class="mb-4 bg-amber-50 border-l-4 border-amber-500 p-4 rounded">
+        <div class="flex">
+          <svg class="h-5 w-5 text-amber-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p class="text-amber-800">
+            <span class="font-semibold">Pendiente de cobro.</span>
+            Se debe cobrar S/ {{ amountToCollect.toFixed(2) }} al momento de la entrega.
+          </p>
+        </div>
+      </div>
+
+      <!-- Cobro registrado -->
+      <div v-if="collectSuccess" class="mb-4 bg-green-50 border-l-4 border-green-500 p-4 rounded">
+        <div class="flex">
+          <svg class="h-5 w-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p class="text-green-700">{{ collectSuccess }}</p>
         </div>
       </div>
 
@@ -347,6 +382,72 @@
         </div>
       </div>
     </div>
+    <!-- Modal para cobrar una venta contra-entrega -->
+    <div v-if="showCollectModal" class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" @click="showCollectModal = false"></div>
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full">
+          <div class="bg-white px-4 pt-5 pb-4 sm:p-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Registrar cobro</h3>
+            <p class="text-sm text-gray-500 mt-1">
+              Venta #{{ order?.order_number }}
+            </p>
+
+            <div class="mt-4 p-3 bg-gray-50 rounded-lg flex justify-between items-center">
+              <span class="text-sm text-gray-700">Monto a cobrar</span>
+              <span class="text-xl font-bold text-gray-900">S/ {{ amountToCollect.toFixed(2) }}</span>
+            </div>
+
+            <div class="mt-4">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Método de pago</label>
+              <select v-model="collectMethod" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500">
+                <option value="efectivo">Efectivo</option>
+                <option value="tarjeta">Tarjeta</option>
+                <option value="yape">Yape</option>
+                <option value="plin">Plin</option>
+                <option value="transferencia">Transferencia</option>
+              </select>
+            </div>
+
+            <div class="mt-3">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Referencia (opcional)</label>
+              <input
+                v-model="collectReference"
+                type="text"
+                placeholder="Nro. de operación"
+                class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+
+            <p class="text-xs text-gray-500 mt-3">
+              El cobro se registra en el turno de caja abierto. El comprobante ya fue emitido al crear la venta.
+            </p>
+
+            <p v-if="collectError" class="mt-3 text-sm text-red-600">{{ collectError }}</p>
+          </div>
+
+          <div class="bg-gray-50 px-4 py-3 sm:px-6 flex flex-col sm:flex-row-reverse gap-2">
+            <button
+              type="button"
+              :disabled="collectLoading"
+              class="w-full sm:w-auto px-4 py-2 rounded-lg bg-amber-600 text-white font-medium hover:bg-amber-700 disabled:opacity-50"
+              @click="collectPayment"
+            >
+              {{ collectLoading ? 'Registrando...' : 'Confirmar cobro' }}
+            </button>
+            <button
+              type="button"
+              :disabled="collectLoading"
+              class="w-full sm:w-auto px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 font-medium hover:bg-gray-50"
+              @click="showCollectModal = false"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal para anular venta -->
     <div v-if="showVoidModal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="void-modal-title" role="dialog" aria-modal="true">
       <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -447,12 +548,15 @@ import ReceiptTicket from '../components/ReceiptTicket.vue';
 import { buildCompanyInfo } from '../config/companyConfig';
 import { useAuthStore } from '../stores/auth';
 import { useBillingStore } from '../stores/billing';
+import { useCashierStore } from '../stores/cashier';
+import { shippingApi } from '../services/shippingApi';
 import { useThermalPrinter } from '../composables/useThermalPrinter';
 
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 const billingStore = useBillingStore();
+const cashierStore = useCashierStore();
 const { isConnected: thermalConnected, isEnabled: thermalEnabled, printReceipt: thermalPrint } = useThermalPrinter();
 
 const order = ref(null);
@@ -474,6 +578,65 @@ const voidMotivo = ref('');
 const voidLoading = ref(false);
 const voidError = ref(null);
 const voidSuccess = ref(null);
+
+// Cobro de venta contra-entrega
+const showCollectModal = ref(false);
+const collectMethod = ref('efectivo');
+const collectReference = ref('');
+const collectLoading = ref(false);
+const collectError = ref(null);
+const collectSuccess = ref(null);
+
+// Una venta POS impaga es siempre contra-entrega: el POS no registra ventas de
+// mostrador sin cobrar. Estado 2 = pendiente.
+const isPendingCollection = computed(() => {
+  if (!order.value) return false;
+  const origen = (order.value.source || '').toLowerCase();
+  return origen === 'pos' && Number(order.value.status) === 2;
+});
+
+const amountToCollect = computed(() => {
+  const raw = order.value?._rawDetail || {};
+  const redondeado = parseFloat(raw.tiendaventa_total_redondeado || 0);
+  return redondeado > 0 ? redondeado : parseFloat(order.value?.total || 0);
+});
+
+const collectPayment = async () => {
+  collectLoading.value = true;
+  collectError.value = null;
+
+  try {
+    await shippingApi.collectPendingOrder(
+      order.value.id,
+      [
+        {
+          method: collectMethod.value,
+          amount: amountToCollect.value,
+          reference: collectReference.value || null
+        }
+      ],
+      cashierStore.cashier?.empleado_id ?? null
+    );
+
+    showCollectModal.value = false;
+    collectReference.value = '';
+    collectSuccess.value = 'Cobro registrado correctamente.';
+    await loadOrderDetail();
+  } catch (err) {
+    // 409 = ya cobrada (reintento tras un timeout de red): no es un error real,
+    // basta con refrescar para que el cajero vea el estado correcto.
+    if (err.response?.status === 409) {
+      showCollectModal.value = false;
+      collectSuccess.value = 'Esta venta ya figuraba como cobrada.';
+      await loadOrderDetail();
+      return;
+    }
+    collectError.value =
+      err.response?.data?.mensaje || err.response?.data?.message || 'No se pudo registrar el cobro.';
+  } finally {
+    collectLoading.value = false;
+  }
+};
 
 const loadOrderDetail = async () => {
   loading.value = true;

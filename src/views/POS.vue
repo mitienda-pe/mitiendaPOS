@@ -32,6 +32,8 @@ import StockValidationErrorModal from '../components/StockValidationErrorModal.v
 import NetsuiteCustomerIssueModal from '../components/NetsuiteCustomerIssueModal.vue';
 import BonificationWarningModal from '../components/BonificationWarningModal.vue';
 import CashierAuthModal from '../components/CashierAuthModal.vue';
+import DeliveryModal from '../components/DeliveryModal.vue';
+import { shippingApi } from '../services/shippingApi';
 import { customersApi } from '../services/customersApi';
 import QuantityStepperInput from '../components/QuantityStepperInput.vue';
 import ToastNotification from '../components/ToastNotification.vue';
@@ -90,6 +92,7 @@ const showPaymentModal = ref(false);
 const showCustomerSearch = ref(false);
 const showSavedSalesModal = ref(false);
 const showStartSaleModal = ref(false);
+const showDeliveryModal = ref(false);
 const showSupervisorAuth = ref(false);
 const showTicket = ref(false);
 const showConfirmProducts = ref(false);
@@ -672,6 +675,7 @@ const handleStartSale = (data) => {
       billingDocumentType.value = data.billingDocumentType;
       console.log('📄 [POS] Billing document type selected:', billingDocumentType.value);
     }
+    applyDeliveryMode(data.deliveryMode);
     saleHasUnsavedChanges.value = true; // Marcar como cambios sin guardar
     return;
   }
@@ -686,7 +690,119 @@ const handleStartSale = (data) => {
     billingDocumentType.value = data.billingDocumentType;
     console.log('📄 [POS] Billing document type selected:', billingDocumentType.value);
   }
+  applyDeliveryMode(data.deliveryMode);
   saleHasUnsavedChanges.value = false;
+};
+
+/**
+ * Aplica la modalidad elegida en StartSaleModal. Si es domicilio, abre de
+ * inmediato el modal de dirección: sin destino no se puede cotizar el envío ni,
+ * por lo tanto, cobrar.
+ */
+const applyDeliveryMode = (mode) => {
+  cartStore.setDeliveryMode(mode);
+  if (cartStore.isHomeDelivery) {
+    showDeliveryModal.value = true;
+  }
+};
+
+const handleDeliveryConfirmed = ({ address, quote }) => {
+  cartStore.setDeliveryAddress(address);
+  cartStore.setShippingQuote(quote);
+  saleHasUnsavedChanges.value = true;
+};
+
+/**
+ * Vuelve a venta de mostrador. Limpia destino, cotización y contra-entrega.
+ */
+const cancelDelivery = () => {
+  cartStore.setDeliveryMode('mostrador');
+  saleHasUnsavedChanges.value = true;
+};
+
+/**
+ * Recotiza el envío del destino ya elegido. Se usa al retomar una cotización o
+ * una venta guardada: la tarifa del snapshot puede tener días y el tarifario de
+ * la tienda pudo cambiar.
+ *
+ * Si el destino perdió cobertura, se limpia la cotización y el chip del carrito
+ * queda pidiendo completar la dirección.
+ */
+const refreshShippingQuote = async () => {
+  if (!cartStore.isHomeDelivery || !cartStore.deliveryAddress?.ubigeo_id) return;
+
+  try {
+    const result = await shippingApi.quote(
+      cartStore.deliveryAddress.ubigeo_id,
+      cartStore.itemsTotal
+    );
+
+    if (!result?.success) {
+      cartStore.setShippingQuote(null);
+      showToast('warning', result?.mensaje || 'El destino guardado ya no tiene cobertura de reparto.');
+      return;
+    }
+
+    if (result.service_types_enabled) {
+      const code = cartStore.shippingQuote?.service_type_code;
+      const opciones = result.opciones || [];
+      const elegida =
+        opciones.find((o) => o.service_type_code === code && o.disponible !== false) ||
+        opciones.find((o) => o.disponible !== false);
+
+      if (!elegida) {
+        cartStore.setShippingQuote(null);
+        showToast('warning', 'No hay servicios de envío disponibles a esta hora para el destino guardado.');
+        return;
+      }
+
+      cartStore.setShippingQuote({
+        cost: elegida.envio_gratis ? 0 : parseFloat(elegida.precio || 0),
+        free: !!elegida.envio_gratis,
+        service_type_code: elegida.service_type_code,
+        service_type_name: elegida.service_type_nombre
+      });
+      return;
+    }
+
+    cartStore.setShippingQuote({
+      cost: parseFloat(result.costo_envio || 0),
+      free: !!result.envio_gratis,
+      service_type_code: null,
+      service_type_name: null
+    });
+  } catch (e) {
+    console.error('[POS] No se pudo recotizar el envío:', e);
+  }
+};
+
+// Contra-entrega solo tiene sentido en reparto, con destino ya cotizado y sin
+// pagos parciales registrados (si el cliente ya adelantó algo, se cobra normal).
+const canRegisterCod = computed(
+  () =>
+    cartStore.isHomeDelivery &&
+    !!cartStore.deliveryAddress &&
+    cartItems.value.length > 0 &&
+    payments.value.length === 0
+);
+
+/**
+ * Registra la venta sin cobrar. El cobro se hace al entregar, desde el detalle
+ * de la venta (POST pos/orders/{id}/collect). El comprobante SÍ se emite ahora:
+ * la mercadería sale de la tienda con el pedido.
+ */
+const registerCodSale = async () => {
+  const monto = formatCurrency(cartStore.totalWithRounding);
+  const confirmado = confirm(
+    `La venta se registrará SIN COBRAR.\n\n` +
+    `Se debe cobrar ${monto} al momento de la entrega.\n\n` +
+    `¿Confirmas el pedido contra-entrega?`
+  );
+
+  if (!confirmado) return;
+
+  cartStore.setPaymentMode('cod');
+  await handlePaymentCompleted();
 };
 
 // Re-autenticación de cajero forzada por el guard del checkout (sesión expirada)
@@ -709,7 +825,7 @@ const onCashierReauthed = () => {
 };
 
 // Retomar una venta guardada
-const resumeSavedSale = (sale) => {
+const resumeSavedSale = async (sale) => {
   // Si hay una venta en curso, preguntar si se desea guardar
   if (cartItems.value.length > 0) {
     if (confirm('¿Desea guardar la venta actual antes de cargar la venta guardada?')) {
@@ -728,6 +844,14 @@ const resumeSavedSale = (sale) => {
   } else {
     payments.value = [];
   }
+
+  // Entrega. Las ventas guardadas antes de que existiera el envío no traen estos
+  // campos y caen a mostrador, que es el comportamiento correcto para ellas.
+  cartStore.deliveryMode = sale.deliveryMode === 'domicilio' ? 'domicilio' : 'mostrador';
+  cartStore.deliveryAddress = sale.deliveryAddress ? { ...sale.deliveryAddress } : null;
+  cartStore.shippingQuote = sale.shippingQuote ? { ...sale.shippingQuote } : null;
+  cartStore.paymentMode = 'immediate';
+  await refreshShippingQuote();
 
   // Marcar como guardada (no tiene cambios sin guardar)
   saleHasUnsavedChanges.value = false;
@@ -871,7 +995,10 @@ const loadCotizacion = async (cotizacionId) => {
     const snap = q.pos_snapshot;
     if (snap && Array.isArray(snap.items)) {
       // Restaurar tal cual el carrito guardado (items, cliente, tipo de documento).
-      cartStore.restoreSnapshot({ ...snap, payments: [], status: 'ABIERTO' });
+      // Los pagos NO se restauran: una cotización aún no se cobró, y el
+      // contra-entrega se vuelve a elegir al momento de convertirla en venta.
+      cartStore.restoreSnapshot({ ...snap, payments: [], status: 'ABIERTO', paymentMode: 'immediate' });
+      await refreshShippingQuote();
     }
     activeCotizacionId.value = q.id;
     showToast('success', `Cotización ${q.codigo || ''} cargada. Edita y cobra para convertirla en venta.`);
@@ -885,6 +1012,15 @@ const processPayment = async () => {
   if (!shiftStore.hasActiveShift) {
     console.error('❌ [POS] No active shift - cannot process payment');
     alert('⚠️ No hay turno de caja abierto. No se pueden registrar pagos.\n\nDebes abrir un turno primero desde el menú principal.');
+    return;
+  }
+
+  // Una venta a domicilio sin destino no tiene tarifa cotizada y el servidor la
+  // rechazaría al registrarla. Se corta acá para no llevar al cajero al modal de
+  // pago con un total incompleto.
+  if (cartStore.isHomeDelivery && !cartStore.deliveryAddress) {
+    showMobileSummary.value = false;
+    showDeliveryModal.value = true;
     return;
   }
 
@@ -1314,7 +1450,14 @@ const handlePaymentCompleted = async () => {
       currency: 'PEN',
       notes: '', // Campo para notas adicionales
       // Promociones V2: cupón ingresado por el cajero (el backend nativo lo valida y aplica).
-      v2_coupon_codes: cartStore.couponCode ? [cartStore.couponCode] : []
+      v2_coupon_codes: cartStore.couponCode ? [cartStore.couponCode] : [],
+      // Entrega. En mostrador es { mode: 'mostrador' } y el backend no hace nada.
+      // El costo de envío NO va acá: lo resuelve el servidor con el tarifario de la
+      // tienda (PosShippingResolver). `shipping_cost_quoted` es solo lo que vio el
+      // cajero en pantalla, para poder comparar si hubo diferencia.
+      delivery: cartStore.buildDeliveryPayload(),
+      payment_mode: cartStore.paymentMode,
+      shipping_cost_quoted: cartStore.shippingCost
     };
 
     // 🔥 NUEVO: Enviar IDs específicos de bonificaciones a excluir (no todas)
@@ -1361,6 +1504,34 @@ const handlePaymentCompleted = async () => {
 
     if (isSuccess) {
       console.log('Orden creada exitosamente:', response.data);
+
+      // Datos de entrega para el ticket. Se capturan ACÁ porque resetSale() limpia
+      // el carrito antes de imprimir. El costo y el estado de cobro se toman de la
+      // respuesta del servidor —que recotizó— y no de lo que se mostró en pantalla.
+      const deliveryInfo = cartStore.isHomeDelivery
+        ? {
+            mode: 'domicilio',
+            address: cartStore.deliveryAddress ? { ...cartStore.deliveryAddress } : null,
+            shippingCost: parseFloat(response.data?.delivery?.shipping_cost ?? cartStore.shippingCost),
+            freeShipping: response.data?.delivery?.free_shipping ?? cartStore.isFreeShipping,
+            paymentPending: response.data?.delivery?.payment_pending ?? cartStore.isCod
+          }
+        : { mode: 'mostrador', paymentPending: false };
+
+      // Si el servidor cobró una tarifa distinta a la cotizada, el cajero debe
+      // enterarse antes de entregar el ticket al cliente.
+      if (deliveryInfo.mode === 'domicilio') {
+        const cotizado = Math.round(cartStore.shippingCost * 100) / 100;
+        const cobrado = Math.round(deliveryInfo.shippingCost * 100) / 100;
+        if (Math.abs(cotizado - cobrado) > 0.009) {
+          alert(
+            `⚠️ El costo de envío cambió al registrar la venta.\n\n` +
+            `Cotizado: ${formatCurrency(cotizado)}\n` +
+            `Cobrado: ${formatCurrency(cobrado)}\n\n` +
+            `El ticket muestra el monto correcto.`
+          );
+        }
+      }
 
       // El backend legacy ya actualiza el stock automáticamente
       // No necesitamos hacerlo manualmente desde el frontend
@@ -1519,6 +1690,7 @@ const handlePaymentCompleted = async () => {
               xml: orderDetails.billing_info['e-billing'].url_xml
             }
           } : null,
+          delivery: deliveryInfo,
           _rawData: orderDetails // Guardar datos originales por si se necesitan
         };
 
@@ -1558,6 +1730,7 @@ const handlePaymentCompleted = async () => {
           documentType: billingDocumentType.value,
           createdAt: new Date().toISOString(),
           cajero: authStore.user?.name || '',
+          delivery: deliveryInfo,
         };
 
         // Limpiar carrito ANTES de mostrar ticket
@@ -1958,6 +2131,11 @@ const autoSaveSale = () => {
     // salesrep en NetSuite usa el cajero que COMPLETA el cobro (cashierStore en
     // vivo), no este; se guarda como referencia y para diagnóstico.
     cajero_id: cashierStore.cashier?.empleado_id || null,
+    // Entrega: sin esto, guardar un pedido a domicilio y retomarlo lo convertía
+    // en venta de mostrador sin avisar. La tarifa se recotiza al retomar.
+    deliveryMode: cartStore.deliveryMode,
+    deliveryAddress: cartStore.deliveryAddress ? { ...cartStore.deliveryAddress } : null,
+    shippingQuote: cartStore.shippingQuote ? { ...cartStore.shippingQuote } : null,
   };
 
   // Si ya existe un ID para esta venta, actualizar en lugar de crear una nueva
@@ -2443,6 +2621,42 @@ const getPaymentMethodName = (method) => {
             </button> -->
           </div>
 
+          <!-- Envío a domicilio: destino confirmado o pendiente de completar -->
+          <div
+            v-if="cartStore.isHomeDelivery"
+            class="mb-4 p-3 rounded-lg border-2"
+            :class="cartStore.deliveryAddress ? 'border-primary-200 bg-primary-50' : 'border-amber-300 bg-amber-50'"
+          >
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <div class="text-sm font-medium text-gray-900">Envío a domicilio</div>
+                <div v-if="cartStore.deliveryAddress" class="text-xs text-gray-600 truncate">
+                  {{ cartStore.deliveryAddress.address }}
+                  <span v-if="cartStore.deliveryAddress.district"> · {{ cartStore.deliveryAddress.district }}</span>
+                </div>
+                <div v-else class="text-xs text-amber-700">
+                  Falta la dirección de entrega.
+                </div>
+              </div>
+              <div class="flex flex-col gap-1 shrink-0">
+                <button
+                  type="button"
+                  class="text-xs font-medium text-primary-700 hover:text-primary-800"
+                  @click="showDeliveryModal = true"
+                >
+                  {{ cartStore.deliveryAddress ? 'Editar' : 'Completar' }}
+                </button>
+                <button
+                  type="button"
+                  class="text-xs text-gray-500 hover:text-gray-700"
+                  @click="cancelDelivery"
+                >
+                  Quitar envío
+                </button>
+              </div>
+            </div>
+          </div>
+
           <!-- Order Summary -->
           <div class="bg-white p-4 rounded-lg shadow-sm mb-4">
             <h2 class="text-lg font-medium mb-4">Resumen de la Orden</h2>
@@ -2463,6 +2677,12 @@ const getPaymentMethodName = (method) => {
               <div v-if="hasPromoV2Discount" class="flex justify-between text-primary-600">
                 <span>Descuento promoción</span>
                 <span>- {{ formatCurrency(promoV2Discount) }}</span>
+              </div>
+              <!-- Envío: el monto definitivo lo confirma el servidor al registrar la venta -->
+              <div v-if="cartStore.isHomeDelivery" class="flex justify-between">
+                <span class="text-gray-600">Envío</span>
+                <span v-if="cartStore.isFreeShipping" class="text-green-600 font-medium">GRATIS</span>
+                <span v-else>{{ formatCurrency(cartStore.shippingCost) }}</span>
               </div>
               <div class="border-t pt-2 mt-2 flex justify-between font-medium">
                 <span>Total</span>
@@ -2561,6 +2781,22 @@ const getPaymentMethodName = (method) => {
               </svg>
               Completar Venta
             </button>
+
+            <!-- Contra-entrega: solo en reparto a domicilio y sin pagos registrados.
+                 La orden se registra impaga y se cobra al entregar. -->
+            <button v-if="canRegisterCod" @click="registerCodSale"
+              :disabled="processingOrder"
+              class="w-full bg-white border-2 border-primary-600 text-primary-700 py-3 px-4 rounded-lg hover:bg-primary-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="1" y="3" width="15" height="13"></rect>
+                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                <circle cx="18.5" cy="18.5" r="2.5"></circle>
+              </svg>
+              Contra-entrega (cobrar al entregar)
+            </button>
+
             <div class="flex space-x-2">
 
               <button @click="cancelSale" :disabled="!cartItems.length"
@@ -2631,6 +2867,12 @@ const getPaymentMethodName = (method) => {
           <div v-if="hasPromoV2Discount" class="flex justify-between text-sm text-primary-600">
             <span>Descuento promoción</span>
             <span>- {{ formatCurrency(promoV2Discount) }}</span>
+          </div>
+          <!-- Envío: el monto definitivo lo confirma el servidor al registrar la venta -->
+          <div v-if="cartStore.isHomeDelivery" class="flex justify-between text-sm">
+            <span class="text-gray-600">Envío</span>
+            <span v-if="cartStore.isFreeShipping" class="text-green-600 font-medium">GRATIS</span>
+            <span v-else>{{ formatCurrency(cartStore.shippingCost) }}</span>
           </div>
           <div class="border-t pt-2 mt-2 flex justify-between font-semibold">
             <span>Total</span>
@@ -2796,7 +3038,21 @@ const getPaymentMethodName = (method) => {
   </div>
 
   <!-- Start Sale Modal -->
-  <StartSaleModal v-model="showStartSaleModal" @start="handleStartSale" />
+  <StartSaleModal
+    v-model="showStartSaleModal"
+    :delivery-enabled="authStore.canDelivery"
+    @start="handleStartSale"
+  />
+
+  <!-- Destino del reparto (solo venta a domicilio) -->
+  <DeliveryModal
+    v-model="showDeliveryModal"
+    :customer="selectedCustomer"
+    :items-total="cartStore.itemsTotal"
+    :initial-address="cartStore.deliveryAddress"
+    :initial-quote="cartStore.shippingQuote"
+    @confirm="handleDeliveryConfirmed"
+  />
 
   <!-- Customer Search Modal -->
   <CustomerSearchModal v-model="showCustomerSearch" @select="handleCustomerSelect" />

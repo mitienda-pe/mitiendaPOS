@@ -51,6 +51,42 @@
                 </div>
               </div>
 
+              <!-- Modalidad de entrega -->
+              <div v-if="deliveryEnabled" class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Modalidad de Entrega
+                </label>
+                <div class="flex gap-2">
+                  <button
+                    @click="selectedDeliveryMode = 'mostrador'"
+                    :class="[
+                      'flex-1 px-4 py-3 rounded-lg border-2 transition-all',
+                      selectedDeliveryMode === 'mostrador'
+                        ? 'border-primary-500 bg-primary-50 text-primary-700'
+                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                    ]"
+                  >
+                    <div class="font-medium">Mostrador</div>
+                    <div class="text-xs mt-1">El cliente se lleva la compra</div>
+                  </button>
+                  <button
+                    @click="selectedDeliveryMode = 'domicilio'"
+                    :class="[
+                      'flex-1 px-4 py-3 rounded-lg border-2 transition-all',
+                      selectedDeliveryMode === 'domicilio'
+                        ? 'border-primary-500 bg-primary-50 text-primary-700'
+                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                    ]"
+                  >
+                    <div class="font-medium">Envío a domicilio</div>
+                    <div class="text-xs mt-1">Se despacha a su dirección</div>
+                  </button>
+                </div>
+                <p v-if="selectedDeliveryMode === 'domicilio'" class="text-xs text-gray-500 mt-2">
+                  Para un envío necesitas identificar al cliente; la dirección se pide en el siguiente paso.
+                </p>
+              </div>
+
               <!-- Document Input -->
               <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -233,7 +269,9 @@
               <div class="flex gap-2 mt-4">
                 <button
                   @click="skipCustomer"
-                  class="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  :disabled="selectedDeliveryMode === 'domicilio'"
+                  :title="selectedDeliveryMode === 'domicilio' ? 'Un envío a domicilio requiere cliente identificado' : ''"
+                  class="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Omitir
                 </button>
@@ -258,12 +296,16 @@ import { ref, computed, watch, nextTick } from 'vue';
 import { customersApi } from '../services/customersApi';
 
 const props = defineProps({
-  modelValue: Boolean
+  modelValue: Boolean,
+  // Lo expone pos/access. Solo controla la visibilidad del selector: el servidor
+  // vuelve a validarlo al registrar la venta (Order::assertPosDeliveryAllowed).
+  deliveryEnabled: { type: Boolean, default: false }
 });
 
 const emit = defineEmits(['update:modelValue', 'start']);
 
 const selectedDocumentType = ref('boleta'); // 'boleta' o 'factura'
+const selectedDeliveryMode = ref('mostrador'); // 'mostrador' o 'domicilio'
 const tipoDoc = ref('DNI');
 const numDoc = ref('');
 const customerFound = ref(null);
@@ -535,7 +577,8 @@ const startWithCustomer = async () => {
   console.log('🚀 [StartSaleModal] Emitiendo evento start con customer:', customerToSend);
   emit('start', {
     customer: customerToSend,
-    billingDocumentType: selectedDocumentType.value // 'boleta' o 'factura'
+    billingDocumentType: selectedDocumentType.value, // 'boleta' o 'factura'
+    deliveryMode: selectedDeliveryMode.value
   });
   closeModal();
 };
@@ -547,9 +590,17 @@ const skipCustomer = () => {
     return;
   }
 
+  // Un envío necesita destinatario y teléfono, y la libreta de direcciones cuelga
+  // del cliente: sin cliente identificado no hay a dónde ni a quién despachar.
+  if (selectedDeliveryMode.value === 'domicilio') {
+    alert('Para un envío a domicilio es obligatorio identificar al cliente');
+    return;
+  }
+
   emit('start', {
     customer: null,
-    billingDocumentType: selectedDocumentType.value // siempre 'boleta'
+    billingDocumentType: selectedDocumentType.value, // siempre 'boleta'
+    deliveryMode: 'mostrador'
   });
   closeModal();
 };
@@ -561,6 +612,7 @@ const closeModal = () => {
 
 const resetForm = () => {
   selectedDocumentType.value = 'boleta'; // Reset to default
+  selectedDeliveryMode.value = 'mostrador';
   tipoDoc.value = 'DNI';
   numDoc.value = '';
   customerFound.value = null;

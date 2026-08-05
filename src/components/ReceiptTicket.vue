@@ -55,6 +55,25 @@
         <div v-if="cajeroName">Cajero: {{ cajeroName }}</div>
       </div>
 
+      <!-- Envío a domicilio: el repartidor necesita destino y contacto en el ticket -->
+      <template v-if="isHomeDelivery">
+        <div class="border-t border-dashed border-gray-400 my-3"></div>
+        <div class="mb-3">
+          <div class="font-bold text-center mb-2">*** ENVÍO A DOMICILIO ***</div>
+          <div v-if="deliveryReceiver">Recibe: {{ deliveryReceiver }}</div>
+          <div v-if="delivery.address?.receiver_phone">Tel: {{ delivery.address.receiver_phone }}</div>
+          <div v-if="delivery.address?.address">
+            {{ delivery.address.address }}<template v-if="delivery.address.interior"> Int. {{ delivery.address.interior }}</template>
+          </div>
+          <div v-if="deliveryUbigeo" class="text-xs">{{ deliveryUbigeo }}</div>
+          <div v-if="delivery.address?.reference" class="text-xs">Ref: {{ delivery.address.reference }}</div>
+          <div v-if="delivery.address?.fecha_reparto" class="text-xs mt-1">
+            Entrega: {{ delivery.address.fecha_reparto }}
+            <template v-if="delivery.address.hora_reparto"> {{ delivery.address.hora_reparto }}</template>
+          </div>
+        </div>
+      </template>
+
       <div class="border-t border-dashed border-gray-400 my-3"></div>
 
       <!-- Productos -->
@@ -110,6 +129,12 @@
           <span>ICBPER ({{ icbperRate.toFixed(2) }} x bolsa):</span>
           <span>S/ {{ icbper.toFixed(2) }}</span>
         </div>
+        <!-- Envío: ya está incluido en el TOTAL GENERAL, se detalla para el cliente -->
+        <div v-if="isHomeDelivery" class="flex justify-between">
+          <span>ENVÍO:</span>
+          <span v-if="delivery.freeShipping">GRATIS</span>
+          <span v-else>S/ {{ Number(delivery.shippingCost || 0).toFixed(2) }}</span>
+        </div>
         <div class="flex justify-between font-bold text-base mt-2">
           <span>TOTAL GENERAL S/:</span>
           <span>S/ {{ total.toFixed(2) }}</span>
@@ -130,8 +155,20 @@
         </div>
       </div>
 
+      <!-- Contra-entrega: el repartidor cobra al entregar. Reemplaza al bloque de
+           pagos porque no hay ninguno registrado. -->
+      <div v-if="isPaymentPending" class="mb-3">
+        <div class="border-t border-dashed border-gray-400 my-3"></div>
+        <div class="border-2 border-gray-800 p-2 text-center">
+          <div class="font-bold">PENDIENTE DE PAGO</div>
+          <div class="font-bold text-base">
+            COBRAR AL ENTREGAR: S/ {{ amountToCollect.toFixed(2) }}
+          </div>
+        </div>
+      </div>
+
       <!-- Métodos de Pago -->
-      <div v-if="payments && payments.length > 0" class="mb-3">
+      <div v-else-if="payments && payments.length > 0" class="mb-3">
         <div class="border-t border-dashed border-gray-400 my-3"></div>
         <div class="font-bold mb-2">PAGOS</div>
         <div v-for="(payment, index) in payments" :key="payment.id || index" class="flex justify-between">
@@ -309,6 +346,13 @@ const props = defineProps({
     default: null
   },
 
+  // Entrega. En venta de mostrador es { mode: 'mostrador' } y no se imprime nada.
+  // { mode, address: {...}, shippingCost, freeShipping, paymentPending }
+  delivery: {
+    type: Object,
+    default: () => ({ mode: 'mostrador' })
+  },
+
   // Comprobante electrónico
   billingDocument: {
     type: Object,
@@ -347,6 +391,29 @@ const inafectasBase = computed(() => lineBaseByAffectation(3));
 const gravadasBase = computed(() =>
   Math.max(0, props.subtotal - exoneradasBase.value - inafectasBase.value)
 );
+
+// ========== Entrega ==========
+const isHomeDelivery = computed(() => props.delivery?.mode === 'domicilio');
+
+// Contra-entrega: no hay pagos y el repartidor cobra al entregar.
+const isPaymentPending = computed(() => !!props.delivery?.paymentPending);
+
+// Lo que debe cobrar el repartidor es el total ya redondeado, no el de ítems.
+const amountToCollect = computed(() =>
+  props.totalAfterRounding != null ? Number(props.totalAfterRounding) : Number(props.total || 0)
+);
+
+const deliveryReceiver = computed(() => {
+  const a = props.delivery?.address;
+  if (!a) return '';
+  return [a.receiver_first_name, a.receiver_last_name].filter(Boolean).join(' ').trim();
+});
+
+const deliveryUbigeo = computed(() => {
+  const a = props.delivery?.address;
+  if (!a) return '';
+  return [a.district, a.province, a.department].filter(Boolean).join(' / ');
+});
 
 // Computed para nombre del cliente
 const customerName = computed(() => {
