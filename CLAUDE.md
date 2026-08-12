@@ -19,6 +19,22 @@ build with pnpm + rsync `dist/` to `/var/www/pos/` on the deploy server.
 
 No test runner or linter is configured in this project.
 
+## Releases and changelog
+
+[CHANGELOG.md](CHANGELOG.md) is generated from the conventional commits — **never edit it by hand**, `scripts/changelog.sh` overwrites it.
+
+```bash
+scripts/release.sh --dry-run   # preview the next version
+scripts/release.sh             # version bump + CHANGELOG + tag (local only)
+scripts/release.sh minor       # major | minor | patch (default: patch)
+scripts/release.sh --push      # also pushes to origin, which deploys
+```
+
+- **Semver**, and `package.json` is the source of truth: that number feeds the "hay versión nueva" prompt ([useVersionCheck.js](src/composables/useVersionCheck.js)), so it must not become a date. Config lives in [scripts/release.conf](scripts/release.conf).
+- If `package.json` already holds a version with no matching tag, `release.sh` adopts it instead of bumping past it — the manual bump you may have already done still counts.
+- Only `feat`, `fix`, `perf`, `refactor`, `revert` and breaking changes (`!` or `BREAKING CHANGE`) reach the changelog; `chore`/`docs`/`test`/`debug` are dropped unless you pass `--all`.
+- Everything before the first semver tag lives under "Histórico", grouped by month.
+
 ### Versionado
 
 Semver en `package.json` (v1.30.1 desde 2026-08-12; el número se estimó a partir
