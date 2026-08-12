@@ -3,7 +3,7 @@
     <div class="mb-6">
       <h1 class="text-2xl font-bold text-gray-800">Preferencias</h1>
       <p class="text-sm text-gray-500 mt-1">
-        Moneda y límites de monto que aplican a tus ventas.
+        Moneda, límites de monto y entrega que aplican a tus ventas.
       </p>
     </div>
 
@@ -47,6 +47,28 @@
         </div>
       </section>
 
+      <section class="bg-white rounded-lg shadow-sm p-5">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">Entrega</h2>
+
+        <label class="inline-flex items-center gap-2" :class="canEnableDelivery ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'">
+          <input
+            v-model="form.tiendageneral_sw_pos_entregaadomicilio"
+            type="checkbox"
+            :disabled="!canEnableDelivery"
+            class="rounded text-primary-600 focus:ring-primary-500 h-4 w-4"
+          />
+          <span class="text-sm text-gray-700">Vender con envío a domicilio desde el POS</span>
+        </label>
+
+        <p v-if="canEnableDelivery" class="text-xs text-gray-400 mt-2">
+          El vendedor podrá tomar el pedido con la dirección del cliente. El costo sale de tu
+          tarifario de reparto, igual que en la tienda web.
+        </p>
+        <p v-else class="text-xs text-amber-600 mt-2">
+          {{ deliveryBlockReason }} Configúralo en Envíos para poder activarlo.
+        </p>
+      </section>
+
       <div class="flex justify-end">
         <button type="submit" :disabled="saving" class="btn-primary">
           {{ saving ? 'Guardando...' : 'Guardar cambios' }}
@@ -57,8 +79,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import { storeApi } from '../../services/storeApi';
+import { useAuthStore } from '../../stores/auth';
+
+const auth = useAuthStore();
 
 const loading = ref(true);
 const saving = ref(false);
@@ -66,10 +91,18 @@ const message = ref('');
 const messageType = ref('success');
 const currencies = ref([]);
 
+// Motivo por el que la tienda todavía no puede vender a domicilio (reparto
+// apagado, sin coberturas, ítem de envío del ERP sin configurar), o null si ya
+// puede. Lo calcula la API: el POS no replica esas condiciones para no divergir
+// del enforcement que corre al crear la venta.
+const deliveryBlockReason = ref(null);
+const canEnableDelivery = computed(() => deliveryBlockReason.value === null);
+
 const form = reactive({
   moneda_id: 1,
   tiendageneral_montominimo: 0,
   tiendageneral_montomaximo: 100000,
+  tiendageneral_sw_pos_entregaadomicilio: false,
 });
 
 const showMessage = (text, type = 'success') => {
@@ -90,6 +123,8 @@ const loadData = async () => {
       form.moneda_id = Number(config.moneda_id) || 1;
       form.tiendageneral_montominimo = config.tiendageneral_montominimo != null ? Number(config.tiendageneral_montominimo) : 0;
       form.tiendageneral_montomaximo = config.tiendageneral_montomaximo != null ? Number(config.tiendageneral_montomaximo) : 100000;
+      form.tiendageneral_sw_pos_entregaadomicilio = Number(config.tiendageneral_sw_pos_entregaadomicilio) === 1;
+      deliveryBlockReason.value = config.pos_delivery_config_reason ?? null;
     }
   } catch (e) {
     showMessage('No se pudieron cargar las preferencias.', 'error');
@@ -102,11 +137,19 @@ const handleSave = async () => {
   saving.value = true;
   message.value = '';
   try {
-    await storeApi.updateConfig({
+    const updated = await storeApi.updateConfig({
       moneda_id: form.moneda_id,
       tiendageneral_montominimo: form.tiendageneral_montominimo,
       tiendageneral_montomaximo: form.tiendageneral_montomaximo,
+      tiendageneral_sw_pos_entregaadomicilio: form.tiendageneral_sw_pos_entregaadomicilio ? 1 : 0,
     });
+    if (updated) {
+      deliveryBlockReason.value = updated.pos_delivery_config_reason ?? null;
+    }
+    // `pos_delivery_enabled` se resuelve en /pos/access y queda cacheado en
+    // selectedStore desde el login. Sin este refresh, el toggle de entrega no
+    // aparece en el mostrador hasta que el cajero cierre sesión.
+    await auth.refreshAccessFlags().catch(() => {});
     showMessage('Preferencias guardadas correctamente.');
   } catch (e) {
     showMessage(e?.response?.data?.message || 'Error al guardar las preferencias.', 'error');
