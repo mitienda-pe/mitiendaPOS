@@ -19,6 +19,26 @@ build with pnpm + rsync `dist/` to `/var/www/pos/` on the deploy server.
 
 No test runner or linter is configured in this project.
 
+### Versionado
+
+Semver en `package.json` (v1.30.1 desde 2026-08-12; el número se estimó a partir
+del historial: 484 commits / 202 feats calibrados contra la razón del backoffice,
+que iba en 2.60.1 con 895 commits / 428 feats). Antes de desplegar cambios
+relevantes: `pnpm version patch` (fixes) o `pnpm version minor` (features) —
+exige árbol de trabajo limpio; si falla, editar `"version"` a mano.
+
+Cómo funciona el aviso de actualización:
+
+- `vite.config.js` inyecta `__APP_VERSION__` y `__BUILD_ID__` (`versión+hash`,
+  el hash cambia en cada build) y escribe `public/version.json` (gitignored).
+- `src/composables/useVersionCheck.js` compara cada 5 min su `__BUILD_ID__`
+  contra `/version.json` (no-store; regla no-cache en `public/_headers`).
+- `src/components/AppUpdateBanner.vue` (montado en `App.vue`) muestra la barra.
+  **Nunca recarga solo**: el carrito vive en memoria y un refresh a mitad de
+  venta lo pierde; si hay ítems en el carrito el banner avisa y pide confirmar.
+- La versión actual se muestra en el pie del Menú Principal.
+- En dev el chequeo está desactivado (`import.meta.env.DEV`).
+
 ## Architecture
 
 Vue 3 Point-of-Sale application using Options-style Pinia stores, Vue Router, and TailwindCSS. All source is JavaScript (not TypeScript, except `src/types/billing.ts`). Uses `<script setup>` in Vue components.

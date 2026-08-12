@@ -22,3 +22,7 @@
 # index.html no cachear (para que deploys tomen efecto inmediato)
 /index.html
   Cache-Control: no-cache, no-store, must-revalidate
+
+# version.json no cachear: es la sonda de "hay versión nueva"
+/version.json
+  Cache-Control: no-cache, no-store, must-revalidate

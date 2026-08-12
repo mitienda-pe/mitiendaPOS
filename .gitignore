@@ -2,6 +2,9 @@
 node_modules
 /dist
 
+# Generado en cada build (ver plugin version-json en vite.config.js)
+public/version.json
+
 # local env files
 .env
 .env.local

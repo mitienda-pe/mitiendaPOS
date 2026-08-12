@@ -183,6 +183,9 @@
 
       <!-- Banner de impersonación: superadmin operando como otra tienda -->
       <ImpersonationBanner />
+
+      <!-- Banner de nueva versión publicada -->
+      <AppUpdateBanner />
     </template>
 
     <!-- Loading Overlay -->
@@ -249,6 +252,7 @@ import LockScreenModal from './components/LockScreenModal.vue';
 import OpenShiftModal from './components/OpenShiftModal.vue';
 import CloseShiftModal from './components/CloseShiftModal.vue';
 import ImpersonationBanner from './components/ImpersonationBanner.vue';
+import AppUpdateBanner from './components/AppUpdateBanner.vue';
 import { MENU_ITEMS } from './config/menuItems';
 import { useTawkTo } from './composables/useTawkTo';
 

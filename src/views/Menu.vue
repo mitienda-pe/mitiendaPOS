@@ -21,6 +21,8 @@
         </div>
       </router-link>
     </div>
+
+    <p class="mt-6 text-center text-xs text-gray-400">MiTienda POS v{{ currentVersion }}</p>
   </div>
 </template>
 
@@ -28,8 +30,10 @@
 import { computed, h } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { MENU_ITEMS } from '../config/menuItems';
+import { useAppVersion } from '../composables/useVersionCheck';
 
 const authStore = useAuthStore();
+const { currentVersion } = useAppVersion();
 
 const svgIcon = (paths) => ({
   render() {

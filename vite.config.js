@@ -1,10 +1,41 @@
 import path from "path";
+import { readFileSync, writeFileSync } from "fs";
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 
+// Versión desde package.json + hash de build para detectar despliegues nuevos.
+// El hash cambia en cada build aunque la versión semver no se haya tocado, así
+// que el banner de actualización también se dispara en re-deploys sin bump.
+const pkg = JSON.parse(readFileSync(path.resolve(__dirname, "package.json"), "utf-8"));
+const appVersion = pkg.version;
+const buildId = `${appVersion}+${Date.now().toString(36)}`;
+
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [vue()],
+  define: {
+    __APP_VERSION__: JSON.stringify(appVersion),
+    __BUILD_ID__: JSON.stringify(buildId),
+  },
+  plugins: [
+    // Escribe public/version.json (ignorado por git) para que el cliente pueda
+    // comparar su buildId contra el desplegado. Solo en build: en dev no ensucia
+    // el árbol de trabajo.
+    {
+      name: "version-json",
+      apply: "build",
+      buildStart() {
+        writeFileSync(
+          path.resolve(__dirname, "public/version.json"),
+          JSON.stringify({
+            version: buildId,
+            appVersion,
+            buildTime: new Date().toISOString(),
+          })
+        );
+      },
+    },
+    vue(),
+  ],
   build: {
     rollupOptions: {
       output: {
