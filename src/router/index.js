@@ -264,6 +264,18 @@ const routes = [
         meta: { requiresModule: 'branchStock' }
       },
       {
+        path: 'inventory-movements',
+        name: 'InventoryMovements',
+        component: () => import('../views/settings/InventoryMovementsView.vue'),
+        meta: { requiresModule: 'branchStock' }
+      },
+      {
+        path: 'inventory-transfers',
+        name: 'InventoryTransfers',
+        component: () => import('../views/settings/InventoryTransfersView.vue'),
+        meta: { requiresModule: 'branchStock' }
+      },
+      {
         path: 'netsuite/preferences',
         name: 'Preferences',
         component: Preferences

@@ -1,9 +1,9 @@
 <template>
   <div>
     <div class="mb-6">
-      <h1 class="text-2xl font-bold text-gray-800">Stock por sucursal</h1>
+      <h1 class="text-2xl font-bold text-gray-800">Stock por almacén</h1>
       <p class="text-sm text-gray-500 mt-1">
-        Gestiona el inventario de cada sucursal de forma independiente. El stock total se calcula como la suma de las sucursales.
+        Gestiona el stock de cada almacén de forma independiente. El total del producto se calcula como la suma de sus almacenes.
       </p>
     </div>
 
@@ -21,9 +21,9 @@
 
     <!-- No activado -->
     <div v-else-if="!isActive" class="bg-white rounded-lg shadow-sm p-6 max-w-2xl">
-      <h2 class="text-lg font-semibold text-gray-800 mb-2">Activar gestión de stock por sucursal</h2>
+      <h2 class="text-lg font-semibold text-gray-800 mb-2">Activar el stock por almacén</h2>
       <p class="text-sm text-gray-600 mb-4">
-        Al activarla, el stock total de cada producto pasará a calcularse como la suma de sus sucursales.
+        Al activarlo, el stock total de cada producto pasará a calcularse como la suma de sus almacenes.
         Solo disponible para tiendas sin integración con ERP/NetSuite.
       </p>
       <button class="btn-primary" :disabled="activating" @click="activate">
@@ -67,7 +67,7 @@
             <tr>
               <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase">SKU</th>
               <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Producto</th>
-              <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Stock en sucursal</th>
+              <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Stock en el almacén</th>
               <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Stock total</th>
             </tr>
           </thead>
@@ -93,7 +93,7 @@
               <td class="px-4 py-2 text-sm text-gray-600">{{ row.stock_ilimitado ? '∞' : row.stock_agregado }}</td>
             </tr>
             <tr v-if="!rows.length">
-              <td colspan="4" class="px-4 py-8 text-center text-gray-500 text-sm">No hay productos para esta sucursal.</td>
+              <td colspan="4" class="px-4 py-8 text-center text-gray-500 text-sm">No hay productos para este almacén.</td>
             </tr>
           </tbody>
         </table>
@@ -106,7 +106,7 @@
       </div>
 
       <p class="text-xs text-gray-400 mt-3">
-        Productos con variantes: usa el import CSV con la columna <code>variante_sku</code> para fijar su stock por sucursal.
+        Aquí no se agregan productos: aparecen todos los del catálogo y editas cuántas unidades tiene cada uno en el almacén elegido. Para variantes, usa el import CSV con la columna <code>variante_sku</code> o regístralas como ingreso en Inventario.
       </p>
     </div>
   </div>
@@ -211,7 +211,7 @@ const activate = async () => {
     const res = await branchStockApi.setActivation(true);
     isActive.value = res.enabled;
     if (isActive.value) {
-      showMessage('Gestión de stock por sucursal activada');
+      showMessage('Gestión de stock por almacén activada');
       await loadBranches();
       await loadRows();
     }
