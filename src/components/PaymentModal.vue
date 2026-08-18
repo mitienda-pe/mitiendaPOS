@@ -750,11 +750,20 @@
         </div>
       </div>
     </div>
+
+    <!-- Emitir comprobante eligiendo tipo y cliente, ya cobrada la venta -->
+    <EmitBillingModal
+      v-model="showEmitModal"
+      :order-id="emitOrderId"
+      :order-code="String(emitOrderId || '')"
+      @emitted="onBillingEmitted"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, onBeforeUnmount } from 'vue';
+import EmitBillingModal from './EmitBillingModal.vue';
 import QRCode from 'qrcode';
 import { useCartStore } from '../stores/cart';
 import { useAuthStore } from '../stores/auth';
@@ -1197,9 +1206,12 @@ const emitOrderId = computed(() => props.completedSaleData?.orderId || null);
 const emitError = ref(null);
 const emitting = computed(() => billingStore.isEmitting);
 
-// Botón habilitado solo en modo manual y mientras no exista comprobante.
+// Habilitado mientras la venta no tenga comprobante y la tienda facture con
+// proveedor propio. No se exige isBillingManual: con auto-emisión activada la
+// emisión puede haber fallado, y sin este botón la venta quedaba sin salida.
 const canEmitManually = computed(
-  () => authStore.isBillingManual && !!emitOrderId.value && !displayBillingDocument.value
+  () => !!emitOrderId.value && !displayBillingDocument.value
+    && authStore.hasBillingProvider && !authStore.isBillingDelegated
 );
 const billingDelegated = computed(() => authStore.isBillingDelegated);
 const billingProviderMissing = computed(
@@ -1215,25 +1227,24 @@ const emitDisabledReason = computed(() => {
 // (manual → habilitado; delegada / sin proveedor → deshabilitado + tooltip).
 const showEmitButton = computed(
   () => !displayBillingDocument.value
-    && (authStore.isBillingManual || billingDelegated.value || billingProviderMissing.value)
+    && (canEmitManually.value || billingDelegated.value || billingProviderMissing.value)
 );
 
-const handleEmitDocument = async () => {
+// Abre el modal que pide tipo de comprobante y documento del cliente: es el
+// momento en que el cliente pide "factura, por favor" con la venta ya cobrada.
+const showEmitModal = ref(false);
+
+const handleEmitDocument = () => {
   if (!canEmitManually.value || !emitOrderId.value) return;
   emitError.value = null;
+  showEmitModal.value = true;
+};
 
-  // El tipo de comprobante (boleta/factura) lo deriva el backend del
-  // documento_id_facturacion de la orden; aquí solo pedimos la emisión.
-  const result = await billingStore.emitDocument({
-    order_id: Number(emitOrderId.value),
-    pdf_format: 'TICKET',
-  });
-
-  if (result.success) {
-    emittedDocument.value = result.data;
-  } else {
-    emitError.value = result.error || 'No se pudo emitir el comprobante';
-  }
+const onBillingEmitted = (result) => {
+  emittedDocument.value = result.data || {
+    serie: result.serie,
+    correlative: result.correlative
+  };
 };
 
 // Validaciones

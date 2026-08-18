@@ -537,6 +537,16 @@
         </div>
       </div>
     </div>
+
+    <!-- Emitir comprobante eligiendo tipo y cliente -->
+    <EmitBillingModal
+      v-model="showEmitModal"
+      :order-id="order?.id"
+      :order-code="String(order?.order_number || '')"
+      :initial-document-type="order?.customer?.document_number?.length === 11 ? 'factura' : 'boleta'"
+      :initial-document-number="order?.customer?.document_number || ''"
+      @emitted="onBillingEmitted"
+    />
   </div>
 </template>
 
@@ -545,6 +555,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ordersApi } from '../services/ordersApi';
 import ReceiptTicket from '../components/ReceiptTicket.vue';
+import EmitBillingModal from '../components/EmitBillingModal.vue';
 import { buildCompanyInfo } from '../config/companyConfig';
 import { useAuthStore } from '../stores/auth';
 import { useBillingStore } from '../stores/billing';
@@ -879,15 +890,19 @@ const billingEmitting = computed(() => billingStore.isEmitting);
 
 const hasEmittedDocument = computed(() => !!getBillingDocument());
 const isPaidOrder = computed(() => Number(order.value?.status) === 1);
-// Solo en modo manual el cajero puede emitir el comprobante.
+// El cajero puede emitir siempre que la venta esté pagada, no tenga comprobante y
+// la tienda facture con proveedor propio. Antes se exigía isBillingManual, y eso
+// dejaba sin salida a las ventas con auto-emisión activada cuya emisión falló:
+// quedaban sin comprobante y sin botón para emitirlo.
 const canEmitBilling = computed(() =>
-  isPaidOrder.value && !hasEmittedDocument.value && authStore.isBillingManual
+  isPaidOrder.value && !hasEmittedDocument.value &&
+  authStore.hasBillingProvider && !authStore.isBillingDelegated
 );
 // El botón se muestra (deshabilitado + tooltip) también cuando está delegado al
 // ERP o no hay proveedor, para dar contexto al cajero.
 const showBillingEmitButton = computed(() =>
   isPaidOrder.value && !hasEmittedDocument.value &&
-  (authStore.isBillingManual || authStore.isBillingDelegated || !authStore.hasBillingProvider)
+  (canEmitBilling.value || authStore.isBillingDelegated || !authStore.hasBillingProvider)
 );
 const billingEmitDisabledReason = computed(() => {
   if (authStore.isBillingDelegated) return 'La facturación está delegada al ERP; el comprobante se emite automáticamente.';
@@ -895,28 +910,23 @@ const billingEmitDisabledReason = computed(() => {
   return '';
 });
 
-const handleEmitBilling = async () => {
+// El modal pide tipo de comprobante y documento del cliente. Antes se emitía a
+// ciegas con el documento_id_facturacion que traía la orden, así que una venta
+// cobrada sin datos solo podía terminar en boleta a consumidor final.
+const showEmitModal = ref(false);
+
+const handleEmitBilling = () => {
   if (!canEmitBilling.value || !order.value?.id) return;
   billingEmitError.value = null;
   billingEmitSuccess.value = null;
+  showEmitModal.value = true;
+};
 
-  // El tipo (boleta/factura) lo deriva el backend del documento_id_facturacion
-  // de la orden (elegido en el checkout del POS).
-  const result = await billingStore.emitDocument({
-    order_id: Number(order.value.id),
-    pdf_format: 'TICKET',
-  });
-
-  if (result.success) {
-    const doc = result.data || {};
-    billingEmitSuccess.value = `Comprobante emitido: ${doc.serie || ''}-${doc.correlative || ''}`;
-    setTimeout(() => { billingEmitSuccess.value = null; }, 5000);
-    // Recargar para que getBillingDocument() refleje el comprobante recién emitido.
-    await loadOrderDetail();
-  } else {
-    billingEmitError.value = result.error || 'No se pudo emitir el comprobante';
-    setTimeout(() => { billingEmitError.value = null; }, 8000);
-  }
+const onBillingEmitted = async (result) => {
+  billingEmitSuccess.value = `Comprobante emitido: ${result.serie || ''}-${result.correlative || ''}`;
+  setTimeout(() => { billingEmitSuccess.value = null; }, 5000);
+  // Recargar para que getBillingDocument() refleje el comprobante recién emitido.
+  await loadOrderDetail();
 };
 
 // Información de la empresa para el ticket, derivada de la tienda autenticada

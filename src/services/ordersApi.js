@@ -118,6 +118,17 @@ export const ordersApi = {
     return response.data;
   },
 
+  // Cambiar el receptor del comprobante de una venta ya creada. Permite vender
+  // primero y pedir el RUC después; el backend rechaza (409) si el comprobante ya
+  // salió. Encadena con billingApi.emitDocument().
+  async updateBillingCustomer(orderId, { documentType, customer }) {
+    const response = await apiClient.put(`/orders/${orderId}/billing-customer`, {
+      document_type: documentType,
+      customer
+    });
+    return response.data;
+  },
+
   // Obtener resumen de ventas del día
   async getDailySummary(date = null) {
     const params = new URLSearchParams();

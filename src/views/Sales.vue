@@ -183,6 +183,15 @@
                       PDF
                     </button>
                   </div>
+                  <div v-else-if="canEmitBilling(order)" class="mt-2">
+                    <button
+                      type="button"
+                      @click.stop.prevent="openEmitModal(order)"
+                      class="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700"
+                    >
+                      Emitir comprobante
+                    </button>
+                  </div>
                 </div>
                 <div class="text-right flex-shrink-0">
                   <div class="text-base font-semibold text-gray-900">{{ formatCurrency(order.total) }}</div>
@@ -249,6 +258,14 @@
                       PDF
                     </a>
                   </div>
+                  <button
+                    v-else-if="canEmitBilling(order)"
+                    @click="openEmitModal(order)"
+                    class="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700"
+                    title="Emitir el comprobante de esta venta"
+                  >
+                    Emitir
+                  </button>
                   <span v-else class="text-gray-400 text-xs">Sin comprobante</span>
                 </td>
               </tr>
@@ -346,12 +363,47 @@
       </div>
     </div>
   </div>
+
+    <!-- Emitir el comprobante de una venta sin comprobante, sin entrar al detalle -->
+    <EmitBillingModal
+      v-model="showEmitModal"
+      :order-id="emitOrder?.id"
+      :order-code="String(emitOrder?.order_number || emitOrder?.id || '')"
+      :initial-document-type="emitOrder?.customer?.document_number?.length === 11 ? 'factura' : 'boleta'"
+      :initial-document-number="emitOrder?.customer?.document_number || ''"
+      @emitted="onBillingEmitted"
+    />
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { ordersApi } from '../services/ordersApi';
 import { formatCurrency } from '../utils/formatters.js';
+import EmitBillingModal from '../components/EmitBillingModal.vue';
+import { useAuthStore } from '../stores/auth';
+
+const authStore = useAuthStore();
+
+// ===== Emisión rápida desde el listado =====
+// Solo para ventas pagadas sin comprobante, cuando la tienda factura con
+// proveedor propio (si está delegado al ERP, el comprobante lo emite NetSuite).
+const showEmitModal = ref(false);
+const emitOrder = ref(null);
+
+const canEmitBilling = (order) =>
+  Number(order?.status) === 1
+  && !order?.billing?.emitted
+  && authStore.hasBillingProvider
+  && !authStore.isBillingDelegated;
+
+const openEmitModal = (order) => {
+  emitOrder.value = order;
+  showEmitModal.value = true;
+};
+
+const onBillingEmitted = () => {
+  fetchOrders();
+};
 
 // Función para obtener fecha de hoy en formato YYYY-MM-DD
 const getTodayDate = () => {
