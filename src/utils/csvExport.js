@@ -90,6 +90,14 @@ export const downloadCsv = (csvContent, filename) => {
  * @param {Array} movements - Array of movements
  * @param {Object} cashier - Optional cashier data from store
  */
+/**
+ * Suma los montos de los movimientos de un tipo dado ('entrada' | 'salida').
+ */
+const sumMovements = (movements, tipo) =>
+  (movements || [])
+    .filter(m => m.tipo === tipo)
+    .reduce((total, m) => total + (parseFloat(m.monto) || 0), 0);
+
 export const exportShiftReportToCsv = (shift, movements, cashier = null) => {
   const filename = `turno_${shift.id}_${new Date().toISOString().split('T')[0]}.csv`;
 
@@ -153,6 +161,11 @@ export const exportShiftReportToCsv = (shift, movements, cashier = null) => {
     ['Número de Ventas', shift.numero_ventas || 0],
   ];
 
+  // Ingresos y retiros manuales de efectivo. total_efectivo ya viene neto de ellos;
+  // se listan aparte para que el arqueo del turno sea auditable.
+  const cashIn = sumMovements(movements, 'entrada');
+  const cashOut = sumMovements(movements, 'salida');
+
   // Add scorecards section (available for both open and closed shifts)
   summaryData.push(
     [''],
@@ -160,6 +173,8 @@ export const exportShiftReportToCsv = (shift, movements, cashier = null) => {
     [''],
     ['💵 Pagos Efectivo', `S/ ${(shift.total_efectivo || 0).toFixed(2)}`],
     ['💳 Pagos con Tarjeta', `S/ ${(shift.total_tarjeta || 0).toFixed(2)}`],
+    ['📥 Ingresos de Efectivo', `S/ ${cashIn.toFixed(2)}`],
+    ['📤 Retiros de Efectivo', `S/ ${cashOut.toFixed(2)}`],
     ['🎯 Esperado en Caja', `S/ ${((shift.monto_inicial || 0) + (shift.total_efectivo || 0)).toFixed(2)}`]
   );
 

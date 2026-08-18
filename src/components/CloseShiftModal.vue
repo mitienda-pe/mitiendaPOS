@@ -69,6 +69,14 @@
                           {{ formatCurrency(shift.total_redondeo) }}
                         </span>
                       </div>
+                      <div v-if="cashIn" class="flex justify-between text-sm text-gray-600">
+                        <span>Ingresos de efectivo:</span>
+                        <span class="text-green-600">+{{ formatCurrency(cashIn) }}</span>
+                      </div>
+                      <div v-if="cashOut" class="flex justify-between text-sm text-gray-600">
+                        <span>Retiros de efectivo:</span>
+                        <span class="text-red-600">−{{ formatCurrency(cashOut) }}</span>
+                      </div>
                       <div class="flex justify-between text-sm font-medium border-t pt-2">
                         <span>Total Ventas:</span>
                         <span>{{ formatCurrency(shift.total_ventas) }}</span>
@@ -83,7 +91,8 @@
                     <div>
                       <p class="text-sm font-medium text-primary-900">Efectivo Esperado en Caja</p>
                       <p class="text-xs text-primary-700 mt-1">
-                        Inicial ({{ formatCurrency(shift.monto_inicial) }}) + Efectivo de ventas ({{ formatCurrency(shift.total_efectivo) }})
+                        Inicial ({{ formatCurrency(shift.monto_inicial) }}) + Efectivo del turno ({{ formatCurrency(shift.total_efectivo) }})
+                        <span v-if="cashIn || cashOut">, ya neto de ingresos y retiros</span>
                       </p>
                     </div>
                     <p class="text-2xl font-bold text-primary-900">
@@ -269,6 +278,7 @@ import CashBreakdownInput from './CashBreakdownInput.vue';
 import { useCashierStore } from '../stores/cashier';
 import { useShiftStore } from '../stores/shift';
 import { posEmpleadosApi } from '../services/posEmpleadosApi';
+import { cashMovementsApi } from '../services/cashMovementsApi';
 import { useAuthStore } from '../stores/auth';
 
 const props = defineProps({
@@ -296,6 +306,12 @@ const error = ref(null);
 const difference = ref(0);
 const montoInput = ref(null);
 
+// Ingresos y retiros manuales de efectivo del turno. total_efectivo ya viene neto
+// de estos movimientos, así que se muestran solo para que el arqueo sea auditable
+// (sin ellos, "Inicial + ventas" no cuadra con el esperado y parece un error).
+const cashIn = ref(0);
+const cashOut = ref(0);
+
 // Toggle para mostrar/ocultar desglose
 const showBreakdown = ref(false);
 
@@ -309,6 +325,27 @@ const expectedCash = computed(() => {
   if (!props.shift) return 0;
   return props.shift.monto_inicial + props.shift.total_efectivo;
 });
+
+/**
+ * Totales de ingresos/retiros manuales del turno. Si falla, se muestran en cero:
+ * es información de contexto, no debe impedir cerrar la caja.
+ */
+const loadCashMovementTotals = async () => {
+  cashIn.value = 0;
+  cashOut.value = 0;
+
+  const shiftId = props.shift?.id;
+  if (!shiftId) return;
+
+  try {
+    const response = await cashMovementsApi.getShiftMovementsSummary(shiftId);
+    const resumen = response.data?.resumen_por_tipo;
+    cashIn.value = resumen?.entradas?.total || 0;
+    cashOut.value = resumen?.salidas?.total || 0;
+  } catch (err) {
+    console.error('[CloseShiftModal] No se pudo cargar el resumen de movimientos:', err);
+  }
+};
 
 const isValid = computed(() => {
   return montoReal.value !== null && montoReal.value >= 0;
@@ -451,6 +488,8 @@ watch(() => props.modelValue, async (value) => {
     console.log('🔄 [CloseShiftModal] Refrescando datos del turno activo...');
     await shiftStore.fetchActiveShift();
     console.log('✅ [CloseShiftModal] Datos del turno actualizados');
+
+    await loadCashMovementTotals();
 
     // Reset to closing step (data first, matching opening flow)
     currentStep.value = 'closing';

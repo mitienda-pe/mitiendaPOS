@@ -87,6 +87,16 @@
               Diferencia: {{ shift.diferencia >= 0 ? '+' : '' }}S/ {{ shift.diferencia.toFixed(2) }}
             </p>
           </div>
+
+          <!-- Ingresos / retiros manuales de efectivo -->
+          <div v-if="cashIn > 0" class="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
+            <p class="text-xs font-medium text-emerald-700 mb-1">📥 Ingresos de Efectivo</p>
+            <p class="text-2xl font-bold text-emerald-900">S/ {{ cashIn.toFixed(2) }}</p>
+          </div>
+          <div v-if="cashOut > 0" class="bg-amber-50 rounded-lg p-4 border border-amber-200">
+            <p class="text-xs font-medium text-amber-700 mb-1">📤 Retiros de Efectivo</p>
+            <p class="text-2xl font-bold text-amber-900">S/ {{ cashOut.toFixed(2) }}</p>
+          </div>
         </div>
       </div>
 
@@ -226,7 +236,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import cashRegisterShiftsApi from '@/services/cashRegisterShiftsApi';
 import { exportShiftReportToCsv } from '@/utils/csvExport';
@@ -240,6 +250,15 @@ const loading = ref(true);
 const error = ref(null);
 const shift = ref(null);
 const movements = ref([]);
+
+// Ingresos y retiros manuales de efectivo. total_efectivo ya viene neto de ellos,
+// así que se muestran aparte para que el arqueo del turno sea auditable.
+const sumMovements = (tipo) => movements.value
+  .filter(m => m.tipo === tipo)
+  .reduce((total, m) => total + (parseFloat(m.monto) || 0), 0);
+
+const cashIn = computed(() => sumMovements('entrada'));
+const cashOut = computed(() => sumMovements('salida'));
 const loadingMovements = ref(false);
 
 /**

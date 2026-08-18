@@ -12,6 +12,14 @@ import autoTable from 'jspdf-autotable';
  * @param {Array} movements - Array of movements
  * @param {Object} cashier - Optional cashier data from store
  */
+/**
+ * Suma los montos de los movimientos de un tipo dado ('entrada' | 'salida').
+ */
+const sumMovements = (movements, tipo) =>
+  (movements || [])
+    .filter(m => m.tipo === tipo)
+    .reduce((total, m) => total + (parseFloat(m.monto) || 0), 0);
+
 export const exportShiftReportToPdf = (shift, movements, cashier = null) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -141,9 +149,13 @@ export const exportShiftReportToPdf = (shift, movements, cashier = null) => {
   doc.text('Scorecards', 14, yPosition);
   yPosition += 8;
 
+  // total_efectivo ya viene neto de ingresos/retiros; se listan aparte para que el
+  // arqueo sea auditable.
   const scorecardsData = [
     ['Pagos Efectivo', `S/ ${(shift.total_efectivo || 0).toFixed(2)}`],
     ['Pagos con Tarjeta', `S/ ${(shift.total_tarjeta || 0).toFixed(2)}`],
+    ['Ingresos de Efectivo', `S/ ${sumMovements(movements, 'entrada').toFixed(2)}`],
+    ['Retiros de Efectivo', `S/ ${sumMovements(movements, 'salida').toFixed(2)}`],
     ['Esperado en Caja', `S/ ${((shift.monto_inicial || 0) + (shift.total_efectivo || 0)).toFixed(2)}`]
   ];
 

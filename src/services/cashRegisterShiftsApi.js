@@ -70,21 +70,10 @@ const cashRegisterShiftsApi = {
    */
   getShiftMovements(shiftId) {
     return apiClient.get(`/cash-register-shifts/${shiftId}/movements`);
-  },
-
-  /**
-   * Register a cash movement (entry/withdrawal)
-   * @param {Object} data - Movement data
-   * @param {number} data.turnocaja_id - Shift ID
-   * @param {string} data.tipo - Movement type: 'entrada' or 'salida'
-   * @param {number} data.monto - Amount
-   * @param {string} data.concepto - Concept/reason
-   * @param {string} data.notas - Additional notes
-   * @returns {Promise}
-   */
-  registerMovement(data) {
-    return apiClient.post('/turnocaja-movimientos', data);
   }
+  // Para CREAR movimientos usar cashMovementsApi (POST /cash-register-shifts/movements).
+  // Acá vivía un registerMovement() que apuntaba a /turnocaja-movimientos, ruta que
+  // no existe en el API; nunca se llamó y por eso nadie notó que estaba rota.
 };
 
 export default cashRegisterShiftsApi;

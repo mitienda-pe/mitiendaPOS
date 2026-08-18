@@ -163,6 +163,18 @@
           </h2>
           <div class="flex gap-2 flex-wrap">
             <button
+              @click="openCashMovement('entrada')"
+              class="inline-flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded font-medium"
+              title="Registrar ingreso de efectivo a la caja">
+              + Ingreso
+            </button>
+            <button
+              @click="openCashMovement('salida')"
+              class="inline-flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded font-medium"
+              title="Registrar retiro de efectivo de la caja">
+              − Retiro
+            </button>
+            <button
               @click="downloadCsvReport"
               class="inline-flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded font-medium"
               title="Descargar reporte en CSV">
@@ -271,6 +283,13 @@
       :shift="shiftStore.activeShift"
       @shift-closed="onShiftClosed"
     />
+    <CashMovementModal
+      v-model="showCashMovementModal"
+      :shift-id="shiftStore.activeShift?.id"
+      :initial-tipo="cashMovementTipo"
+      :available-cash="summary.efectivoEsperado"
+      @registered="onCashMovementRegistered"
+    />
     <CashierAuthModal
       v-model="showCashierAuthModal"
       :required="true"
@@ -291,6 +310,7 @@ import cashRegisterShiftsApi from '@/services/cashRegisterShiftsApi';
 import OpenShiftModal from '@/components/OpenShiftModal.vue';
 import CloseShiftModal from '@/components/CloseShiftModal.vue';
 import CashierAuthModal from '@/components/CashierAuthModal.vue';
+import CashMovementModal from '@/components/CashMovementModal.vue';
 import { exportShiftReportToCsv } from '@/utils/csvExport';
 import { exportShiftReportToPdf } from '@/utils/pdfExport';
 
@@ -305,6 +325,8 @@ const loadingMovements = ref(false);
 const showOpenShiftModal = ref(false);
 const showCloseShiftModal = ref(false);
 const showCashierAuthModal = ref(false);
+const showCashMovementModal = ref(false);
+const cashMovementTipo = ref('entrada');
 const pendingShiftData = ref(null);
 
 // Real-time summary
@@ -393,20 +415,15 @@ const calculateSummary = () => {
     (shift.total_transferencia || 0);
 
   // 📝 MEJORAS FUTURAS:
-  // 1. Agregar UI para registrar entradas/salidas manuales de efectivo
-  //    - Permitir al cajero sacar efectivo a mitad de turno (tipo: 'salida')
-  //    - Permitir agregar efectivo de cambio del banco (tipo: 'entrada')
-  //    - Ver cashMovementsApi.registerIncome() y .registerWithdrawal()
-  //
-  // 2. Registrar redondeos como movimientos separados
+  // 1. Registrar redondeos como movimientos separados
   //    - Actualmente el redondeo solo se menciona en payment.reference
   //    - Podría ser un movimiento tipo 'ajuste' para trazabilidad
   //
-  // 3. Registrar cambio entregado por separado
+  // 2. Registrar cambio entregado por separado
   //    - Actualmente el cambio solo se extrae del campo 'referencia' con regex
   //    - Ver cart.js totalChange() getter
   //
-  // 4. Score card de "Cambio Entregado"
+  // 3. Score card de "Cambio Entregado"
   //    - Extraer cambio de movements.referencia con regex: /Cambio: S\/\s*([\d.]+)/
   //    - Mostrar total de cambio entregado en el turno
 
@@ -441,6 +458,22 @@ const loadMovements = async () => {
   } finally {
     loadingMovements.value = false;
   }
+};
+
+/**
+ * Abre el modal de movimiento de caja (ingreso o retiro de efectivo).
+ */
+const openCashMovement = (tipo) => {
+  cashMovementTipo.value = tipo;
+  showCashMovementModal.value = true;
+};
+
+/**
+ * Tras registrar un movimiento hay que refrescar el turno, no solo la lista:
+ * el efectivo esperado se recalcula server-side (entradas suman, salidas restan).
+ */
+const onCashMovementRegistered = async () => {
+  await loadShiftData();
 };
 
 /**
