@@ -15,6 +15,19 @@ const cashRegisterShiftsApi = {
   },
 
   /**
+   * Último cierre de una caja física, para sugerir el monto inicial del turno.
+   * Devuelve data: null si esa caja no tiene turnos cerrados todavía.
+   * @param {number} tiendadireccionId - Sucursal donde está la caja
+   * @param {string} cajaNumero - Etiqueta tal como se persiste (ej. "Caja 1")
+   * @returns {Promise}
+   */
+  getLastClosedShift(tiendadireccionId, cajaNumero) {
+    return apiClient.get('/cash-register-shifts/last-closed', {
+      params: { tiendadireccion_id: tiendadireccionId, caja_numero: cajaNumero }
+    });
+  },
+
+  /**
    * Open a new shift
    * @param {Object} data - Shift data
    * @param {string} data.caja_numero - Cash register number

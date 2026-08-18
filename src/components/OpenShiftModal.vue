@@ -91,11 +91,24 @@
                         'pl-10 w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500',
                         showBreakdown ? 'bg-gray-100 cursor-not-allowed' : ''
                       ]"
+                      @input="montoTouched = true"
                       @keyup.enter="handleOpen"
                     />
                   </div>
                   <p v-if="showBreakdown" class="text-xs text-gray-500 mt-1">
                     El monto se calcula automáticamente del desglose
+                  </p>
+                  <p v-else-if="loadingLastClosure" class="text-xs text-gray-500 mt-1">
+                    Buscando el cierre anterior de esta caja...
+                  </p>
+                  <p v-else-if="lastClosure" class="text-xs text-gray-600 mt-1">
+                    Sugerido del cierre anterior: <strong>S/ {{ lastClosure.monto_real.toFixed(2) }}</strong>
+                    <span v-if="lastClosure.cajero_nombre"> — contado por {{ lastClosure.cajero_nombre }}</span>
+                    <span v-if="lastClosure.fecha_cierre">, {{ formatClosureDate(lastClosure.fecha_cierre) }}</span>.
+                    Puedes modificarlo.
+                  </p>
+                  <p v-else-if="cajaNumero" class="text-xs text-gray-500 mt-1">
+                    Esta caja no tiene turnos cerrados previos.
                   </p>
                 </div>
 
@@ -174,6 +187,7 @@ import { ref, computed, watch, nextTick, onMounted } from 'vue';
 import { DENOMINATIONS } from '../utils/cashDenominations.js';
 import CashBreakdownInput from './CashBreakdownInput.vue';
 import { branchesApi } from '../services/branchesApi';
+import cashRegisterShiftsApi from '../services/cashRegisterShiftsApi';
 import { useAuthStore } from '../stores/auth';
 import { useCashierStore } from '../stores/cashier';
 
@@ -194,6 +208,13 @@ const montoInicial = ref(0);
 const notas = ref('');
 const processing = ref(false);
 const error = ref(null);
+// Cierre anterior de esta caja: se usa para sugerir el monto inicial. Es el
+// efectivo REALMENTE contado al cerrar, que es lo que quedó en el cajón.
+const lastClosure = ref(null);
+const loadingLastClosure = ref(false);
+// El cajero tocó el monto a mano: dejamos de pisarlo con la sugerencia.
+const montoTouched = ref(false);
+
 const sucursalSelect = ref(null);
 const cajaSelect = ref(null);
 const montoInput = ref(null);
@@ -301,10 +322,40 @@ const loadSucursales = async () => {
   }
 };
 
+/**
+ * Sugerir el monto inicial con el efectivo contado al cerrar el turno anterior
+ * de ESTA caja. Editable: es una sugerencia, no un dato cerrado. Si el cajero ya
+ * escribió un monto o está usando el desglose de billetes, no se le pisa.
+ */
+const loadLastClosure = async () => {
+  lastClosure.value = null;
+
+  if (!selectedSucursal.value || !cajaNumero.value) return;
+
+  loadingLastClosure.value = true;
+  try {
+    const response = await cashRegisterShiftsApi.getLastClosedShift(
+      selectedSucursal.value,
+      `Caja ${cajaNumero.value}`
+    );
+    lastClosure.value = response.data?.data || null;
+
+    if (lastClosure.value && !montoTouched.value && !showBreakdown.value) {
+      montoInicial.value = lastClosure.value.monto_real;
+    }
+  } catch (err) {
+    // Sin sugerencia se abre el turno igual; no vale la pena molestar al cajero.
+    console.error('[OpenShiftModal] No se pudo obtener el cierre anterior:', err);
+  } finally {
+    loadingLastClosure.value = false;
+  }
+};
+
 // Generar opciones de cajas según la sucursal seleccionada
 const loadCajasForSucursal = () => {
   cajaNumero.value = ''; // Reset caja selection
   availableCajas.value = [];
+  lastClosure.value = null;
 
   if (!selectedSucursal.value) return;
 
@@ -329,11 +380,18 @@ watch(() => props.modelValue, (value) => {
     notas.value = '';
     error.value = null;
     showBreakdown.value = false;
+    lastClosure.value = null;
+    montoTouched.value = false;
     // Reset denomination counts
     Object.keys(denominationCounts.value).forEach(key => {
       denominationCounts.value[key] = 0;
     });
   }
+});
+
+// Al elegir la caja, buscar con cuánto cerró el turno anterior
+watch(cajaNumero, (value) => {
+  if (value) loadLastClosure();
 });
 
 // Watch desglose para autocompletar monto inicial
@@ -342,6 +400,20 @@ watch(breakdownTotal, (newTotal) => {
     montoInicial.value = newTotal;
   }
 });
+
+/**
+ * Fecha del cierre anterior en formato corto (ej. "17/08 21:35").
+ */
+const formatClosureDate = (value) => {
+  const date = new Date(value);
+  if (isNaN(date.getTime())) return '';
+  return date.toLocaleString('es-PE', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
 
 const handleBreakdownTotal = (total) => {
   montoInicial.value = total;
