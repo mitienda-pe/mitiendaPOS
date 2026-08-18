@@ -10,19 +10,21 @@ export const useSavedSalesStore = defineStore('savedSales', () => {
     localStorage.setItem('savedSales', JSON.stringify(newValue));
   }, { deep: true });
 
-  // Guardar una venta inconclusa
+  // Guardar una venta inconclusa. No exige cliente: la venta en espera puede ser
+  // anónima y recibir un nombre después (renameSale).
   function saveSale(sale) {
     // Generar un ID único y timestamp para la venta
     const id = Date.now().toString();
     const timestamp = new Date().toISOString();
-    
+
     // Guardar la venta con metadatos
     savedSales.value.push({
       id,
       timestamp,
+      label: '',
       ...sale
     });
-    
+
     return id;
   }
 
@@ -41,19 +43,29 @@ export const useSavedSalesStore = defineStore('savedSales', () => {
     savedSales.value = savedSales.value.filter(sale => sale.id !== id);
   }
 
-  // Actualizar una venta existente
+  // Actualizar una venta existente. Fusiona sobre lo que ya había en vez de
+  // reemplazarlo: la fusión de ventas manda solo items/customer/payments y antes
+  // se llevaba puestos el total y los datos de entrega del ticket guardado.
   function updateSale(id, saleData) {
     const index = savedSales.value.findIndex(sale => sale.id === id);
     if (index !== -1) {
-      // Mantener el ID y timestamp originales
-      const originalId = savedSales.value[index].id;
-      const originalTimestamp = savedSales.value[index].timestamp;
+      const existing = savedSales.value[index];
 
       savedSales.value[index] = {
-        id: originalId,
-        timestamp: originalTimestamp,
-        ...saleData
+        ...existing,
+        ...saleData,
+        // El ID y el timestamp de creación no se tocan
+        id: existing.id,
+        timestamp: existing.timestamp
       };
+    }
+  }
+
+  // Renombrar una venta en espera (alias para reconocerla en el listado)
+  function renameSale(id, label) {
+    const sale = savedSales.value.find(item => item.id === id);
+    if (sale) {
+      sale.label = (label || '').trim().slice(0, 60);
     }
   }
 
@@ -80,6 +92,7 @@ export const useSavedSalesStore = defineStore('savedSales', () => {
     getSaleById,
     deleteSavedSale,
     updateSale,
+    renameSale,
     findSalesByCustomer,
     clearAll
   };

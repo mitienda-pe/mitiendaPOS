@@ -15,8 +15,10 @@ import { cotizacionesApi } from '../services/cotizacionesApi';
 import { netsuiteStockApi } from '../services/netsuiteStockApi';
 import { mockCustomersApi } from '../api/mockCustomers';
 import { useSavedSalesStore } from '../stores/savedSales';
+import { buildCustomerPayload as buildCustomerPayloadFrom } from '../composables/useDocumentLookup';
 import { cashMovementsApi } from '../services/cashMovementsApi';
 import CustomerSearchModal from '../components/CustomerSearchModal.vue';
+import CustomerCaptureModal from '../components/CustomerCaptureModal.vue';
 import PaymentModal from '../components/PaymentModal.vue';
 import SavedSalesModal from '../components/SavedSalesModal.vue';
 import StartSaleModal from '../components/StartSaleModal.vue';
@@ -53,6 +55,12 @@ const savingQuote = ref(false);
 // Stores
 const authStore = useAuthStore();
 const savedSalesStore = useSavedSalesStore();
+// Cuántos tickets hay esperando en el mostrador (badge del botón "En espera").
+// Excluye la venta en curso: el autoguardado la persiste igual, pero no está
+// esperando — está en la caja.
+const heldSalesCount = computed(
+  () => savedSalesStore.savedSales.filter(sale => sale.id !== currentSaleId.value).length
+);
 const cartStore = useCartStore();
 const shiftStore = useShiftStore();
 const cashierStore = useCashierStore();
@@ -130,7 +138,15 @@ const stockValidatedForCurrentCart = ref(false);
 const skipBonificationsForCurrentOrder = ref(false);
 
 // Tipo de comprobante seleccionado al inicio de la venta
-const billingDocumentType = ref('boleta'); // 'boleta' o 'factura'
+// Fuente única del tipo de comprobante: el store. Antes convivía un ref local
+// (el que viajaba al backend) con cartStore.documentType (el que ve PaymentModal
+// y el que se serializa en getSnapshot/restoreSnapshot, pero que nadie escribía)
+// → el ticket del modal de pago siempre decía "boleta" y retomar una cotización
+// de factura perdía el tipo. Este proxy mantiene la API local y un solo estado.
+const billingDocumentType = computed({
+  get: () => documentType.value,
+  set: (value) => cartStore.setDocumentType(value)
+});
 
 // Autorización pendiente
 const pendingAction = ref({ type: null, data: null });
@@ -547,44 +563,39 @@ const removeItem = (item) => {
   }
 };
 
-// Guardar la venta actual para más tarde (Botón "Guardar Venta")
+// Poner la venta actual en espera (Botón "Poner en espera").
+//
+// No exige cliente ni documento: la venta en espera es anónima y se le puede
+// poner nombre después desde el listado. Antes, sin documento, este botón abría
+// StartSaleModal en vez de guardar — una exigencia puramente de UI, porque el
+// autoguardado (watch de más abajo) ya venía persistiendo esas mismas ventas.
 const saveSaleForLater = () => {
-  const state = saleState.value;
-
-  // Estado A: Carrito vacío, sin documento
-  if (state === 'A') {
-    // Mostrar modal "Iniciar Venta" para capturar documento del cliente
-    showStartSaleModal.value = true;
+  if (!cartItems.value.length) {
+    showToast('warning', 'Agrega productos antes de poner la venta en espera.');
     return;
   }
 
-  // Estado B: Carrito con productos, sin documento
-  if (state === 'B') {
-    // Mostrar modal "Iniciar Venta" para capturar documento del cliente
-    showStartSaleModal.value = true;
-    return;
-  }
+  // Con documento, ofrecer fusionar con otra venta en espera del mismo cliente
+  // en vez de dejar dos tickets sueltos del mismo comprador.
+  const customerDoc = selectedCustomer.value?.documento;
+  if (customerDoc) {
+    const existingSales = savedSalesStore
+      .findSalesByCustomer(customerDoc)
+      .filter(sale => sale.id !== currentSaleId.value);
 
-  // Estado C: Carrito con productos y documento registrado
-  if (state === 'C') {
-    // Verificar si el cliente ya tiene una venta guardada
-    const customerDoc = selectedCustomer.value?.documento;
-    if (customerDoc) {
-      const existingSales = savedSalesStore.findSalesByCustomer(customerDoc);
-
-      // Si hay ventas guardadas del mismo cliente, mostrar modal de fusión
-      if (existingSales.length > 0) {
-        existingSaleForMerge.value = existingSales[0]; // Tomar la primera (más reciente)
-        showMergeSales.value = true;
-        return;
-      }
+    if (existingSales.length > 0) {
+      existingSaleForMerge.value = existingSales[0]; // La más reciente
+      showMergeSales.value = true;
+      return;
     }
-
-    // No hay conflicto, guardar normalmente
-    autoSaveSale();
-    saleHasUnsavedChanges.value = false;
-    alert('✅ Venta guardada correctamente');
   }
+
+  autoSaveSale();
+  saleHasUnsavedChanges.value = false;
+  // Poner en espera libera la caja para el siguiente cliente; la venta queda en
+  // el listado "En espera" y se retoma desde ahí.
+  resetSale();
+  showToast('success', 'Venta puesta en espera');
 };
 
 // Iniciar una nueva venta (Botón "Nueva Venta")
@@ -650,7 +661,7 @@ const handleMergeSales = (data) => {
   resetSale();
   saleHasUnsavedChanges.value = false;
 
-  alert('✅ Ventas fusionadas correctamente. La venta se encuentra en "Ventas Guardadas".');
+  showToast('success', 'Ventas fusionadas. Quedó en "En espera".');
 };
 
 // Manejar creación de nueva venta independiente
@@ -681,7 +692,7 @@ const handleStartSale = (data) => {
   }
 
   // En cualquier otro caso (A o C), limpiar y empezar de nuevo
-  resetSale(); // resetSale() pone billingDocumentType = 'boleta'
+  resetSale(); // resetSale() deja el tipo de comprobante en 'boleta'
   if (data.customer) {
     selectedCustomer.value = data.customer;
   }
@@ -824,6 +835,28 @@ const onCashierReauthed = () => {
   handlePaymentCompleted();
 };
 
+// Captura del documento del cliente cuando el checkout lo exige (factura sin RUC,
+// boleta >= S/700 sin documento). Mismo patrón que la re-autenticación: se pide
+// el dato que falta sin tocar el carrito y se reintenta el cobro.
+const showCustomerCapture = ref(false);
+const customerCaptureKind = ref('DNI');
+const customerCaptureTitle = ref('');
+const customerCaptureReason = ref('');
+
+const requestCustomerDocument = (docKind, title, reason) => {
+  customerCaptureKind.value = docKind;
+  customerCaptureTitle.value = title;
+  customerCaptureReason.value = reason;
+  showCustomerCapture.value = true;
+};
+
+const onCustomerCaptured = (customer) => {
+  selectedCustomer.value = customer;
+  showCustomerCapture.value = false;
+  // Reintentar el cobro con el documento ya cargado
+  handlePaymentCompleted();
+};
+
 // Retomar una venta guardada
 const resumeSavedSale = async (sale) => {
   // Si hay una venta en curso, preguntar si se desea guardar
@@ -837,6 +870,8 @@ const resumeSavedSale = async (sale) => {
   cartItems.value = [...sale.items];
   selectedCustomer.value = sale.customer;
   currentSaleId.value = sale.id;
+  // Las ventas guardadas antes de este cambio no traen el tipo: caen a boleta.
+  cartStore.setDocumentType(sale.documentType === 'factura' ? 'factura' : 'boleta');
 
   // Cargar los pagos si existen
   if (sale.payments && Array.isArray(sale.payments)) {
@@ -859,55 +894,9 @@ const resumeSavedSale = async (sale) => {
 
 // ========== Cotizaciones / Proformas ==========
 
-// Cliente en el shape que espera el backend (customer{}). Mismo mapeo que arma
-// la orden en handlePaymentCompleted, extraído para reusarlo en la cotización.
-const buildCustomerPayload = () => {
-  const c = selectedCustomer.value;
-  const docTypeRaw = c?.document_type || '1';
-  const isRuc = docTypeRaw === 'ruc' || docTypeRaw === '2' || docTypeRaw === '6';
-  const docType = isRuc ? '2' : (docTypeRaw === 'dni' || docTypeRaw === '1' ? '1' : docTypeRaw);
-
-  const base = {
-    id: c?.id || null,
-    email: c?.email || c?.correoElectronico || c?.correo || c?.tiendacliente_correo_electronico || c?.tiendacliente_correo || '',
-    phone: c?.phone || c?.telefono || c?.tiendacliente_telefono || '',
-    document_number: c?.document_number || c?.numeroDocumento || '',
-    document_type: docType
-  };
-
-  if (isRuc) {
-    // Domicilio fiscal: de la direccion "Fiscal" del cliente registrado (trae el
-    // ubigeo_id ya resuelto) o, si no existe, de la predeterminada. El API lo persiste
-    // en la venta para que el comprobante y NetSuite usen la geografia fiscal y no la
-    // de la tienda.
-    const addresses = Array.isArray(c?.addresses) ? c.addresses : [];
-    const fiscal = addresses.find(a => a?.label === 'Fiscal')
-      || addresses.find(a => a?.is_default)
-      || addresses[0];
-
-    return {
-      ...base,
-      business_name: c?.business_name || c?.name || 'EMPRESA',
-      name: '',
-      lastname: '',
-      fiscal_address: fiscal?.address || c?.direccion || '',
-      fiscal_ubigeo_id: fiscal?.ubigeo_id || 0,
-      fiscal_ubigeo: c?.ubigeo || ''
-    };
-  }
-  let firstName = '', lastName = '';
-  if (c?.nombres || c?.apellidos) {
-    firstName = c?.nombres || '';
-    lastName = c?.apellidos || '';
-  } else if (c?.name) {
-    const parts = (c.name || 'Cliente General').trim().split(' ');
-    firstName = parts[0] || '';
-    lastName = parts.slice(1).join(' ') || '';
-  } else {
-    firstName = 'Cliente'; lastName = 'General';
-  }
-  return { ...base, name: firstName, lastname: lastName, business_name: '' };
-};
+// Cliente en el shape que espera el backend (customer{}). El mapeo vive en el
+// composable porque también lo necesita la emisión posterior del comprobante.
+const buildCustomerPayload = () => buildCustomerPayloadFrom(selectedCustomer.value);
 
 // Items en el shape que espera el backend. ÚNICO mapeo: lo usan tanto la orden
 // como la cotización (antes estaba duplicado y las dos copias divergían).
@@ -1363,11 +1352,17 @@ const handlePaymentCompleted = async () => {
       return;
     }
 
-    // Validación: Boleta >= S/700 requiere DNI/RUC
+    // Validación: Boleta >= S/700 requiere DNI/RUC (requisito SUNAT, no se puede
+    // saltar). Antes se avisaba con un alert() y el cajero tenía que volver a
+    // "Nueva Venta"; ahora se pide el documento sobre el carrito vivo.
     if (billingDocumentType.value === 'boleta' && total.value >= 700) {
       if (!selectedCustomer.value || !selectedCustomer.value.document_number) {
-        alert('⚠️ Las ventas con Boleta de S/700 o más requieren DNI o RUC del cliente.\n\nPor favor, agregue el documento del cliente antes de continuar.');
         processingOrder.value = false;
+        requestCustomerDocument(
+          'DNI',
+          'Documento obligatorio',
+          'Las boletas de S/ 700 o más exigen el DNI o RUC del cliente (norma SUNAT).'
+        );
         return;
       }
     }
@@ -1378,14 +1373,13 @@ const handlePaymentCompleted = async () => {
       const docType = selectedCustomer.value?.document_type?.toString().toLowerCase();
       const isRuc = docType === 'ruc' || docType === '2' || docType === '6';
 
-      console.log('🔍 [DEBUG Factura Validation] document_type:', selectedCustomer.value?.document_type);
-      console.log('🔍 [DEBUG Factura Validation] docType normalizado:', docType);
-      console.log('🔍 [DEBUG Factura Validation] isRuc:', isRuc);
-      console.log('🔍 [DEBUG Factura Validation] selectedCustomer:', JSON.stringify(selectedCustomer.value, null, 2));
-
       if (!selectedCustomer.value || !isRuc) {
-        alert('⚠️ Para emitir una Factura es obligatorio tener un cliente con RUC.\n\nPor favor, agregue el RUC del cliente antes de continuar.');
         processingOrder.value = false;
+        requestCustomerDocument(
+          'RUC',
+          'Falta el RUC',
+          'Una factura se emite a nombre de una empresa: ingresa el RUC del cliente.'
+        );
         return;
       }
     }
@@ -1812,7 +1806,7 @@ const resetSale = (orderData = null) => {
   searchQuery.value = '';
   searchResults.value = [];
   saleHasUnsavedChanges.value = false;
-  billingDocumentType.value = 'boleta'; // Reset to default
+  // El tipo de comprobante lo resetea cartStore.reset() (fuente única)
   activeCotizacionId.value = null; // Ya no hay cotización de origen para esta venta
 
   // 🔥 OPTIMIZATION: Clear validated inventory numbers and stock validation flag
@@ -2130,6 +2124,8 @@ const autoSaveSale = () => {
     tax: tax.value,
     total: total.value,
     payments: [...payments.value],
+    // Sin esto, retomar una venta en espera de factura la devolvía como boleta.
+    documentType: documentType.value,
     // Metadato: cajero que inició/editó la venta guardada. La atribución del
     // salesrep en NetSuite usa el cajero que COMPLETA el cobro (cashierStore en
     // vivo), no este; se guarda como referencia y para diagnóstico.
@@ -2274,7 +2270,7 @@ const getPaymentMethodName = (method) => {
                 <line x1="5" y1="12" x2="19" y2="12"></line>
               </svg>
             </button>
-            <button @click="saveSaleForLater" :disabled="!cartItems.length" class="p-2 text-primary-600 hover:bg-primary-50 rounded-md disabled:opacity-40 disabled:hover:bg-transparent" title="Guardar venta" aria-label="Guardar venta">
+            <button @click="saveSaleForLater" :disabled="!cartItems.length" class="p-2 text-primary-600 hover:bg-primary-50 rounded-md disabled:opacity-40 disabled:hover:bg-transparent" title="Poner en espera" aria-label="Poner en espera">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 2v8" />
                 <path d="m16 6-4 4-4-4" />
@@ -2291,11 +2287,14 @@ const getPaymentMethodName = (method) => {
                 <line x1="8" y1="17" x2="13" y2="17" />
               </svg>
             </button>
-            <button @click="showSavedSalesModal = true" class="p-2 text-primary-600 hover:bg-primary-50 rounded-md" title="Ventas guardadas" aria-label="Ventas guardadas">
+            <button @click="showSavedSalesModal = true" class="relative p-2 text-primary-600 hover:bg-primary-50 rounded-md" title="Ventas en espera" aria-label="Ventas en espera">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
                 <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
               </svg>
+              <span v-if="heldSalesCount" class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-primary-600 text-white text-[10px] font-bold">
+                {{ heldSalesCount }}
+              </span>
             </button>
           </div>
         </header>
@@ -2561,7 +2560,10 @@ const getPaymentMethodName = (method) => {
                 <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
                 <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
               </svg>
-              Ventas Guardadas
+              En espera
+              <span v-if="heldSalesCount" class="ml-2 min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full bg-white/25 text-xs font-bold">
+                {{ heldSalesCount }}
+              </span>
             </button>
 
             <button @click="saveSaleForLater" :disabled="!cartItems.length"
@@ -2574,7 +2576,7 @@ const getPaymentMethodName = (method) => {
                 <path d="M6 18h.01" />
                 <path d="M10 18h.01" />
               </svg>
-              Guardar Venta
+              Poner en espera
             </button>
 
             <button @click="saveAsQuote" :disabled="!cartItems.length || savingQuote"
@@ -3068,7 +3070,15 @@ const getPaymentMethodName = (method) => {
     @payment-added="handlePaymentAdded" @sale-finalized="resetSale" @update:show-ticket="showTicket = $event" />
 
   <!-- Saved Sales Modal -->
-  <SavedSalesModal v-model="showSavedSalesModal" @resume-sale="resumeSavedSale" />
+  <CustomerCaptureModal
+    v-model="showCustomerCapture"
+    :doc-kind="customerCaptureKind"
+    :title="customerCaptureTitle"
+    :reason="customerCaptureReason"
+    @captured="onCustomerCaptured"
+  />
+
+  <SavedSalesModal v-model="showSavedSalesModal" :current-sale-id="currentSaleId" @resume-sale="resumeSavedSale" />
 
   <!-- Supervisor Authorization Modal -->
   <SupervisorAuthModal

@@ -7,7 +7,7 @@
           <div class="sm:flex sm:items-start">
             <div class="w-full">
               <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg leading-6 font-medium text-gray-900">Ventas Guardadas</h3>
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Ventas en espera</h3>
                 <button 
                   @click="close" 
                   class="text-gray-400 hover:text-gray-500 focus:outline-none"
@@ -23,26 +23,57 @@
                 <table class="min-w-full divide-y divide-gray-200 table-fixed">
                   <thead class="bg-gray-50">
                     <tr>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase w-1/6">Fecha</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase w-1/6">Cliente</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase w-1/6">Productos</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase w-1/6">Total</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase w-1/6">Acciones</th>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Venta</th>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Productos</th>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
                     </tr>
                   </thead>
                   <tbody class="bg-white divide-y divide-gray-200">
                     <tr v-for="sale in savedSales" :key="sale.id">
-                      <td class="px-6 py-4 whitespace-nowrap text-sm">{{ formatDate(sale.timestamp) }}</td>
-                      <td class="px-6 py-4 text-sm truncate max-w-xs">
+                      <td class="px-4 py-4 text-sm">
+                        <div v-if="editingId === sale.id" class="flex items-center gap-1">
+                          <input
+                            :ref="el => setLabelInput(sale.id, el)"
+                            v-model="editingLabel"
+                            type="text"
+                            maxlength="60"
+                            placeholder="Ej. Señora del abrigo rojo"
+                            class="w-40 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-primary-500 focus:border-primary-500"
+                            @keyup.enter="confirmRename(sale.id)"
+                            @keyup.esc="cancelRename"
+                          />
+                          <button @click="confirmRename(sale.id)" class="text-primary-600 hover:text-primary-800 text-xs font-medium px-1">OK</button>
+                          <button @click="cancelRename" class="text-gray-400 hover:text-gray-600 text-xs px-1">✕</button>
+                        </div>
+                        <div v-else class="flex items-center gap-1">
+                          <span :class="sale.label ? 'font-medium text-gray-900' : 'italic text-gray-500'">
+                            {{ sale.label || 'Venta sin nombre' }}
+                          </span>
+                          <button
+                            @click="startRename(sale)"
+                            class="text-gray-400 hover:text-primary-600"
+                            :title="sale.label ? 'Cambiar el nombre' : 'Ponerle un nombre'"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M12 20h9"></path>
+                              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+                            </svg>
+                          </button>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-0.5">{{ formatDate(sale.timestamp) }}</p>
+                      </td>
+                      <td class="px-4 py-4 text-sm truncate max-w-xs">
                         {{ sale.customer ? getCustomerName(sale.customer) : 'Sin cliente' }}
                       </td>
-                      <td class="px-6 py-4 text-sm">{{ sale.items.length }} productos</td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm">{{ formatCurrency(sale.total) }}</td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm">
+                      <td class="px-4 py-4 text-sm">{{ sale.items.length }} productos</td>
+                      <td class="px-4 py-4 whitespace-nowrap text-sm">{{ formatCurrency(sale.total) }}</td>
+                      <td class="px-4 py-4 whitespace-nowrap text-sm">
                         <div class="flex space-x-2">
                           <button
                             @click="resumeSale(sale)"
-                            class="text-primary-600 hover:text-indigo-900 flex items-center"
+                            class="text-primary-600 hover:text-primary-800 flex items-center"
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                               <polygon points="5 3 19 12 5 21 5 3"></polygon>
@@ -73,7 +104,7 @@
                   <line x1="12" y1="8" x2="12" y2="12"></line>
                   <line x1="12" y1="16" x2="12.01" y2="16"></line>
                 </svg>
-                <p class="text-gray-500">No hay ventas guardadas</p>
+                <p class="text-gray-500">No hay ventas en espera</p>
               </div>
             </div>
           </div>
@@ -93,13 +124,19 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, nextTick } from 'vue';
 import { useSavedSalesStore } from '../stores/savedSales';
 
 const props = defineProps({
   modelValue: {
     type: Boolean,
     required: true
+  },
+  // Venta que está abierta en la caja ahora mismo. El autoguardado la persiste
+  // igual que las que esperan, pero no tiene sentido listarla ni "retomarla".
+  currentSaleId: {
+    type: [String, Number],
+    default: null
   }
 });
 
@@ -108,15 +145,51 @@ const emit = defineEmits(['update:modelValue', 'resume-sale']);
 const savedSalesStore = useSavedSalesStore();
 const savedSales = ref([]);
 
+// Renombrado en línea. La venta en espera puede ser anónima; el alias sirve para
+// reconocerla cuando hay varias esperando en el mostrador.
+const editingId = ref(null);
+const editingLabel = ref('');
+const labelInputs = {};
+
+function setLabelInput(id, el) {
+  if (el) labelInputs[id] = el;
+  else delete labelInputs[id];
+}
+
+function startRename(sale) {
+  editingId.value = sale.id;
+  editingLabel.value = sale.label || '';
+  nextTick(() => labelInputs[sale.id]?.focus());
+}
+
+function confirmRename(id) {
+  savedSalesStore.renameSale(id, editingLabel.value);
+  refreshSales();
+  cancelRename();
+}
+
+function cancelRename() {
+  editingId.value = null;
+  editingLabel.value = '';
+}
+
+// Lista de ventas realmente en espera (sin la que está abierta en la caja)
+function refreshSales() {
+  savedSales.value = savedSalesStore
+    .getSavedSales()
+    .filter(sale => sale.id !== props.currentSaleId);
+}
+
 // Actualizar la lista de ventas guardadas cada vez que se abre el modal
 watch(() => props.modelValue, (newValue) => {
   if (newValue) {
-    savedSales.value = savedSalesStore.getSavedSales();
+    refreshSales();
+    cancelRename();
   }
 });
 
 // Inicializar la lista de ventas guardadas
-savedSales.value = savedSalesStore.getSavedSales();
+refreshSales();
 
 // Formatear fecha
 function formatDate(dateString) {
@@ -155,11 +228,11 @@ function resumeSale(sale) {
 
 // Eliminar una venta guardada
 async function deleteSale(id) {
-  if (confirm('¿Está seguro de eliminar esta venta guardada?')) {
+  if (confirm('¿Está seguro de eliminar esta venta en espera?')) {
     try {
       savedSalesStore.deleteSavedSale(id);
       // Forzar actualización del ref
-      savedSales.value = savedSalesStore.getSavedSales();
+      refreshSales();
     } catch (error) {
       console.error('Error al eliminar la venta guardada:', error);
       alert('Ocurrió un error al eliminar la venta guardada');
