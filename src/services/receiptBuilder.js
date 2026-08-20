@@ -6,7 +6,7 @@
 
 import ReceiptPrinterEncoder from '@point-of-sale/receipt-printer-encoder'
 import { COMPANY_CONFIG } from '@/config/companyConfig'
-import { PRINTER_CONFIG } from '@/config/printerConfig'
+import { PRINTER_CONFIG, getPaperFormat } from '@/config/printerConfig'
 
 /**
  * Build a complete receipt from order data.
@@ -30,14 +30,15 @@ import { PRINTER_CONFIG } from '@/config/printerConfig'
  * @returns {Uint8Array} ESC/POS byte commands
  */
 export function buildReceipt(orderData) {
+  const W = getPaperFormat().columns
+
   const encoder = new ReceiptPrinterEncoder({
     language: 'esc-pos',
-    columns: PRINTER_CONFIG.paperWidth,
+    columns: W,
     feedBeforeCut: PRINTER_CONFIG.feedLinesBeforeCut,
   })
 
   const company = orderData.companyInfo || COMPANY_CONFIG
-  const W = PRINTER_CONFIG.paperWidth
 
   encoder.initialize()
 
@@ -230,12 +231,12 @@ export function buildReceipt(orderData) {
  * @returns {Uint8Array}
  */
 export function buildTestReceipt() {
+  const W = getPaperFormat().columns
+
   const encoder = new ReceiptPrinterEncoder({
     language: 'esc-pos',
-    columns: PRINTER_CONFIG.paperWidth,
+    columns: W,
   })
-
-  const W = PRINTER_CONFIG.paperWidth
 
   encoder.initialize()
   encoder.align('center')

@@ -562,13 +562,14 @@ import { useBillingStore } from '../stores/billing';
 import { useCashierStore } from '../stores/cashier';
 import { shippingApi } from '../services/shippingApi';
 import { useThermalPrinter } from '../composables/useThermalPrinter';
+import { getPaperFormat } from '@/config/printerConfig';
 
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 const billingStore = useBillingStore();
 const cashierStore = useCashierStore();
-const { isConnected: thermalConnected, isEnabled: thermalEnabled, printReceipt: thermalPrint } = useThermalPrinter();
+const { canPrint: thermalReady, printReceipt: thermalPrint } = useThermalPrinter();
 
 const order = ref(null);
 const loading = ref(false);
@@ -1005,7 +1006,7 @@ const getStoreInfo = () => {
 
 const printTicket = async () => {
   // Intentar impresión térmica ESC/POS primero
-  if (thermalEnabled.value && thermalConnected.value) {
+  if (thermalReady.value) {
     const thermalData = {
       companyInfo: getCompanyInfo(),
       storeName: getStoreName(),
@@ -1058,6 +1059,8 @@ const printTicket = async () => {
     else if (serie.startsWith('B')) docType = 'BOLETA ELECTRÓNICA';
   }
 
+  const paper = getPaperFormat();
+
   const ticketHTML = `
     <!DOCTYPE html>
     <html>
@@ -1065,13 +1068,13 @@ const printTicket = async () => {
       <meta charset="UTF-8">
       <title>Ticket de Venta #${order.value.order_number}</title>
       <style>
-        @page { size: 80mm auto; margin: 0; }
+        @page { size: ${paper.mm}mm auto; margin: 0; }
         body {
           font-family: 'Courier New', monospace;
           font-size: 11px;
           margin: 0;
           padding: 10px;
-          width: 80mm;
+          width: ${paper.mm}mm;
         }
         .center { text-align: center; }
         .bold { font-weight: bold; }

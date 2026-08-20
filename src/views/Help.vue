@@ -985,6 +985,15 @@
                     la impresión térmica desactivada y no necesitas QZ Tray.
                   </p>
                 </div>
+
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                  <p class="text-sm text-yellow-800">
+                    <strong>¿Usas el POS en una tablet o celular Android?</strong> QZ Tray no corre ahí.
+                    En Android la impresión térmica se hace con la app <strong>RawBT</strong>: entra a
+                    <strong>Configuración → Impresora Térmica</strong> desde el propio dispositivo y sigue
+                    las instrucciones que aparecen ahí.
+                  </p>
+                </div>
               </div>
             </div>
 

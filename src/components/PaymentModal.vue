@@ -773,6 +773,7 @@ import RightToLeftMoneyInput from './RightToLeftMoneyInput.vue';
 import ReceiptTicket from './ReceiptTicket.vue';
 import { buildCompanyInfo } from '../config/companyConfig';
 import { useThermalPrinter } from '../composables/useThermalPrinter';
+import { getPaperFormat } from '@/config/printerConfig';
 import { kasnetQrApi } from '../services/kasnetQrApi';
 import { ligoQrApi } from '../services/ligoQrApi';
 import { ordersApi } from '../services/ordersApi';
@@ -788,7 +789,7 @@ const cartStore = useCartStore();
 const authStore = useAuthStore();
 const billingStore = useBillingStore();
 const paymentMethodsStore = usePaymentMethodsStore();
-const { isConnected: thermalConnected, isEnabled: thermalEnabled, printReceipt: thermalPrint } = useThermalPrinter();
+const { canPrint: thermalReady, printReceipt: thermalPrint } = useThermalPrinter();
 
 // Visibilidad por defecto de los métodos cuando la config aún no cargó
 // (fail-open): replica el set hardcodeado histórico. Cuando la config del
@@ -1919,7 +1920,7 @@ const buildThermalOrderData = () => ({
 
 const printTicket = async () => {
   // Intentar impresión térmica ESC/POS primero
-  if (thermalEnabled.value && thermalConnected.value) {
+  if (thermalReady.value) {
     const orderData = buildThermalOrderData();
     const printed = await thermalPrint(orderData);
     if (printed) {
@@ -1942,7 +1943,7 @@ const printTicketDirect = async () => {
   console.log('🖨️ [PaymentModal] Printing ticket directly');
 
   // Intentar impresión térmica ESC/POS primero
-  if (thermalEnabled.value && thermalConnected.value) {
+  if (thermalReady.value) {
     const orderData = buildThermalOrderData();
     const printed = await thermalPrint(orderData);
     if (printed) {
@@ -1980,6 +1981,8 @@ const printTicketDirect = async () => {
     });
   };
 
+  const paper = getPaperFormat();
+
   const ticketHTML = `
     <!DOCTYPE html>
     <html>
@@ -1987,13 +1990,13 @@ const printTicketDirect = async () => {
       <meta charset="UTF-8">
       <title>Ticket de Venta #${displayOrderNumber.value}</title>
       <style>
-        @page { size: 80mm auto; margin: 0; }
+        @page { size: ${paper.mm}mm auto; margin: 0; }
         body {
           font-family: 'Courier New', monospace;
           font-size: 11px;
           margin: 0;
           padding: 10px;
-          width: 80mm;
+          width: ${paper.mm}mm;
         }
         .center { text-align: center; }
         .bold { font-weight: bold; }
