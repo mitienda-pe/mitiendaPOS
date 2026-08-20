@@ -3,10 +3,24 @@
 Generado con `scripts/changelog.sh` desde los conventional commits.
 No editar a mano: los cambios se pierden en la siguiente regeneracion.
 
+## [v1.33.0] - 2026-08-20
+
+Primera version etiquetada. Lo anterior esta en el historico.
+
+---
+
+# Historico (previo al versionado)
+
 ## Agosto 2026
 
 ### Novedades
 
+- **pos:** imprimir tickets ESC/POS en Android con RawBT y hacer configurable el ancho de rollo ([`f564976`](https://github.com/mitienda-pe/mitiendaPOS/commit/f564976185357a1b7baca9ac6bda8abe1d570e07))
+- **pos:** emitir el comprobante pidiendo cliente y tipo despues de cobrar ([`b4f4b50`](https://github.com/mitienda-pe/mitiendaPOS/commit/b4f4b50bb7fd942931d1677df6e89a599ee162c9))
+- **pos:** poner ventas en espera sin exigir cliente ([`8c0e218`](https://github.com/mitienda-pe/mitiendaPOS/commit/8c0e218eecef45ce5a29c168249b569691cc7503))
+- **pos:** sugerir el monto inicial del turno con el cierre anterior ([`002f1bf`](https://github.com/mitienda-pe/mitiendaPOS/commit/002f1bfb8072a599aac6d6e09e0153b59744e8d7))
+- **pos:** registrar ingresos y retiros de efectivo del turno ([`d9e2d13`](https://github.com/mitienda-pe/mitiendaPOS/commit/d9e2d137973e3655282b3deb3bc3d6838fad0707))
+- **inventario:** kardex y transferencias desde el POS ([`739d8cc`](https://github.com/mitienda-pe/mitiendaPOS/commit/739d8cce9dbe85fe3a2e011e4fe2fb3f08dfed6f))
 - **pos:** activar el envio a domicilio desde Preferencias ([`dd66d2c`](https://github.com/mitienda-pe/mitiendaPOS/commit/dd66d2c7fd65a1cf0c7f1eb61517c571def862c7))
 - **pos:** versionado semver y banner de nueva version publicada ([`c17d215`](https://github.com/mitienda-pe/mitiendaPOS/commit/c17d21589ae97afe9fc2336f0307b4e23a7264e9))
 - **pos:** tomar pedidos con envio a domicilio desde el mostrador ([`67a4b97`](https://github.com/mitienda-pe/mitiendaPOS/commit/67a4b979cc715072169fa140cda4070a841c72a4))
