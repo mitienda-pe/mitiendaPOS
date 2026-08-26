@@ -45,6 +45,7 @@ const normalizeAccessFlags = (access) => {
     categories: !!a.categories_enabled,
     paymentMethods: !!a.payment_methods_enabled,
     branchStock: !!a.branch_stock_enabled,
+    paymentLinks: !!a.payment_links_enabled,
     // Envío a domicilio: no depende del plan sino de configuración de la tienda
     // (reparto activo, cobertura cargada y, si delega facturación, ítem de envío
     // en el ERP). El motivo se muestra al cajero cuando está apagado.

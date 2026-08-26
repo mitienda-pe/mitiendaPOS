@@ -12,6 +12,7 @@ import { inventoryApi } from '../services/inventoryApi';
 import { catalogApi } from '../services/catalogApi';
 import { ordersApi } from '../services/ordersApi';
 import { cotizacionesApi } from '../services/cotizacionesApi';
+import { paymentLinksApi } from '../services/paymentLinksApi';
 import { netsuiteStockApi } from '../services/netsuiteStockApi';
 import { mockCustomersApi } from '../api/mockCustomers';
 import { useSavedSalesStore } from '../stores/savedSales';
@@ -21,6 +22,7 @@ import CustomerSearchModal from '../components/CustomerSearchModal.vue';
 import CustomerCaptureModal from '../components/CustomerCaptureModal.vue';
 import PaymentModal from '../components/PaymentModal.vue';
 import SavedSalesModal from '../components/SavedSalesModal.vue';
+import PaymentLinkModal from '../components/PaymentLinkModal.vue';
 import StartSaleModal from '../components/StartSaleModal.vue';
 import SupervisorAuthModal from '../components/SupervisorAuthModal.vue';
 import ConfirmProductsModal from '../components/ConfirmProductsModal.vue';
@@ -51,9 +53,17 @@ const route = useRoute();
 // venta, se sella la conversión (cotización → venta) con este id.
 const activeCotizacionId = ref(null);
 const savingQuote = ref(false);
+// Link de pago: el POS como toma-pedidos. Ver `cobrarConLink`.
+const creatingPaymentLink = ref(false);
+const showPaymentLinkModal = ref(false);
+const paymentLink = ref(null);
 
 // Stores
 const authStore = useAuthStore();
+
+// Cobro por link gateado por el mismo módulo que en el backoffice: sin él, el
+// API responde 403 y el botón sería una promesa rota.
+const canPaymentLinks = computed(() => !!authStore.accessFlags?.paymentLinks);
 const savedSalesStore = useSavedSalesStore();
 // Cuántos tickets hay esperando en el mostrador (badge del botón "En espera").
 // Excluye la venta en curso: el autoguardado la persiste igual, pero no está
@@ -966,6 +976,54 @@ const saveAsQuote = async () => {
     showToast('error', e.message || 'No se pudo guardar la cotización');
   } finally {
     savingQuote.value = false;
+  }
+};
+
+/**
+ * Cobrar el carrito por WhatsApp: crea un link de pago y lo comparte.
+ *
+ * NO crea la venta ni descuenta stock. El link solo describe qué se cobra; la
+ * venta la crea el checkout cuando el cliente paga, con su comprobante y su
+ * kardex. Por eso no se toca la caja del turno ni se imprime ticket: si el
+ * cliente paga, entra como cualquier otra venta web.
+ *
+ * Es lo que convierte al POS en toma-pedidos para las tiendas que venden por
+ * WhatsApp, sin obligar al vendedor a cobrar en el momento.
+ */
+const cobrarConLink = async () => {
+  if (!cartItems.value.length) {
+    showToast('warning', 'Agrega productos al carrito antes de generar el link');
+    return;
+  }
+  creatingPaymentLink.value = true;
+  try {
+    const cliente = buildCustomerPayload() || {};
+    const resp = await paymentLinksApi.create({
+      origen: 'pos',
+      tiendadireccion_id: shiftStore.activeShift?.tiendadireccion_id || null,
+      cajero_id: cashierStore.cashier?.empleado_id || null,
+      // El backend solo mira product_id y quantity, y reprecia contra el catálogo.
+      items: buildItemsPayload(),
+      // Un link de mostrador es de un solo uso: es el cobro de ESTE pedido.
+      max_usos: 1,
+      // Lo que se sepa del cliente se precarga en el checkout: menos tipeo para
+      // quien paga desde el celular. Es editable, el que paga puede no ser el
+      // mismo al que se le facturó.
+      cliente: {
+        nombres: cliente.name || cliente.business_name || undefined,
+        telefono: cliente.phone || undefined,
+        correo: cliente.email || undefined,
+        documento: cliente.document_number || undefined,
+        tipo_documento: cliente.document_type || undefined,
+      },
+    });
+
+    paymentLink.value = resp.data;
+    showPaymentLinkModal.value = true;
+  } catch (e) {
+    showToast('error', e.message || 'No se pudo generar el link de pago');
+  } finally {
+    creatingPaymentLink.value = false;
   }
 };
 
@@ -2287,6 +2345,12 @@ const getPaymentMethodName = (method) => {
                 <line x1="8" y1="17" x2="13" y2="17" />
               </svg>
             </button>
+            <button v-if="canPaymentLinks" @click="cobrarConLink" :disabled="!cartItems.length || creatingPaymentLink" class="p-2 text-green-600 hover:bg-green-50 rounded-md disabled:opacity-40 disabled:hover:bg-transparent" title="Cobrar por WhatsApp" aria-label="Cobrar por WhatsApp">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+              </svg>
+            </button>
             <button @click="showSavedSalesModal = true" class="relative p-2 text-primary-600 hover:bg-primary-50 rounded-md" title="Ventas en espera" aria-label="Ventas en espera">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
@@ -3079,6 +3143,11 @@ const getPaymentMethodName = (method) => {
   />
 
   <SavedSalesModal v-model="showSavedSalesModal" :current-sale-id="currentSaleId" @resume-sale="resumeSavedSale" />
+  <PaymentLinkModal
+    v-model="showPaymentLinkModal"
+    :link="paymentLink"
+    :telefono="paymentLink?.cliente?.telefono || ''"
+  />
 
   <!-- Supervisor Authorization Modal -->
   <SupervisorAuthModal
