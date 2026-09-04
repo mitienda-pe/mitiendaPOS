@@ -3,7 +3,7 @@ import { useAuthStore } from '../stores/auth';
 import { useShiftStore } from '../stores/shift';
 
 // Lazy-loaded components
-const Welcome = () => import('../views/Welcome.vue');
+const Landing = () => import('../views/Landing.vue');
 const Login = () => import('../views/Login.vue');
 const CashierLogin = () => import('../views/CashierLogin.vue');
 const POS = () => import('../views/POS.vue');
@@ -322,11 +322,11 @@ const routes = [
     meta: { requiresAuth: true, requiresSuperAdmin: true }
   },
   {
-    // Entrada del subdominio para quien llega sin sesión. El guard manda a
-    // /menu si ya hay sesión, así que el cajero no ve esta pantalla.
+    // Landing pública del producto. El guard manda a /menu si ya hay sesión,
+    // así que el cajero nunca aterriza en el marketing.
     path: '/',
-    name: 'Welcome',
-    component: Welcome,
+    name: 'Landing',
+    component: Landing,
     meta: { requiresAuth: false }
   }
 ];
@@ -345,7 +345,7 @@ router.beforeEach(async (to, from, next) => {
   const requiredRoles = to.meta.roles;
 
   // Páginas de entrada, accesibles sin sesión. Con sesión abierta no tienen
-  // sentido: la raíz es la bienvenida para visitantes, no el destino del cajero.
+  // sentido: la raíz es la landing pública, no el destino del cajero.
   const isEntryPage = to.path === '/' || to.path === '/login' || to.path === '/cashier-login';
 
   // Check authentication
