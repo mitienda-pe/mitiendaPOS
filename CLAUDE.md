@@ -15,7 +15,8 @@ pnpm run preview # Preview production build locally
 ```
 
 Deploy: `git push origin main` triggers GitHub Actions (`.github/workflows/deploy.yml`):
-build with pnpm + rsync `dist/` to `/var/www/pos/` on the deploy server.
+build with pnpm + `wrangler pages deploy dist` to the Cloudflare Pages project
+`mitienda-pos`, which serves <https://pos.mitienda.pe>.
 
 No test runner or linter is configured in this project.
 
@@ -108,7 +109,10 @@ Vite proxies `/api` to `api2.mitienda.pe`, `/api-reniec` and `/api-sunat` to `ap
 
 - UI language is Spanish (es-PE locale)
 - Color primary: `#00b2a6` (turquoise) — use `text-primary`, `bg-primary`
-- Use `AppButton`, `AppInput`, `AppBadge`, `AppEmptyState`, `AppErrorState` from `@/components/ui`
+- Este repo **no tiene** `@/components/ui` ni los `AppButton`/`AppInput` del
+  backoffice: los controles se escriben con clases de Tailwind. Para un formulario
+  o una pantalla de entrada, copiar el patrón de `src/views/Login.vue` y
+  `src/views/CashierLogin.vue` en vez de inventar componentes nuevos.
 - Do NOT use `indigo-*` or `blue-*` for interactive elements
 - Icons: `@heroicons/vue`
 - Commits: conventional commits (`feat:`, `fix:`, etc.)

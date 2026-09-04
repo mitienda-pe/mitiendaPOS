@@ -3,6 +3,7 @@ import { useAuthStore } from '../stores/auth';
 import { useShiftStore } from '../stores/shift';
 
 // Lazy-loaded components
+const Welcome = () => import('../views/Welcome.vue');
 const Login = () => import('../views/Login.vue');
 const CashierLogin = () => import('../views/CashierLogin.vue');
 const POS = () => import('../views/POS.vue');
@@ -321,8 +322,12 @@ const routes = [
     meta: { requiresAuth: true, requiresSuperAdmin: true }
   },
   {
+    // Entrada del subdominio para quien llega sin sesión. El guard manda a
+    // /menu si ya hay sesión, así que el cajero no ve esta pantalla.
     path: '/',
-    redirect: '/menu'
+    name: 'Welcome',
+    component: Welcome,
+    meta: { requiresAuth: false }
   }
 ];
 
@@ -339,8 +344,9 @@ router.beforeEach(async (to, from, next) => {
   const requiresActiveShift = to.meta.requiresActiveShift;
   const requiredRoles = to.meta.roles;
 
-  // Allow access to login pages without authentication
-  const isLoginPage = to.path === '/login' || to.path === '/cashier-login';
+  // Páginas de entrada, accesibles sin sesión. Con sesión abierta no tienen
+  // sentido: la raíz es la bienvenida para visitantes, no el destino del cajero.
+  const isEntryPage = to.path === '/' || to.path === '/login' || to.path === '/cashier-login';
 
   // Check authentication
   if (requiresAuth && !authStore.isAuthenticated) {
@@ -389,8 +395,8 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
-  // Redirect to menu if already authenticated and trying to access login pages
-  if (isLoginPage && authStore.isAuthenticated) {
+  // Redirect to menu if already authenticated and trying to access entry pages
+  if (isEntryPage && authStore.isAuthenticated) {
     next('/menu');
     return;
   }

@@ -1,3 +1,4 @@
-# Netlify SPA redirect rules
-# This ensures all routes are handled by the Vue Router
+# Fallback SPA para Cloudflare Pages (formato heredado de Netlify, que Pages
+# también entiende): todas las rutas las resuelve Vue Router.
+# Los archivos que existen en dist/ se sirven tal cual y no pasan por aquí.
 /* /index.html 200

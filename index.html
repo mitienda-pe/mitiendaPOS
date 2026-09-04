@@ -4,7 +4,37 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MiTienda - POS</title>
+    <title>MiTienda POS — la caja para tu tienda</title>
+    <!--
+      Meta estáticos: este index.html se sirve para TODAS las rutas del SPA
+      (ver public/_redirects), así que describen la app, no una vista concreta.
+      Sin SSR no hay forma de variarlos por ruta; los crawlers sociales no
+      ejecutan JS, y sin esto compartir el enlace sale en blanco.
+      El contenido de marketing es canónico en https://mitienda.pe/punto-de-venta.
+    -->
+    <meta
+      name="description"
+      content="Punto de venta de MiTienda: caja, inventario y comprobantes electrónicos sincronizados con tu tienda online."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="MiTienda POS" />
+    <meta property="og:title" content="MiTienda POS — la caja para tu tienda" />
+    <meta
+      property="og:description"
+      content="Punto de venta de MiTienda: caja, inventario y comprobantes electrónicos sincronizados con tu tienda online."
+    />
+    <meta property="og:url" content="https://pos.mitienda.pe/" />
+    <meta property="og:image" content="https://mitienda.pe/img/pos-banner.webp" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <!--
+      Fuera del índice: las rutas internas del SPA (/pos, /inventory, /sales…)
+      se sirven con este mismo HTML y no aportan nada en buscadores; la página
+      que debe posicionar es la del landing.
+      Va por meta y NO por robots.txt a propósito: un Disallow impediría que
+      Google llegue a leer este noindex, y además bloquearía a los crawlers de
+      WhatsApp y Facebook, que sí lo respetan — dejando el preview en blanco.
+    -->
+    <meta name="robots" content="noindex, follow" />
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-7JXW2GGFX1"></script>
     <script>
