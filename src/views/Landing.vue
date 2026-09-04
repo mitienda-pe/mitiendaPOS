@@ -250,7 +250,7 @@ import { useAppVersion } from '../composables/useVersionCheck';
 
 const { currentVersion } = useAppVersion();
 
-const WHATSAPP = '51992640275';
+const WHATSAPP = '51967797232';
 const SUPPORT_EMAIL = 'soporte@mitienda.pe';
 
 const wa = (message) => `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(message)}`;
