@@ -246,9 +246,49 @@
 </template>
 
 <script setup>
+import { onMounted, onBeforeUnmount } from 'vue';
 import { useAppVersion } from '../composables/useVersionCheck';
 
 const { currentVersion } = useAppVersion();
+
+// Widget de chat, el mismo del landing de mitienda.pe (modo `sales`).
+//
+// Se carga acá y no en index.html a propósito: index.html se sirve para TODAS
+// las rutas del SPA, así que ahí el chat de ventas le saldría también al cajero
+// en medio de una venta. Montándolo en esta vista, vive y muere con la landing.
+//
+// Requiere que public/_headers permita jsDelivr en style-src y
+// rag.tiendabox.co en connect-src, o falla en silencio.
+const CHAT_WIDGET_BASE = 'https://cdn.jsdelivr.net/gh/mitienda-pe/mitienda-chat-widget@v1.2.0/dist';
+
+function mountChatWidget() {
+  if (document.querySelector('script[data-mitienda-chat]')) return;
+
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = `${CHAT_WIDGET_BASE}/mitienda-chat.css`;
+  link.dataset.mitiendaChat = 'true';
+  document.head.appendChild(link);
+
+  const script = document.createElement('script');
+  script.async = true;
+  script.src = `${CHAT_WIDGET_BASE}/mitienda-chat.iife.js`;
+  script.dataset.mode = 'sales';
+  script.dataset.botName = 'MiTienda POS';
+  script.dataset.country = 'PE';
+  script.dataset.mitiendaChat = 'true';
+  document.body.appendChild(script);
+}
+
+function unmountChatWidget() {
+  document.querySelectorAll('[data-mitienda-chat]').forEach((el) => el.remove());
+  // El widget se monta solo en este contenedor; sin quitarlo queda flotando
+  // sobre la app cuando el visitante entra a /login o /cashier-login.
+  document.getElementById('mitienda-chat')?.remove();
+}
+
+onMounted(mountChatWidget);
+onBeforeUnmount(unmountChatWidget);
 
 const WHATSAPP = '51967797232';
 const SUPPORT_EMAIL = 'soporte@mitienda.pe';
