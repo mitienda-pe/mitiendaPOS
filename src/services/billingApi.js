@@ -87,6 +87,56 @@ const billingApi = {
     return response.data
   },
 
+  // ========== Facturación MiTienda (SEE propio, sin PSE) ==========
+
+  /**
+   * Configuración actual. Trae `available`: si es false, esta tienda no está
+   * habilitada para el proveedor y la tarjeta no debe mostrarse.
+   * Nunca devuelve el token de la empresa, ni la clave SOL ni el certificado.
+   * @returns {Promise<Object>}
+   */
+  async getSunatConfig() {
+    const response = await apiClient.get('/billing/sunat')
+    return response.data
+  },
+
+  /**
+   * Da de alta (o actualiza) la empresa emisora. Manda datos fiscales, clave SOL
+   * y el certificado en base64; el backend los reenvía al microservicio de
+   * emisión y guarda localmente solo el token que devuelve.
+   * @returns {Promise<Object>}
+   */
+  async saveSunatCompany(data, isUpdate = false) {
+    const response = isUpdate
+      ? await apiClient.put('/billing/sunat', data)
+      : await apiClient.post('/billing/sunat', data)
+    return response.data
+  },
+
+  async deleteSunatConfig() {
+    const response = await apiClient.delete('/billing/sunat')
+    return response.data
+  },
+
+  async testSunatConnection() {
+    const response = await apiClient.post('/billing/sunat/test')
+    return response.data
+  },
+
+  /**
+   * Valida el certificado ANTES de guardarlo y devuelve titular y vigencia. Sin
+   * esto, un .pfx vencido o con la contraseña equivocada recién se descubre
+   * cuando el comercio intenta emitir su primera venta.
+   * @returns {Promise<Object>}
+   */
+  async inspectSunatCertificate(certificado, certPassword) {
+    const response = await apiClient.post('/billing/sunat/certificate/inspect', {
+      certificado,
+      cert_password: certPassword,
+    })
+    return response.data
+  },
+
   // ========== Billing Documents ==========
 
   /**

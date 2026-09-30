@@ -247,6 +247,14 @@ const routes = [
         meta: { requiresModule: 'billing' }
       },
       {
+        // La tienda tiene que estar habilitada (SUNAT_SERVICE_ALLOWED_STORES): la
+        // vista lo consulta al montar y el backend rechaza la escritura si no.
+        path: 'billing/sunat',
+        name: 'SunatConfig',
+        component: () => import('../views/settings/billing/SunatConfigView.vue'),
+        meta: { requiresModule: 'billing' }
+      },
+      {
         path: 'reports',
         name: 'Reports',
         component: () => import('../views/settings/ReportsView.vue'),

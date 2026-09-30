@@ -34,6 +34,24 @@
           Configura tus credenciales de Nubefact para emitir comprobantes.
         </p>
       </router-link>
+
+      <!-- Facturación MiTienda: emisión directa a SUNAT, sin PSE. Solo se muestra
+           a las tiendas habilitadas; el backend además rechaza la escritura. -->
+      <router-link
+        v-if="sunatAvailable"
+        to="/settings/billing/sunat"
+        class="block bg-white rounded-lg shadow-sm p-5 border border-transparent hover:border-primary-300 hover:shadow transition"
+      >
+        <div class="flex items-start justify-between mb-2">
+          <h2 class="text-lg font-semibold text-gray-800">Facturación MiTienda</h2>
+          <span v-if="activeProviderId === 7" class="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700">Activo</span>
+          <span v-else class="text-xs font-medium px-2 py-0.5 rounded-full bg-primary-50 text-primary-700">Sin proveedor externo</span>
+        </div>
+        <p class="text-sm text-gray-500">
+          Emite directo a SUNAT con el certificado digital gratuito, para empresas que
+          facturan menos de S/ 1 260 000 al año.
+        </p>
+      </router-link>
     </div>
 
     <p class="text-xs text-gray-400 mt-4 max-w-3xl">
@@ -46,8 +64,9 @@
 import { ref, onMounted } from 'vue';
 import billingApi from '../../../services/billingApi';
 
-// provider_id: 2 = Nubefact, 3 = Bizlinks
+// provider_id: 2 = Nubefact, 3 = Bizlinks, 7 = Facturación MiTienda
 const activeProviderId = ref(null);
+const sunatAvailable = ref(false);
 
 onMounted(async () => {
   try {
@@ -56,6 +75,16 @@ onMounted(async () => {
     activeProviderId.value = data?.provider_configured ? (data?.provider_id ?? null) : null;
   } catch (e) {
     activeProviderId.value = null;
+  }
+
+  // La emisión propia se ofrece por tienda, así que hay que preguntarle al
+  // backend en vez de mostrarla siempre. Un fallo acá deja la tarjeta oculta.
+  try {
+    const res = await billingApi.getSunatConfig();
+    const data = res?.data ?? res;
+    sunatAvailable.value = data?.available === true;
+  } catch (e) {
+    sunatAvailable.value = false;
   }
 });
 </script>
