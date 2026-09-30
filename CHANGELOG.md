@@ -3,6 +3,21 @@
 Generado con `scripts/changelog.sh` desde los conventional commits.
 No editar a mano: los cambios se pierden en la siguiente regeneracion.
 
+## [v1.38.0] - 2026-09-30
+
+### Novedades
+
+- **facturación:** configurar la emisión propia SUNAT desde el POS ([`4853e0d`](https://github.com/mitienda-pe/mitiendaPOS/commit/4853e0dc57fe66c133b7c162fd2bfb2605c6a863))
+- **pos:** widget de chat en la landing ([`15a2392`](https://github.com/mitienda-pe/mitiendaPOS/commit/15a23924289c7257c241cf3af5a5adedda600521))
+- **pos:** landing del producto en la raíz de pos.mitienda.pe ([`b5c3b3f`](https://github.com/mitienda-pe/mitiendaPOS/commit/b5c3b3f52ce8b54145cc183b48dcbab34fe54235))
+- **pos:** pantalla de bienvenida en la raíz para quien llega sin sesión ([`cc19328`](https://github.com/mitienda-pe/mitiendaPOS/commit/cc1932819ab1e02005edee9c0a21e0c0463c5596))
+- **pos:** cobrar el carrito por WhatsApp con un link de pago ([`6f3429d`](https://github.com/mitienda-pe/mitiendaPOS/commit/6f3429d4acd9d6c57437243df57ff17e211db82d))
+
+### Correcciones
+
+- **pos:** permitir Google Analytics en la CSP ([`c330787`](https://github.com/mitienda-pe/mitiendaPOS/commit/c330787bd5f3467cbe63c96707f5b608e5a330cc))
+- **pos:** corregir el número de WhatsApp de la landing ([`6ba21b3`](https://github.com/mitienda-pe/mitiendaPOS/commit/6ba21b3002648abde8b8cef1e97b58e8af47fac4))
+
 ## [v1.33.0] - 2026-08-20
 
 Primera version etiquetada. Lo anterior esta en el historico.
