@@ -262,11 +262,22 @@ const formatWeight = (value) => {
   return parseFloat(n.toFixed(3)).toString();
 };
 
+// Un escaneo en vuelo. Las pistolas configuradas con sufijo CR+LF mandan DOS
+// eventos Enter (el navegador reporta 'Enter' para los dos), y el segundo
+// llegaba mientras el primero esperaba la respuesta del servidor: el producto
+// se agregaba dos veces de un solo escaneo.
+const escaneoEnCurso = ref(false);
+
 const handleBarcodeInput = async () => {
-  if (!barcode.value) return;
+  if (!barcode.value || escaneoEnCurso.value) return;
+
+  // El campo se vacía ACÁ, no al terminar: así el segundo Enter del sufijo no
+  // encuentra nada que procesar. Es la misma limpieza de siempre, adelantada.
+  const scannedCode = barcode.value;
+  barcode.value = '';
+  escaneoEnCurso.value = true;
 
   try {
-    const scannedCode = barcode.value;
 
     // 1. Resolución exacta del código de barras (producto o variación). Si el código
     // pertenece a una variación, la agregamos directo sin pasar por el selector
@@ -293,7 +304,6 @@ const handleBarcodeInput = async () => {
             variant_sku: v.sku || null,
           });
         }
-        barcode.value = '';
         barcodeInput.value?.focus();
         return;
       }
@@ -306,7 +316,6 @@ const handleBarcodeInput = async () => {
         } else {
           showToast('warning', 'Este producto está agotado');
         }
-        barcode.value = '';
         barcodeInput.value?.focus();
         return;
       }
@@ -341,11 +350,14 @@ const handleBarcodeInput = async () => {
       showToast('warning', 'Producto no encontrado');
     }
 
-    barcode.value = '';
-    barcodeInput.value.focus();
+    barcodeInput.value?.focus();
   } catch (error) {
     console.error('Error searching product:', error);
     showToast('error', 'Error al buscar el producto');
+  } finally {
+    // Se libera pase lo que pase: si quedara trabado, la caja dejaría de
+    // responder a la pistola y el cajero no tendría cómo darse cuenta.
+    escaneoEnCurso.value = false;
   }
 };
 
