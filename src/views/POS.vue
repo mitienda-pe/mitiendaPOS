@@ -1910,6 +1910,9 @@ const fetchCustomers = async () => {
 
 // Search methods
 const BARCODE_PATTERN = /^\d{8,14}$/;
+// Pausa sin teclas que da por terminado un código sin Enter. Una pistola manda
+// cada dígito a pocos ms del anterior; una persona que lo tipea, mucho más lento.
+const BARCODE_IDLE_MS = 400;
 
 const searchProducts = () => {
   if (searchDebounce) {
@@ -1925,14 +1928,20 @@ const searchProducts = () => {
     return;
   }
 
-  // Barcode: match exacto sin debounce. El backend detecta el patrón
-  // y aplica filtro exacto sobre `barcodes` (sin typo tolerance).
+  // Barcode: NO se busca en cada tecla. La pistola "teclea" el código dígito a
+  // dígito y el patrón ya coincide en el 8.º: buscar ahí mandaba un código
+  // cortado (`77501060` de `7750106003377`) y vaciaba el campo, así que el resto
+  // de los dígitos caía suelto. Se espera al Enter de la pistola (onSearchEnter)
+  // o, si no manda sufijo, a una pausa sin teclas.
   if (BARCODE_PATTERN.test(barcode.value)) {
     searchResults.value = [];
     highlightedIndex.value = -1;
     searchLoading.value = false;
     searchAttempted.value = false;
-    handleBarcodeInput();
+    searchDebounce = setTimeout(() => {
+      searchDebounce = null;
+      handleBarcodeInput();
+    }, BARCODE_IDLE_MS);
     return;
   }
 
@@ -2009,6 +2018,13 @@ const onSearchKeydown = (e) => {
 };
 
 const onSearchEnter = (e) => {
+  // El Enter adelanta la búsqueda que searchProducts dejó programada: si no se
+  // cancela, el temporizador la repetiría con el campo ya vacío.
+  if (searchDebounce) {
+    clearTimeout(searchDebounce);
+    searchDebounce = null;
+  }
+
   if (highlightedIndex.value >= 0 && searchResults.value[highlightedIndex.value]) {
     e.preventDefault();
     selectProduct(searchResults.value[highlightedIndex.value]);
