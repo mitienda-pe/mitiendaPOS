@@ -98,8 +98,9 @@ export const useAuthStore = defineStore('auth', {
       return !!this.accessToken && !this.isCashierToken;
     },
 
-    // true si el usuario autenticado es superadministrador de la plataforma.
-    isSuperAdmin: (state) => !!state.superAdminInfo?.is_superadmin,
+    // true si el usuario da soporte a todas las tiendas (lista e impersona):
+    // el equipo técnico (`is_superadmin`) y también ventas (`can_support`).
+    isSuperAdmin: (state) => !!(state.superAdminInfo?.is_superadmin || state.superAdminInfo?.can_support),
     // true si el token activo es de impersonación (superadmin operando como
     // otra tienda). Se deriva del propio JWT, así sobrevive recargas.
     isImpersonating: (state) => decodeJwtPayload(state.accessToken)?.is_impersonating === true,
