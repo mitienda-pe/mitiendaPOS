@@ -69,14 +69,14 @@ const increment = () => {
   emit('update:modelValue', newValue);
 };
 
-const onInputFocus = () => {
+const onInputFocus = (event) => {
   if (props.disabled) return;
   isEditing.value = true;
-  // Seleccionar todo el texto al hacer focus
-  setTimeout(() => {
-    const input = document.getElementById('quantity-input');
-    if (input) input.select();
-  }, 0);
+  // Seleccionar todo el texto al hacer focus. Sobre el input propio: hay un
+  // stepper por línea del carrito y un getElementById agarraba siempre el
+  // primero, robándole el foco al que se acababa de tocar.
+  const input = event.target;
+  setTimeout(() => input.select(), 0);
 };
 
 const onInputBlur = () => {
@@ -165,9 +165,9 @@ const canIncrement = computed(() => {
 
     <!-- Input Editable -->
     <input
-      id="quantity-input"
       v-model="inputValue"
       type="text"
+      autocomplete="off"
       inputmode="numeric"
       pattern="[0-9]*"
       :disabled="disabled"
