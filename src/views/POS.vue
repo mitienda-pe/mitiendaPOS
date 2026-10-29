@@ -332,6 +332,8 @@ const handleBarcodeInput = async () => {
         sku: response.data.sku || '',
         nombre: response.data.name,
         precio: response.data.price,
+        precio_original: response.data.original_price || null,
+        promocion: response.data.promotion || null,
         stock: response.data.stock,
         unlimited_stock: response.data.unlimited_stock,
         categoria: response.data.category?.name || 'Sin categoría',
@@ -367,6 +369,9 @@ const mapResolvedProduct = (p) => ({
   sku: p.sku ? String(p.sku) : '',
   nombre: p.name,
   precio: p.price,
+  // Promoción vigente: el backend ya rebajó `price`; esto pinta el tachado.
+  precio_original: p.original_price || null,
+  promocion: p.promotion || null,
   stock: p.stock,
   unlimited_stock: p.unlimited_stock === true,
   categoria: p.category?.name || 'Sin categoría',

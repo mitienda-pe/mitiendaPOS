@@ -28,8 +28,10 @@ const adaptMeiliHit = (hit) => ({
   name: hit.title || hit.name || '',
   description: '',
   price: parseFloat(hit.price || 0),
-  original_price: hit.originalPrice != null ? parseFloat(hit.originalPrice) : null,
-  promotion: null,
+  // El índice manda originalPrice igual a price cuando no hay rebaja; solo cuenta si es mayor.
+  original_price: parseFloat(hit.originalPrice) > parseFloat(hit.price || 0) ? parseFloat(hit.originalPrice) : null,
+  // Promoción legacy vigente (la agrega el backend con pos=1): la misma que se cobra en la línea.
+  promotion: hit.promotion || null,
   // Afectación IGV: 1=Gravado, 2=Exonerado, 3=Inafecto (default afecto)
   tax_affectation: parseInt(hit.tax_affectation || hit.taxAffectation || 1),
   // ICBPER (Ley 30884): bolsa plástica. El monto por bolsa lo resuelve el backend.
