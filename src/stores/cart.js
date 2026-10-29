@@ -233,6 +233,25 @@ export const useCartStore = defineStore('cart', {
     // Regalos emitidos por el motor (gasta X → producto gratis), si los hubiera.
     promoV2GiftItems: (state) => state.calculatedTotals?.promotions_v2?.gift_items ?? [],
 
+    // Descuento porcentual (promoción legacy/NetSuite) que calculate-total aplicó a cada
+    // producto, por producto_id. Cubre las promociones con mínimo de compra: el buscador
+    // no puede rebajar la línea porque el descuento recién existe al llegar a la cantidad.
+    linePromotions: (state) => {
+      const byProduct = {};
+      for (const row of state.calculatedTotals?.items ?? []) {
+        if (row.metodo !== '2_lineas') continue;
+        const original = parseFloat(row.precio_original) || 0;
+        const percent = parseFloat(row.descuento_percent) || 0;
+        if (original <= 0 || percent <= 0) continue;
+        byProduct[String(row.producto_id)] = {
+          precio: Math.round(original * (1 - percent / 100) * 100) / 100,
+          precio_original: original,
+          promocion: { value: `-${percent}%` },
+        };
+      }
+      return byProduct;
+    },
+
     // Feedback de cupón para el cajero: { code, valid, message } | null.
     promoV2Coupon: (state) => state.calculatedTotals?.promotions_v2?.coupon ?? null,
 

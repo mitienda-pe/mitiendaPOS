@@ -248,8 +248,19 @@ const removeCoupon = async () => {
 // Methods
 // formatCurrency is now imported from utils/formatters.js
 
+// Precio de la línea tal como se cobra. Si el producto no trajo la promoción desde el
+// buscador (p. ej. una con mínimo de compra que recién se alcanzó), la toma del cálculo
+// del backend. Solo es para mostrar: el payload de la venta sigue mandando item.precio.
+const linePrice = (item) => {
+  if (item.precio_original) {
+    return { precio: item.precio, precio_original: item.precio_original, promocion: item.promocion };
+  }
+  const promo = cartStore.linePromotions[String(item.id)];
+  return promo ?? { precio: item.precio, precio_original: null, promocion: null };
+};
+
 const calculateSubtotal = (item) => {
-  const precio = parseFloat(item.precio) || 0;
+  const precio = parseFloat(linePrice(item).precio) || 0;
   // parseFloat (no parseInt) para soportar venta al peso (ej. 0.250).
   const cantidad = parseFloat(item.quantity) || 0;
   return precio * cantidad;
@@ -1791,7 +1802,7 @@ const handlePaymentCompleted = async () => {
           orderId: null,
           orderNumber: orderNumber || `VENTA-${Date.now()}`,
           customer: selectedCustomer.value ? { ...selectedCustomer.value } : null,
-          items: cartItems.value.map(item => ({ ...item })),
+          items: cartItems.value.map(item => ({ ...item, ...linePrice(item) })),
           payments: payments.value.map(payment => ({ ...payment })),
           subtotal: subtotal.value,
           tax: tax.value,
@@ -2532,12 +2543,12 @@ const getPaymentMethodName = (method) => {
                     <div class="text-sm text-gray-500">SKU: {{ item.sku }}</div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm">
-                    <div v-if="item.precio_original" class="flex flex-col gap-0.5">
-                      <span class="text-gray-400 line-through text-xs">{{ formatCurrency(item.precio_original) }}</span>
+                    <div v-if="linePrice(item).precio_original" class="flex flex-col gap-0.5">
+                      <span class="text-gray-400 line-through text-xs">{{ formatCurrency(linePrice(item).precio_original) }}</span>
                       <div class="flex items-center gap-2">
-                        <span class="font-semibold text-green-600">{{ formatCurrency(item.precio) }}</span>
-                        <span v-if="item.promocion" class="text-xs font-semibold bg-red-500 text-white px-1.5 py-0.5 rounded">
-                          {{ item.promocion.value }}
+                        <span class="font-semibold text-green-600">{{ formatCurrency(linePrice(item).precio) }}</span>
+                        <span v-if="linePrice(item).promocion" class="text-xs font-semibold bg-red-500 text-white px-1.5 py-0.5 rounded">
+                          {{ linePrice(item).promocion.value }}
                         </span>
                       </div>
                     </div>
@@ -2596,11 +2607,11 @@ const getPaymentMethodName = (method) => {
                   <div v-if="item.variant_name" class="text-xs text-primary-600 font-medium truncate">{{ item.variant_name }}</div>
                   <div class="text-xs text-gray-500">SKU: {{ item.sku }}</div>
                   <div class="mt-1 text-sm">
-                    <div v-if="item.precio_original" class="flex items-center gap-2 flex-wrap">
-                      <span class="text-gray-400 line-through text-xs">{{ formatCurrency(item.precio_original) }}</span>
-                      <span class="font-semibold text-green-600">{{ formatCurrency(item.precio) }}</span>
-                      <span v-if="item.promocion" class="text-xs font-semibold bg-red-500 text-white px-1.5 py-0.5 rounded">
-                        {{ item.promocion.value }}
+                    <div v-if="linePrice(item).precio_original" class="flex items-center gap-2 flex-wrap">
+                      <span class="text-gray-400 line-through text-xs">{{ formatCurrency(linePrice(item).precio_original) }}</span>
+                      <span class="font-semibold text-green-600">{{ formatCurrency(linePrice(item).precio) }}</span>
+                      <span v-if="linePrice(item).promocion" class="text-xs font-semibold bg-red-500 text-white px-1.5 py-0.5 rounded">
+                        {{ linePrice(item).promocion.value }}
                       </span>
                     </div>
                     <span v-else class="text-gray-700">{{ formatCurrency(item.precio) }}</span>
