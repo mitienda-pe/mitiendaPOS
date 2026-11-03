@@ -233,6 +233,13 @@ export const useCartStore = defineStore('cart', {
     // Regalos emitidos por el motor (gasta X → producto gratis), si los hubiera.
     promoV2GiftItems: (state) => state.calculatedTotals?.promotions_v2?.gift_items ?? [],
 
+    // Bonificaciones (promociones tipo 7, "compra X lleva Y"). Las calcula el
+    // backend en calculate-total y las vuelve a calcular al cobrar: aquí solo se
+    // muestran. No se mandan en la venta ni mueven el total (van a S/ 0).
+    bonificationItems: (state) => state.calculatedTotals?.bonificaciones ?? [],
+    // Regalos que correspondían pero no alcanza el stock: { titulo, corresponde, entregado }.
+    bonificationShortages: (state) => state.calculatedTotals?.bonificaciones_faltantes ?? [],
+
     // Descuento porcentual (promoción legacy/NetSuite) que calculate-total aplicó a cada
     // producto, por producto_id. Cubre las promociones con mínimo de compra: el buscador
     // no puede rebajar la línea porque el descuento recién existe al llegar a la cantidad.

@@ -231,6 +231,8 @@ const promoV2Discount = computed(() => cartStore.promoV2Discount);
 const couponInput = ref('');
 const applyingCoupon = ref(false);
 const couponFeedback = computed(() => cartStore.promoV2Coupon);
+const bonificationItems = computed(() => cartStore.bonificationItems);
+const bonificationShortages = computed(() => cartStore.bonificationShortages);
 const applyCoupon = async () => {
   if (!couponInput.value || !couponInput.value.trim()) return;
   applyingCoupon.value = true;
@@ -1802,7 +1804,18 @@ const handlePaymentCompleted = async () => {
           orderId: null,
           orderNumber: orderNumber || `VENTA-${Date.now()}`,
           customer: selectedCustomer.value ? { ...selectedCustomer.value } : null,
-          items: cartItems.value.map(item => ({ ...item, ...linePrice(item) })),
+          items: [
+            ...cartItems.value.map(item => ({ ...item, ...linePrice(item) })),
+            // Regalos a S/ 0 (en el camino normal vienen en el detalle de la orden).
+            ...bonificationItems.value.map(gift => ({
+              id: `bonif-${gift.producto_id}`,
+              nombre: gift.titulo,
+              sku: gift.sku,
+              quantity: gift.cantidad,
+              precio: 0,
+              precio_original: null,
+            })),
+          ],
           payments: payments.value.map(payment => ({ ...payment })),
           subtotal: subtotal.value,
           tax: tax.value,
@@ -2651,6 +2664,26 @@ const getPaymentMethodName = (method) => {
             <div v-if="cartItems.length === 0" class="bg-white rounded-lg border border-dashed border-gray-300 px-4 py-8 text-center text-sm text-gray-500">
               No hay productos en el carrito
             </div>
+          </div>
+
+          <!-- Bonificaciones: las decide el backend; el cajero solo entrega el producto -->
+          <div v-if="cartItems.length && (bonificationItems.length || bonificationShortages.length)"
+            class="mt-3 rounded-lg border border-primary-200 bg-primary-50 p-3">
+            <div class="text-xs font-semibold uppercase tracking-wide text-primary-700 mb-2">Regalos de la promoción</div>
+            <ul class="space-y-1">
+              <li v-for="gift in bonificationItems" :key="gift.producto_id"
+                class="flex items-center justify-between gap-2 text-sm">
+                <span class="min-w-0 truncate text-gray-900">
+                  <span class="font-semibold">{{ gift.cantidad }} ×</span> {{ gift.titulo }}
+                  <span class="text-xs text-gray-500">SKU: {{ gift.sku }}</span>
+                </span>
+                <span class="flex-shrink-0 text-xs font-semibold bg-primary text-white px-1.5 py-0.5 rounded">GRATIS</span>
+              </li>
+            </ul>
+            <p v-for="short in bonificationShortages" :key="'short-' + short.producto_id"
+              class="mt-2 text-xs text-amber-700">
+              Sin stock suficiente de {{ short.titulo }}: corresponden {{ short.corresponde }}, se entregan {{ short.entregado }}.
+            </p>
           </div>
         </div>
       </div>
