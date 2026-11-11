@@ -99,6 +99,11 @@
               <input v-model="form.distrito" type="text" class="input-field" placeholder="MIRAFLORES" />
             </div>
           </div>
+          <div v-if="configured" class="flex justify-end">
+            <button type="button" class="btn-secondary" :disabled="saving" @click="guardarPaso(1)">
+              {{ saving ? 'Guardando...' : 'Guardar datos de la empresa' }}
+            </button>
+          </div>
         </div>
       </section>
 
@@ -119,10 +124,27 @@
               <input v-model="form.sol_user" type="text" autocapitalize="characters" class="input-field" placeholder="FACTURA1" />
             </div>
             <div>
-              <label class="form-label">Clave SOL <span class="text-red-500">*</span></label>
+              <label class="form-label">Clave SOL <span v-if="!configured" class="text-red-500">*</span></label>
               <input v-model="form.sol_pass" type="password" class="input-field" />
+              <p v-if="configured" class="text-xs text-gray-500 mt-1">Déjala vacía para mantener la clave actual.</p>
             </div>
           </div>
+
+          <div class="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              class="btn-secondary"
+              :disabled="verifyingSol || !form.sol_user || (!form.sol_pass && !configured)"
+              @click="handleVerifySol"
+            >
+              {{ verifyingSol ? 'Verificando...' : 'Verificar clave SOL' }}
+            </button>
+            <p v-if="solCheck" class="text-sm" :class="solCheckClass">{{ solCheckTexto }}</p>
+          </div>
+          <p class="text-xs text-gray-500 -mt-2">
+            Se consulta a SUNAT sin emitir ningún comprobante ni gastar números de la serie.
+            <template v-if="configured && !form.sol_pass">Sin clave escrita, se prueba la que está guardada.</template>
+          </p>
 
           <div>
             <label class="form-label">
@@ -163,6 +185,16 @@
             Verificarlo acá evita descubrir que está vencido o que la contraseña no es
             la correcta recién al emitir tu primera venta.
           </p>
+          <div v-if="configured" class="flex justify-end">
+            <button
+              type="button"
+              class="btn-secondary"
+              :disabled="saving || (!form.sol_pass && !form.certificado)"
+              @click="guardarPaso(2)"
+            >
+              {{ saving ? 'Guardando...' : 'Guardar clave SOL y certificado' }}
+            </button>
+          </div>
         </div>
       </section>
 
@@ -252,7 +284,7 @@
 
         <template v-if="configured">
           <button type="button" class="btn-secondary" :disabled="testing" @click="handleTest">
-            {{ testing ? 'Probando...' : 'Probar conexión' }}
+            {{ testing ? 'Probando...' : 'Probar configuración' }}
           </button>
           <button
             type="button"
@@ -282,6 +314,17 @@
             <dd class="font-medium text-gray-800">{{ formatDate(credentials?.cert_expires_at) }}</dd>
           </div>
         </dl>
+        <!-- Dos pruebas distintas: "Servicio" no sale de MiTienda; "Clave SOL"
+             pregunta a SUNAT. Un "conexión correcta" solo no garantiza que se
+             pueda emitir (Dental Bach: servicio OK y SUNAT con 0111). -->
+        <ul v-if="prueba" class="text-sm space-y-2 mt-4 pt-4 border-t border-gray-100">
+          <li :class="prueba.servicio.ok ? 'text-green-700' : 'text-red-700'">
+            {{ prueba.servicio.ok ? '✓' : '✗' }} <strong>Servicio de facturación:</strong> {{ prueba.servicio.texto }}
+          </li>
+          <li :class="prueba.sol.clase">
+            {{ prueba.sol.ok ? '✓' : '✗' }} <strong>Clave SOL ante SUNAT:</strong> {{ prueba.sol.texto }}
+          </li>
+        </ul>
       </section>
     </form>
   </div>
@@ -373,6 +416,22 @@ const load = async () => {
       form.pdf_format = creds.pdf_format || 'TICKET';
       form.blocked = config.blocked ?? true;
     }
+
+    // Razón social, domicilio y usuario SOL viven solo en el servicio de
+    // facturación; la API los trae de allá. Sin esto el formulario se abría
+    // vacío y guardar pisaba los datos registrados (el ubigeo volvía a 150101).
+    const company = config?.company;
+    if (configured.value && company) {
+      form.ruc_emisor = company.ruc || form.ruc_emisor;
+      form.razon_social = company.razon_social || '';
+      form.nombre_comercial = company.nombre_comercial || '';
+      form.direccion = company.direccion || '';
+      form.ubigeo = company.ubigeo || form.ubigeo;
+      form.departamento = company.departamento || '';
+      form.provincia = company.provincia || '';
+      form.distrito = company.distrito || '';
+      form.sol_user = company.sol_user || '';
+    }
   } catch (e) {
     // Un 403 del backend es la tienda no habilitada, no un fallo.
     if (e?.response?.status === 403) {
@@ -425,9 +484,13 @@ const siguiente = () => {
     if (!/^\d{11}$/.test(form.ruc_emisor)) return showMessage('El RUC debe tener 11 dígitos.', 'error');
     if (!form.razon_social.trim()) return showMessage('La razón social es obligatoria.', 'error');
     if (!form.direccion.trim()) return showMessage('El domicilio fiscal es obligatorio.', 'error');
+    if (!/^\d{6}$/.test(form.ubigeo.trim())) return showMessage('El ubigeo debe tener 6 dígitos.', 'error');
   }
   if (paso.value === 2) {
-    if (!form.sol_user || !form.sol_pass) return showMessage('El usuario y la clave SOL son obligatorios.', 'error');
+    // Con la empresa registrada, la clave SOL vacía conserva la actual.
+    if (!form.sol_user || (!form.sol_pass && !configured.value)) {
+      return showMessage('El usuario y la clave SOL son obligatorios.', 'error');
+    }
     if (!form.certificado && !configured.value) return showMessage('Carga tu certificado digital.', 'error');
   }
   message.value = '';
@@ -457,22 +520,148 @@ const handleSave = async () => {
   }
 };
 
+/**
+ * Guarda solo un paso, con la empresa ya registrada. La API manda al servicio
+ * de facturación únicamente lo que llega: corregir el domicilio no exige volver
+ * a cargar la clave SOL ni el certificado.
+ */
+const guardarPaso = async (n) => {
+  let datos;
+  if (n === 1) {
+    if (!form.razon_social.trim()) return showMessage('La razón social es obligatoria.', 'error');
+    if (!/^\d{6}$/.test(form.ubigeo.trim())) return showMessage('El ubigeo debe tener 6 dígitos.', 'error');
+    datos = {
+      razon_social: form.razon_social,
+      nombre_comercial: form.nombre_comercial,
+      direccion: form.direccion,
+      ubigeo: form.ubigeo.trim(),
+      departamento: form.departamento,
+      provincia: form.provincia,
+      distrito: form.distrito,
+    };
+  } else {
+    if (form.sol_pass && !form.sol_user) return showMessage('Falta el usuario SOL.', 'error');
+    datos = {
+      sol_user: form.sol_user,
+      sol_pass: form.sol_pass,
+      certificado: form.certificado,
+      cert_password: form.cert_password,
+    };
+  }
+
+  saving.value = true;
+  try {
+    const res = await billingApi.saveSunatCompany(datos, true);
+    if (res?.success === false) {
+      showMessage(res?.message || 'No se pudo guardar.', 'error');
+      return;
+    }
+    showMessage('Cambios guardados.');
+    if (n === 2) {
+      // Los secretos no se quedan en memoria una vez enviados.
+      form.sol_pass = '';
+      form.certificado = '';
+      form.cert_password = '';
+      certFileName.value = '';
+      certInfo.value = null;
+    }
+    await load();
+  } catch (e) {
+    showMessage(e?.response?.data?.message || 'No se pudo guardar.', 'error');
+  } finally {
+    saving.value = false;
+  }
+};
+
+// ─── Verificación de la clave SOL (sin emitir) ─────────────────────────
+const verifyingSol = ref(false);
+const solCheck = ref(null);
+
+const textoSol = (r) => {
+  if (!r) return '';
+  switch (r.estado) {
+    case 'ok':
+      return 'La clave SOL funciona y tiene permiso para enviar comprobantes.';
+    case 'credenciales_invalidas':
+      return `SUNAT no reconoce el usuario o la clave SOL. Revísalos. (${r.code})`;
+    case 'sin_perfil':
+      return 'La clave es correcta, pero SUNAT no permite enviar comprobantes con ella (0111). '
+        + 'Revisa los permisos del usuario secundario, la afiliación al SEE – Del Contribuyente y que no tengas un OSE vigente.';
+    case 'sin_respuesta':
+      return 'SUNAT no respondió. Intenta de nuevo en unos minutos.';
+    default:
+      return `SUNAT respondió algo inesperado: ${r.mensaje}`;
+  }
+};
+
+const claseSol = (r) => {
+  switch (r?.estado) {
+    case 'ok': return 'text-green-700';
+    case 'sin_respuesta':
+    case 'indeterminado': return 'text-amber-700';
+    default: return 'text-red-700';
+  }
+};
+
+const solCheckTexto = computed(() => textoSol(solCheck.value));
+const solCheckClass = computed(() => claseSol(solCheck.value));
+
+/** Devuelve { ok, data } o { ok: false, error }. Sin clave escrita, la API usa la guardada. */
+const verificarSolApi = async (datos) => {
+  try {
+    const res = await billingApi.verifySunatSol(datos);
+    if (res?.success === false) return { ok: false, error: res?.message || 'No se pudo verificar la clave SOL.' };
+    return { ok: true, data: res?.data ?? res };
+  } catch (e) {
+    return { ok: false, error: e?.response?.data?.message || 'No se pudo verificar la clave SOL.' };
+  }
+};
+
+const handleVerifySol = async () => {
+  verifyingSol.value = true;
+  solCheck.value = null;
+  const r = await verificarSolApi({
+    ruc_emisor: form.ruc_emisor,
+    sol_user: form.sol_user,
+    sol_pass: form.sol_pass || undefined,
+    environment: form.environment,
+  });
+  verifyingSol.value = false;
+  if (r.ok) solCheck.value = r.data;
+  else showMessage(r.error, 'error');
+};
+
+// ─── Probar configuración: servicio + clave SOL ────────────────────────
+const prueba = ref(null);
+
 const handleTest = async () => {
   testing.value = true;
+  prueba.value = null;
+  message.value = '';
+
+  // 1. Servicio de facturación: MiTienda llega y el token sirve. No consulta a SUNAT.
+  let servicio;
   try {
     const res = await billingApi.testSunatConnection();
     const data = res?.data ?? res;
     if (res?.success === false || data?.connected === false) {
-      showMessage(res?.message || 'No se pudo conectar.', 'error');
+      servicio = { ok: false, texto: res?.message || 'no responde.' };
     } else {
       const amb = data?.environment === 'produccion' ? 'producción' : 'pruebas';
-      showMessage(`Conexión correcta. ${data?.razon_social || ''} en ${amb}.`);
+      servicio = { ok: true, texto: `funciona. ${data?.razon_social || ''} en ${amb}.` };
     }
   } catch (e) {
-    showMessage(e?.response?.data?.message || 'No se pudo conectar.', 'error');
-  } finally {
-    testing.value = false;
+    servicio = { ok: false, texto: e?.response?.data?.message || 'no responde.' };
   }
+
+  // 2. Clave SOL ante SUNAT, con la guardada, sin emitir.
+  const r = await verificarSolApi({ environment: credentials.value?.environment });
+  const sol = r.ok
+    ? { ok: r.data?.estado === 'ok', texto: textoSol(r.data), clase: claseSol(r.data) }
+    : { ok: false, texto: r.error, clase: 'text-red-700' };
+
+  prueba.value = { servicio, sol };
+  testing.value = false;
 };
 
 const handleDelete = async () => {

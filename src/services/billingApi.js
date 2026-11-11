@@ -124,6 +124,16 @@ const billingApi = {
   },
 
   /**
+   * Prueba la clave SOL contra SUNAT sin emitir ni gastar números de la serie.
+   * Con la empresa registrada y sin clave nueva, prueba la guardada.
+   * @returns {Promise<Object>} data: { estado, code, mensaje }
+   */
+  async verifySunatSol(data) {
+    const response = await apiClient.post('/billing/sunat/sol/verify', data)
+    return response.data
+  },
+
+  /**
    * Valida el certificado ANTES de guardarlo y devuelve titular y vigencia. Sin
    * esto, un .pfx vencido o con la contraseña equivocada recién se descubre
    * cuando el comercio intenta emitir su primera venta.
