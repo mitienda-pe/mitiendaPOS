@@ -3,6 +3,22 @@
 Generado con `scripts/changelog.sh` desde los conventional commits.
 No editar a mano: los cambios se pierden en la siguiente regeneracion.
 
+## [v1.39.0] - 2026-11-11
+
+### Novedades
+
+- **facturación:** Facturación MiTienda en el POS a la par del backoffice ([`05a6639`](https://github.com/mitienda-pe/mitiendaPOS/commit/05a663966b89df0e9efb60adf82fdfada710be40))
+- **pos:** mostrar los regalos de las bonificaciones en el carrito ([`264f85a`](https://github.com/mitienda-pe/mitiendaPOS/commit/264f85a1317690be5cb2352b6eabb5361d4f2df4))
+- **superadmin:** ventas también da soporte a todas las tiendas ([`52cb67c`](https://github.com/mitienda-pe/mitiendaPOS/commit/52cb67c46f7b05c429e2010ae1c733d4c544a8d0))
+
+### Correcciones
+
+- **pos:** el stepper de cantidad ya no le devuelve el foco a la primera línea ([`749a4f9`](https://github.com/mitienda-pe/mitiendaPOS/commit/749a4f93970d3298ed236d7c0171445c2e3c2e31))
+- **pos:** la línea muestra el tachado al alcanzar el mínimo de la promoción ([`c99f66e`](https://github.com/mitienda-pe/mitiendaPOS/commit/c99f66e4b9af64ffb204df9b71aa22c2ab0dbe0e))
+- **pos:** la línea muestra la promoción que se cobra ([`6332ad9`](https://github.com/mitienda-pe/mitiendaPOS/commit/6332ad93367885f55bafaacf0bac7a99bdb4dc21))
+- **pos:** la pistola mandaba el código de barras cortado ([`6f0e29c`](https://github.com/mitienda-pe/mitiendaPOS/commit/6f0e29cc8fb74d61fcc8492bafc035e30a5ea7a4))
+- **pos:** un escaneo agregaba el producto dos veces ([`2e8e20b`](https://github.com/mitienda-pe/mitiendaPOS/commit/2e8e20b4ccc50d1bff4ce00f25097b0b880a5768))
+
 ## [v1.38.0] - 2026-09-30
 
 ### Novedades
